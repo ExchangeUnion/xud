@@ -17,6 +17,7 @@ const errorCodes = {
   CURRENCY_MISSING: codesPrefix.concat('.14'),
   EXPIRY_MISSING: codesPrefix.concat('.15'),
   MISSING_SEED: codesPrefix.concat('.16'),
+  INSUFFICIENT_COLLATERAL: codesPrefix.concat('.17'),
 };
 
 const errors = {
@@ -40,14 +41,14 @@ const errors = {
     message: 'request timed out',
     code: errorCodes.TIMEOUT,
   },
-  SERVER_ERROR: {
-    message: 'connext server error',
+  SERVER_ERROR: (statusCode: number, statusMessage?: string) => ({
+    message: `connext server error ${statusCode}: ${statusMessage ?? ''}`,
     code: errorCodes.SERVER_ERROR,
-  },
-  UNEXPECTED: {
-    message: 'unexpected error during connext request',
+  }),
+  UNEXPECTED: (statusCode: number, statusMessage?: string) => ({
+    message: `unexpected status from connext request ${statusCode}: ${statusMessage ?? ''}`,
     code: errorCodes.UNEXPECTED,
-  },
+  }),
   TOKEN_ADDRESS_NOT_FOUND: {
     message: 'connext token address not found',
     code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,
@@ -75,6 +76,10 @@ const errors = {
   MISSING_SEED: {
     message: 'seed is missing',
     code: errorCodes.MISSING_SEED,
+  },
+  INSUFFICIENT_COLLATERAL: {
+    message: 'channel collateralization in progress, please try again in ~1 minute',
+    code: errorCodes.INSUFFICIENT_COLLATERAL,
   },
 };
 

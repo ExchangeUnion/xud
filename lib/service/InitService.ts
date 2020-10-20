@@ -46,14 +46,12 @@ class InitService extends EventEmitter {
         seedMnemonic,
         walletPassword: password,
       });
-      const initializedLndWallets = initWalletResult.initializedLndWallets;
-      const initializedRaiden = initWalletResult.initializedRaiden;
 
       await nodeKey.toFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
       return {
-        initializedLndWallets,
-        initializedRaiden,
+        initializedLndWallets: initWalletResult.initializedLndWallets,
+        initializedConnext: initWalletResult.initializedConnext,
         mnemonic: seedMnemonic,
       };
     } finally {
@@ -93,17 +91,13 @@ class InitService extends EventEmitter {
     password: string,
     xudDatabase: Uint8Array,
     lndBackupsMap: Map<string, Uint8Array>,
-    raidenDatabase: Uint8Array,
     seedMnemonicList: string[],
-    raidenDatabasePath: string,
   }) => {
     const {
       password,
       xudDatabase,
       lndBackupsMap,
-      raidenDatabase,
       seedMnemonicList,
-      raidenDatabasePath,
     } = args;
 
     if (seedMnemonicList.length !== 24) {
@@ -121,15 +115,11 @@ class InitService extends EventEmitter {
       // use the seed and database backups to restore any swap clients' wallets
       // that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
-        raidenDatabasePath,
-        raidenDatabase,
         lndBackups: lndBackupsMap,
         walletPassword: password,
         seedMnemonic: seedMnemonicList,
         restore: true,
       });
-      const restoredLndWallets = initWalletResult.initializedLndWallets;
-      const restoredRaiden = initWalletResult.initializedRaiden;
 
       if (xudDatabase.byteLength) {
         await fs.writeFile(this.databasePath, xudDatabase);
@@ -137,8 +127,8 @@ class InitService extends EventEmitter {
       await nodeKey.toFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
       return {
-        restoredLndWallets,
-        restoredRaiden,
+        initializedLndWallets: initWalletResult.initializedLndWallets,
+        initializedConnext: initWalletResult.initializedConnext,
       };
     } finally {
       this.pendingCall = false;

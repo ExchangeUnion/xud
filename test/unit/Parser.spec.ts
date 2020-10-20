@@ -1,17 +1,17 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { randomBytes } from 'crypto';
-import Parser from '../../lib/p2p/Parser';
+import { DisconnectionReason, SwapFailureReason, XuNetwork } from '../../lib/constants/enums';
+import { errorCodes } from '../../lib/p2p/errors';
+import Framer from '../../lib/p2p/Framer';
+import Network from '../../lib/p2p/Network';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
-import { removeUndefinedProps as removeUndefinedPropsTyped } from '../../lib/utils/utils';
-import { DisconnectionReason, SwapFailureReason, XuNetwork } from '../../lib/constants/enums';
-import uuid = require('uuid');
-import { Address, NodeState } from '../../lib/p2p/types';
 import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPacket';
-import Network from '../../lib/p2p/Network';
-import Framer from '../../lib/p2p/Framer';
-import { errorCodes } from '../../lib/p2p/errors';
+import Parser from '../../lib/p2p/Parser';
+import { Address, NodeState } from '../../lib/p2p/types';
+import { removeUndefinedProps as removeUndefinedPropsTyped } from '../../lib/utils/utils';
+import uuid = require('uuid');
 import stringify = require('json-stable-stringify');
 
 const removeUndefinedProps = (obj: any): any => { return removeUndefinedPropsTyped(obj); };
@@ -30,7 +30,7 @@ describe('Parser', () => {
     parser = new Parser(framer);
   });
 
-  function wait(num = 1): Promise<Packet[]> {
+  function waitForPackets(num = 1): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
       setTimeout(() => reject(timeoutError), 50);
       const parsedPackets: Packet[] = [];
@@ -46,7 +46,7 @@ describe('Parser', () => {
 
   function verify(packets: Packet[]): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      wait(packets.length)
+      waitForPackets(packets.length)
         .then((parsedPackets) => {
           for (let i = 0; i < packets.length; i += 1) {
             expect(stringify(packets[i])).to.equal(stringify(parsedPackets[i]));
@@ -64,7 +64,7 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      framer.frame(packet).then(parser.feed);
+      framer.frame(packet).then(parser.feed).catch(done);
     });
 
     it(`should parse an encrypted valid ${PacketType[packet.type]} packet`, (done) => {
@@ -74,7 +74,7 @@ describe('Parser', () => {
 
       parser.setEncryptionKey(encryptionKey);
 
-      framer.frame(packet, encryptionKey).then(parser.feed);
+      framer.frame(packet, encryptionKey).then(parser.feed).catch(done);
     });
   }
 
@@ -84,7 +84,7 @@ describe('Parser', () => {
         .then(() => done('err: packet is valid'))
         .catch(() => done());
 
-      framer.frame(packet).then(parser.feed);
+      framer.frame(packet).then(parser.feed).catch(done);
     });
   }
 
@@ -98,7 +98,7 @@ describe('Parser', () => {
         const middleIndex = data.length >> 1;
         parser.feed(data.slice(0, middleIndex));
         parser.feed(data.slice(middleIndex));
-      });
+      }).catch(done);
     });
 
     it(`should parse encrypted ${PacketType[packet.type]} packet split`, (done) => {
@@ -112,7 +112,7 @@ describe('Parser', () => {
         const middleIndex = data.length >> 1;
         parser.feed(data.slice(0, middleIndex));
         parser.feed(data.slice(middleIndex));
-      });
+      }).catch(done);
     });
   }
 
@@ -126,7 +126,7 @@ describe('Parser', () => {
         return framer.frame(packet);
       })).then((buffers) => {
         parser.feed(Buffer.concat(buffers));
-      });
+      }).catch(done);
     });
 
     it(`should parse encrypted ${packets.map(packet => PacketType[packet.type]).join(' ')} concatenated`, (done) => {
@@ -140,7 +140,7 @@ describe('Parser', () => {
         return framer.frame(packet, encryptionKey);
       })).then((buffers) => {
         parser.feed(Buffer.concat(buffers));
-      });
+      }).catch(done);
     });
   }
 
@@ -148,7 +148,6 @@ describe('Parser', () => {
     const packetsStr = packets.map(packet => PacketType[packet.type]).join(' ');
     it(`should parse ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
       verify(packets)
-        .then(done)
         .catch(done);
 
       let remaining = Buffer.alloc(0);
@@ -163,7 +162,8 @@ describe('Parser', () => {
       });
       Promise.all(framerPromises).then(() => {
         parser.feed(remaining);
-      });
+        done();
+      }).catch(done);
     });
 
     it(`should parse encrypted ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
@@ -185,14 +185,13 @@ describe('Parser', () => {
       });
       Promise.all(framerPromises).then(() => {
         parser.feed(remaining);
-      });
+      }).catch(done);
     });
   }
 
   const nodeState: NodeState = {
     addresses: [{ host: '1.1.1.1', port: 8885 }, { host: '2.2.2.2', port: 8885 }],
     pairs: [uuid()],
-    raidenAddress: uuid(),
     connextIdentifier: uuid(),
     lndPubKeys: { BTC: uuid(), LTC: uuid() },
     lndUris: { BTC: [''], LTC: [''] },
@@ -272,7 +271,8 @@ describe('Parser', () => {
       isBuy: false,
     };
     testValidPacket(new packets.OrderPacket(orderPacketBody));
-    testValidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, isBuy: true })));
+    testValidPacket(new packets.OrderPacket({ ...orderPacketBody, isBuy: true }));
+    testValidPacket(new packets.OrderPacket({ ...orderPacketBody, replaceOrderId: uuid() }));
     testInvalidPacket(new packets.OrderPacket(orderPacketBody, uuid()));
     testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })));
     testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })));
@@ -372,12 +372,12 @@ describe('Parser', () => {
 
   describe('test more edge-cases', () => {
     it('should not try to parse an empty buffer', async () => {
-      await expect(wait()).to.be.rejectedWith(timeoutError);
+      await expect(waitForPackets()).to.be.rejectedWith(timeoutError);
       parser.feed(Buffer.alloc(0));
     });
 
     it('should not try parse just the header as a packet', (done) => {
-      wait()
+      waitForPackets()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
           if (err === timeoutError) {
@@ -391,13 +391,13 @@ describe('Parser', () => {
       framer.frame(sessionInitPacket).then((data) => {
         const header = data.slice(0, Framer.MSG_HEADER_LENGTH);
         parser.feed(header);
-      });
+      }).catch(done);
     });
 
     it('should buffer a max buffer length', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
-      wait()
+      waitForPackets()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
           if (err === timeoutError) {
@@ -413,7 +413,7 @@ describe('Parser', () => {
     it('should not buffer when max buffer size exceeds', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
-      wait()
+      waitForPackets()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
           if (err && err.code === errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED) {

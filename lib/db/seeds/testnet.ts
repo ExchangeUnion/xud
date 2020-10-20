@@ -3,10 +3,9 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey: '037a74737630bb5a9979762b2163ef9f95c81e00caf347bacc17f16991cdbb61f7',
+    nodePubKey: '02c22007d3367713a3f938595d5f9ad4b049c2fc27cad07035fc6b62b2f3a20149',
     addresses: [
-      { host: 'xud1.testnet.exchangeunion.com', port: 18885 },
-      { host: 'pso32ae2l5nyh3clgee2nj2hgpmcnluhaqibjm2r2fjcsn4gclxfmrid.onion', port: 18885 },
+      { host: 'testnet.boltz.exchange', port: 18885 },
     ],
   },
   {
@@ -14,12 +13,6 @@ const nodes = [
     addresses: [
       { host: 'xud.kilrau.com', port: 18885 },
       { host: 'k3wdrskfge6cvvoebekjf6krgl73a6mh4y6qciyonisiwanmxhcgr5qd.onion', port: 18885 },
-    ],
-  },
-  {
-    nodePubKey: '02c22007d3367713a3f938595d5f9ad4b049c2fc27cad07035fc6b62b2f3a20149',
-    addresses: [
-      { host: 'xud.testnet.boltz.exchange', port: 18885 },
     ],
   },
 ] as db.NodeAttributes[];

@@ -13,6 +13,7 @@ const errorCodes = {
   UNKNOWN_PAYMENT_ERROR: codesPrefix.concat('.9'),
   PAYMENT_PENDING: codesPrefix.concat('.10'),
   REMOTE_IDENTIFIER_MISSING: codesPrefix.concat('.11'),
+  INSUFFICIENT_BALANCE: codesPrefix.concat('.12'),
 };
 
 const errors = {
@@ -64,6 +65,10 @@ const errors = {
   REMOTE_IDENTIFIER_MISSING: {
     message: 'operation failed due to a missing remote identifier',
     code: errorCodes.REMOTE_IDENTIFIER_MISSING,
+  },
+  INSUFFICIENT_BALANCE: {
+    message: 'swap failed due to insufficient channel balance',
+    code: errorCodes.INSUFFICIENT_BALANCE,
   },
 };
 

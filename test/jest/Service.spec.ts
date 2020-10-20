@@ -17,6 +17,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
   return jest.fn().mockImplementation(() => {
     return {
       getType: () => SwapClientType.Lnd,
+      getOutboundReservedAmount: () => 0,
     };
   });
 });
@@ -91,13 +92,14 @@ describe('Service', () => {
       expect.assertions(1);
       service = new Service(components);
       const args = getArgs();
+      const peerNotFoundError = new Error('peer not found');
       components.pool.getPeer = jest.fn().mockImplementation(() => {
-        throw new Error('peer not found');
+        throw peerNotFoundError;
       });
       try {
         await service.openChannel(args);
       } catch (e) {
-        expect(e).toMatchSnapshot();
+        expect(e).toEqual(peerNotFoundError);
       }
     });
 
@@ -203,22 +205,28 @@ describe('Service', () => {
     const setup = () => {
       service = new Service(components);
       components.swapClientManager.swapClients = new Map();
-      components.swapClientManager.get = jest.fn().mockImplementation((arg) => {
-        return components.swapClientManager.swapClients.get(arg);
+      components.swapClientManager.tradingLimits = jest.fn().mockImplementation((currency) => {
+        if (currency === 'BTC') {
+          return Promise.resolve({
+            maxSell: 2000,
+            maxBuy: 1500,
+          });
+        } else if (currency === 'LTC') {
+          return Promise.resolve({
+            maxSell: 7000,
+            maxBuy: 5500,
+          });
+        } else {
+          return Promise.resolve();
+        }
       });
 
       const btcClient = new mockedSwapClient();
-      btcClient.isConnected = jest.fn().mockImplementation(() => true);
-      btcClient.tradingLimits = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ maxSell: 2000, maxBuy: 1500 });
-      });
+      btcClient.isConnected = jest.fn().mockReturnValue(true);
       components.swapClientManager.swapClients.set('BTC', btcClient);
 
       const ltcClient = new mockedSwapClient();
-      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
-      ltcClient.tradingLimits = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ maxSell: 7000, maxBuy: 5500 });
-      });
+      ltcClient.isConnected = jest.fn().mockReturnValue(true);
       components.swapClientManager.swapClients.set('LTC', ltcClient);
 
       const bchClient = new mockedSwapClient();
@@ -256,11 +264,6 @@ describe('Service', () => {
     test('throws in case of invalid currency', async () => {
       setup();
       await expect(service.tradingLimits({ currency: 'A' })).rejects.toMatchSnapshot();
-    });
-
-    test('throws when swap client is not found', async () => {
-      setup();
-      await expect(service.tradingLimits({ currency: 'BBB' })).rejects.toMatchSnapshot();
     });
   });
 
@@ -348,9 +351,9 @@ describe('Service', () => {
       const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 2, includeAliases: false });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
-      expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 1)).toBeTruthy();
+      expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 2)).toBeTruthy();
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
-      expect(result.get(pairIds[0])!.sellArray.some(val => val.price === 6)).toBeTruthy();
+      expect(result.get(pairIds[0])!.sellArray.some(val => val.price === 5)).toBeTruthy();
     });
 
   });

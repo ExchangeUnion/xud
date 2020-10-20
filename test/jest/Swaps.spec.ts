@@ -1,11 +1,11 @@
-import Swaps from '../../lib/swaps/Swaps';
 import LndClient from '../../lib/lndclient/LndClient';
+import Swaps from '../../lib/swaps/Swaps';
 
 describe('Swaps', () => {
   describe('calculateLockBuffer', () => {
     const ltcMinutesPerBlock = LndClient['MINUTES_PER_BLOCK_BY_CURRENCY']['LTC'];
     const btcMinutesPerBlock = LndClient['MINUTES_PER_BLOCK_BY_CURRENCY']['BTC'];
-    const raidenMinutesPerBlock = 0.25;
+    const ethMinutesPerBlock = 0.25;
 
     test('it calculates a lock buffer with BTC first leg and LTC second leg', async () => {
       expect(Swaps['calculateLockBuffer'](1152, ltcMinutesPerBlock, btcMinutesPerBlock))
@@ -18,12 +18,12 @@ describe('Swaps', () => {
     });
 
     test('it calculates a lock buffer with BTC first leg and WETH second leg', async () => {
-      expect(Swaps['calculateLockBuffer'](100, raidenMinutesPerBlock, btcMinutesPerBlock))
+      expect(Swaps['calculateLockBuffer'](100, ethMinutesPerBlock, btcMinutesPerBlock))
         .toMatchSnapshot();
     });
 
     test('it calculates a lock buffer with WETH first leg and BTC second leg', async () => {
-      expect(Swaps['calculateLockBuffer'](80, btcMinutesPerBlock, raidenMinutesPerBlock))
+      expect(Swaps['calculateLockBuffer'](80, btcMinutesPerBlock, ethMinutesPerBlock))
         .toMatchSnapshot();
     });
   });

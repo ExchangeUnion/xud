@@ -1,12 +1,13 @@
 import { EventEmitter } from 'events';
 import { ReputationEvent } from '../constants/enums';
-import { NodeFactory, NodeInstance, ReputationEventInstance } from '../db/types';
+import { NodeCreationAttributes, NodeInstance } from '../db/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
+import errors from './errors';
 import P2PRepository from './P2PRepository';
 import { Address } from './types';
 import errors from './errors';
-import AddrMan/*, {AddrInfo}*/ from './AddrMan';
+import AddrMan from './AddrMan';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -18,14 +19,16 @@ export const reputationEventWeight = {
   [ReputationEvent.InvalidAuth]: -20,
   [ReputationEvent.SwapTimeout]: -15,
   [ReputationEvent.SwapMisbehavior]: -20,
+  [ReputationEvent.SwapAbuse]: Number.NEGATIVE_INFINITY,
+  [ReputationEvent.SwapDelay]: -25,
 };
 
 // TODO: inform node about getting banned
 // TODO: remove reputation events after certain amount of time
 
 interface NodeList {
-  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEventInstance[]) => void): this;
-  emit(event: 'node.ban', nodePubKey: string, events: ReputationEventInstance[]): boolean;
+  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEvent[]) => void): this;
+  emit(event: 'node.ban', nodePubKey: string, events: ReputationEvent[]): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -50,6 +53,7 @@ class NodeList extends EventEmitter {
   private aliasToPubKeyMap = new Map<string, string>();
 
   private static readonly BAN_THRESHOLD = -50;
+  private static readonly MAX_REPUTATION_SCORE = 100;
 
   public get count() {
     return this.inbound.size + this.outbound.size + this.customOutbound.size;
@@ -57,6 +61,18 @@ class NodeList extends EventEmitter {
 
   constructor(private repository: P2PRepository) {
     super();
+  }
+
+  private static updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
+    if (event === ReputationEvent.ManualUnban) {
+      node.reputationScore = reputationEventWeight[event];
+    } else {
+      // events that carry a negative infinity weight will set the
+      // reputationScore to negative infinity and result in a ban
+      node.reputationScore += reputationEventWeight[event];
+      // reputation score for a node cannot exceed the maximum
+      node.reputationScore = Math.min(node.reputationScore, NodeList.MAX_REPUTATION_SCORE);
+    }
   }
 
   /**
@@ -130,7 +146,14 @@ class NodeList extends EventEmitter {
   }
 
   public getPubKeyForAlias = (alias: string) => {
-    return this.aliasToPubKeyMap.get(alias);
+    const nodePubKey = this.aliasToPubKeyMap.get(alias);
+    if (!nodePubKey) {
+      throw errors.ALIAS_NOT_FOUND(alias);
+    }
+    if (nodePubKey === 'CONFLICT') {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+    return nodePubKey;
   }
 
   /**
@@ -138,7 +161,7 @@ class NodeList extends EventEmitter {
    * @returns true if the node was banned, false otherwise
    */
   public ban = async (nodePubKey: string): Promise<boolean> => {
-    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
   }
 
   /**
@@ -146,7 +169,7 @@ class NodeList extends EventEmitter {
    * @returns true if ban was removed, false otherwise
    */
   public unBan = async (nodePubKey: string): Promise<boolean> => {
-    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
   }
 
   public isBanned = (nodePubKey: string): boolean => {
@@ -168,8 +191,9 @@ class NodeList extends EventEmitter {
     nodes.forEach((node) => {
       this.addNode(node, "none");
       const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
+        node.reputationScore = 0;
         events.forEach(({ event }) => {
-          this.updateReputationScore(node, event);
+          NodeList.updateReputationScore(node, event);
         });
       });
       reputationLoadPromises.push(reputationLoadPromise);
@@ -189,6 +213,7 @@ class NodeList extends EventEmitter {
     } else {
       let node = await this.repository.addNodeIfNotExists(nodeFactory);
       if (node) {
+        // TODO node.reputationScore = 0;
         this.addNode(node,sourceIP);
       }
     } 
@@ -239,6 +264,24 @@ class NodeList extends EventEmitter {
   }
 
   /**
+   * Retrieves up to 10 of the most recent negative reputation events for a node
+   * from the repository.
+   * @param node the node for which to retrieve events
+   * @param newEvent a reputation event that hasn't been added to the repository yet
+   */
+  private getNegativeReputationEvents = async (node: NodeInstance, newEvent?: ReputationEvent) => {
+    const reputationEvents = await this.repository.getReputationEvents(node);
+    const negativeReputationEvents = reputationEvents
+      .filter(e => reputationEventWeight[e.event] < 0).slice(0, 9)
+      .map(e => e.event);
+
+    if (newEvent) {
+      negativeReputationEvents.unshift(newEvent);
+    }
+    return negativeReputationEvents;
+  }
+
+  /**
    * Add a reputation event to the node's history
    * @return true if the specified node exists and the event was added, false otherwise
    */
@@ -246,22 +289,22 @@ class NodeList extends EventEmitter {
     const node = this.get(nodePubKey); 
 
     if (node) {
-      const promises: PromiseLike<any>[] = [
-        this.repository.addReputationEvent({ event, nodeId: node.id }),
-      ];
+      const promises: PromiseLike<any>[] = [];
 
-      this.updateReputationScore(node, event);
+      NodeList.updateReputationScore(node, event);
 
-      if (node.reputationScore < NodeList.BAN_THRESHOLD) {
+      if (node.reputationScore < NodeList.BAN_THRESHOLD && !node.banned) {
         promises.push(this.setBanStatus(node, true));
 
-        const events = await this.repository.getReputationEvents(node);
-        this.emit('node.ban', nodePubKey, events);
-      } else if (node.banned) {
+        const negativeReputationEvents = await this.getNegativeReputationEvents(node);
+        this.emit('node.ban', nodePubKey, negativeReputationEvents);
+      } else if (node.reputationScore >= NodeList.BAN_THRESHOLD && node.banned) {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));
       }
+
+      promises.push(this.repository.addReputationEvent({ event, nodeId: node.id }));
 
       await Promise.all(promises);
 
@@ -290,17 +333,6 @@ class NodeList extends EventEmitter {
     return false;
   }
 
-  private updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
-    switch (event) {
-      case (ReputationEvent.ManualBan):
-      case (ReputationEvent.ManualUnban): {
-        node.reputationScore = reputationEventWeight[event];
-        break;
-      }
-      default: node.reputationScore += reputationEventWeight[event]; break;
-    }
-  }
-
   private setBanStatus = (node: NodeInstance, status: boolean) => {
     node.banned = status;
     return node.save();
@@ -310,13 +342,14 @@ class NodeList extends EventEmitter {
     const { nodePubKey } = node;
     const alias = pubKeyToAlias(nodePubKey);
     if (this.aliasToPubKeyMap.has(alias)) {
-      throw errors.ALIAS_CONFLICT(alias);
+      this.aliasToPubKeyMap.set(alias, 'CONFLICT');
+    } else {
+      this.aliasToPubKeyMap.set(alias, nodePubKey);
     }
 
     this.addrManager.Add(node, sourceIP);
     //this.nodeIdMap.set(node.id, node);
     this.pubKeyToAliasMap.set(nodePubKey, alias);
-    this.aliasToPubKeyMap.set(alias, nodePubKey);
   }
 }
 

@@ -1,49 +1,43 @@
-import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions, DefineAttributes } from 'sequelize';
+import { BelongsToGetAssociationMixin, Model } from 'sequelize';
 import { ReputationEvent } from '../constants/enums';
 import { Currency, Order, Pair } from '../orderbook/types';
 import { Address, NodeConnectionInfo } from '../p2p/types';
 import { SwapDeal } from '../swaps/types';
 
-export type SequelizeAttributes<T extends { [key: string]: any }> = DefineAttributes & {
-  [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions
-};
-
 /*
 * The following definitions are in sets of triplets, one for each Model (which represents a table in the database).
 *
-* "xFactory" is the type definition for the object which is required when a new record is to be created.
+* "xCreationAttributes" is the type definition for the object which is required when a new record is to be created.
 *
-* "xAttributes" is the type definition of the record. It cannot support nullables, as it is being used for the table's columns definition.
+* "xAttributes" is the type definition of the record.
 *
 * "xInstance" is the type definition of a fetched record as a Sequelize row instance, which contains some util properties.
 */
 
 /* Currency */
-export type CurrencyFactory = Currency;
+export type CurrencyCreationAttributes = Currency;
 
-export type CurrencyAttributes = CurrencyFactory & {
-  tokenAddress: string;
-};
+export type CurrencyAttributes = CurrencyCreationAttributes;
 
-export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
+export interface CurrencyInstance extends Model<CurrencyAttributes, CurrencyCreationAttributes>, CurrencyAttributes {}
 
 /* SwapDeal */
-export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal,
+export type SwapDealCreationAttributes = Pick<SwapDeal, Exclude<keyof SwapDeal,
   'takerMaxTimeLock' | 'price' | 'pairId' | 'isBuy' | 'takerUnits' | 'makerUnits'>>;
 
-export type SwapDealAttributes = SwapDealFactory & {
+export type SwapDealAttributes = SwapDealCreationAttributes & {
   /** The internal db node id of the counterparty peer for this swap deal. */
   nodeId: number;
-  Node?: NodeAttributes;
-  Order?: OrderAttributes;
 };
 
-export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes> & {
-  getNode: Sequelize.BelongsToGetAssociationMixin<NodeInstance>;
-  getOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
-};
+export interface SwapDealInstance extends Model<SwapDealAttributes, SwapDealCreationAttributes>, SwapDealAttributes {
+  getNode: BelongsToGetAssociationMixin<NodeInstance>;
+  getOrder: BelongsToGetAssociationMixin<OrderInstance>;
+  Node?: NodeInstance;
+  Order?: OrderInstance;
+}
 
-export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' | 'price'>> & {
+export type OrderCreationAttributes = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' | 'price'>> & {
   /** The internal db node id of the peer that created this order. */
   nodeId?: number;
   localId?: string;
@@ -51,12 +45,12 @@ export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' 
   price?: number;
 };
 
-export type OrderAttributes = OrderFactory & {
+export type OrderAttributes = OrderCreationAttributes & {
 };
 
-export type OrderInstance = OrderAttributes & Sequelize.Instance<OrderAttributes>;
+export interface OrderInstance extends Model<OrderAttributes, OrderCreationAttributes>, OrderAttributes {}
 
-export type TradeFactory = {
+export type TradeCreationAttributes = {
   /** The order id of the maker order involved in this trade. */
   makerOrderId: string,
   /** The order id of the taker order involved in this trade, if applicable. */
@@ -67,23 +61,23 @@ export type TradeFactory = {
   quantity: number,
 };
 
-export type TradeAttributes = TradeFactory & {
-  makerOrder?: OrderAttributes;
-  takerOrder?: OrderAttributes;
-  SwapDeal?: SwapDealAttributes;
+export type TradeAttributes = TradeCreationAttributes & {
 };
 
-export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes> & {
-  getMakerOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
-  getTakerOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
-  getSwapDeal: Sequelize.BelongsToGetAssociationMixin<SwapDealInstance>;
-  createdAt: Date,
-};
+export interface TradeInstance extends Model<TradeAttributes, TradeCreationAttributes>, TradeAttributes {
+  getMakerOrder: BelongsToGetAssociationMixin<OrderInstance>;
+  getTakerOrder: BelongsToGetAssociationMixin<OrderInstance>;
+  getSwapDeal: BelongsToGetAssociationMixin<SwapDealInstance>;
+  SwapDeal?: SwapDealInstance;
+  makerOrder?: OrderInstance;
+  takerOrder?: OrderInstance;
+  createdAt: Date;
+}
 
 /* Node */
-export type NodeFactory = NodeConnectionInfo;
+export type NodeCreationAttributes = NodeConnectionInfo;
 
-export type NodeAttributes = NodeFactory & {
+export type NodeAttributes = NodeCreationAttributes & {
   id: number;
   banned: boolean;
   addressesText: string;
@@ -91,29 +85,28 @@ export type NodeAttributes = NodeFactory & {
   lastAddress: Address;
 };
 
-export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes> & {
+export interface NodeInstance extends Model<NodeAttributes, NodeCreationAttributes>, NodeAttributes {
   reputationScore: number;
-};
+}
 
 /* Pairs */
-export type PairFactory = Pair;
+export type PairCreationAttributes = Pair;
 
-export type PairAttributes = PairFactory & {
+export type PairAttributes = PairCreationAttributes & {
   id: string;
 };
 
-export type PairInstance = PairAttributes & Sequelize.Instance<PairAttributes>;
+export interface PairInstance extends Model<PairAttributes, PairCreationAttributes>, PairAttributes {}
 
 /* Reputation events */
-export type ReputationEventFactory = {
+export type ReputationEventCreationAttributes = {
   event: ReputationEvent;
   nodeId: number;
 };
 
-export type ReputationEventAttributes = ReputationEventFactory & {
+export type ReputationEventAttributes = ReputationEventCreationAttributes & {
+  createdAt: number;
   id: number;
 };
 
-export type ReputationEventInstance = ReputationEventAttributes & Sequelize.Instance<ReputationEventAttributes> & {
-  createdAt: number;
-};
+export interface ReputationEventInstance extends Model<ReputationEventAttributes, ReputationEventCreationAttributes>, ReputationEventAttributes {}

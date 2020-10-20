@@ -440,6 +440,33 @@
         ]
       }
     },
+    "/v1/removeallorders": {
+      "post": {
+        "summary": "Removes all orders from the order book. Removed orders become immediately unavailable for swaps,\nand peers are notified that the orders are no longer valid. Any portion of the orders that is\non hold due to ongoing swaps will not be removed until after the swap attempts complete.\nshell: xucli removeallorders",
+        "operationId": "RemoveAllOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveAllOrdersResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveAllOrdersRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/removecurrency": {
       "post": {
         "summary": "Removes a currency from the list of supported currencies. Only currencies that are not in use\nfor any currently supported trading pairs may be removed. Once removed, the currency can no\nlonger be used for any supported trading pairs.\nshell: xucli removecurrency \u003ccurrency\u003e",
@@ -629,6 +656,23 @@
         ]
       }
     },
+    "/v1/subscribeswapsaccepted": {
+      "get": {
+        "summary": "Subscribes to accepted swaps. This stream emits a message when the local xud node \naccepts a swap request from a peer, but before the swap has actually succeeded.",
+        "operationId": "SubscribeSwapsAccepted",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/xudrpcSwapAccepted"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/tradehistory": {
       "post": {
         "summary": "Gets a list of completed trades.\nshell: xucli tradehistory [limit]",
@@ -769,7 +813,7 @@
       "type": "string",
       "enum": [
         "LND",
-        "RAIDEN"
+        "CONNEXT"
       ],
       "default": "LND"
     },
@@ -924,7 +968,16 @@
       }
     },
     "xudrpcCloseChannelResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "transaction_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The id of the transaction per channel close."
+        }
+      }
     },
     "xudrpcConnectRequest": {
       "type": "object",
@@ -972,10 +1025,10 @@
           },
           "description": "The list of lnd clients that were initialized."
         },
-        "initialized_raiden": {
+        "initialized_connext": {
           "type": "boolean",
           "format": "boolean",
-          "description": "Whether raiden was initialized."
+          "description": "Whether the connext wallet was initialized."
         }
       }
     },
@@ -1109,9 +1162,6 @@
             "$ref": "#/definitions/xudrpcLndInfo"
           }
         },
-        "raiden": {
-          "$ref": "#/definitions/xudrpcRaidenInfo"
-        },
         "alias": {
           "type": "string",
           "description": "The alias of this instance of xud."
@@ -1241,7 +1291,13 @@
       }
     },
     "xudrpcOpenChannelResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "transaction_id": {
+          "type": "string",
+          "description": "The id of the transaction that opened the channel."
+        }
+      }
     },
     "xudrpcOrder": {
       "type": "object",
@@ -1415,10 +1471,6 @@
           "format": "int64",
           "description": "The time in seconds that we have been connected to this peer."
         },
-        "raiden_address": {
-          "type": "string",
-          "title": "The raiden address for this peer"
-        },
         "alias": {
           "type": "string",
           "title": "The alias for this peer's public key"
@@ -1512,23 +1564,25 @@
         }
       }
     },
-    "xudrpcRaidenInfo": {
+    "xudrpcRemoveAllOrdersRequest": {
+      "type": "object"
+    },
+    "xudrpcRemoveAllOrdersResponse": {
       "type": "object",
       "properties": {
-        "status": {
-          "type": "string"
+        "removed_order_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The local order ids that were successfully removed."
         },
-        "address": {
-          "type": "string"
-        },
-        "channels": {
-          "$ref": "#/definitions/xudrpcChannels"
-        },
-        "version": {
-          "type": "string"
-        },
-        "chain": {
-          "type": "string"
+        "on_hold_order_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The local order ids that were on hold and failed to be removed."
         }
       }
     },
@@ -1590,10 +1644,10 @@
           },
           "description": "The list of lnd clients that were initialized."
         },
-        "restored_raiden": {
+        "restored_connext": {
           "type": "boolean",
           "format": "boolean",
-          "description": "Whether raiden was initialized."
+          "description": "Whether the connext wallet was initialized."
         }
       }
     },
@@ -1611,6 +1665,59 @@
     },
     "xudrpcShutdownResponse": {
       "type": "object"
+    },
+    "xudrpcSwapAccepted": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": "The global UUID for the order that was accepted to be swapped."
+        },
+        "local_id": {
+          "type": "string",
+          "description": "The local id for the order that was accepted to be swapped."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that the swap is for."
+        },
+        "quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The order quantity that was accepted to be swapped."
+        },
+        "price": {
+          "type": "number",
+          "format": "double",
+          "description": "The price for the swap."
+        },
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer that executed this order."
+        },
+        "r_hash": {
+          "type": "string",
+          "description": "The hex-encoded payment hash for the swap."
+        },
+        "amount_receiving": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The amount received denominated in satoshis."
+        },
+        "amount_sending": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The amount sent denominated in satoshis."
+        },
+        "currency_receiving": {
+          "type": "string",
+          "description": "The ticker symbol of the currency received."
+        },
+        "currency_sending": {
+          "type": "string",
+          "description": "The ticker symbol of the currency sent."
+        }
+      }
     },
     "xudrpcSwapFailure": {
       "type": "object",
@@ -1771,15 +1878,25 @@
     "xudrpcTradingLimits": {
       "type": "object",
       "properties": {
-        "MaxSell": {
+        "max_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "Max outbound capacity for a distinct channel denominated in satoshis."
+          "description": "Maximum outbound limit for an order denominated in satoshis."
         },
-        "MaxBuy": {
+        "max_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "Max inbound capacity for a distinct channel denominated in satoshis."
+          "description": "Maximum inbound limit for an order denominated in satoshis."
+        },
+        "reserved_outbound": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The outbound amount reserved for open orders."
+        },
+        "reserved_inbound": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The inbound amount reserved for open orders."
         }
       }
     },
@@ -1821,11 +1938,6 @@
             "type": "string"
           },
           "description": "The list of lnd clients that were unlocked."
-        },
-        "unlocked_raiden": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "Whether raiden was unlocked."
         },
         "locked_lnds": {
           "type": "array",
@@ -1898,6 +2010,18 @@
         }
       },
       "title": "Stream result of xudrpcPlaceOrderEvent"
+    },
+    "xudrpcSwapAccepted": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcSwapAccepted"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcSwapAccepted"
     },
     "xudrpcSwapFailure": {
       "type": "object",

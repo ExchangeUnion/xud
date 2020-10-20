@@ -2,6 +2,7 @@ import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import Logger from '../../lib/Logger';
+import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 
@@ -47,26 +48,9 @@ jest.mock('../../lib/lndclient/LndClient', () => {
     };
   });
 });
-const mockRaidenAddress = 1234567890;
-let mockRaidenClientIsDisabled = false;
-const mockRaidenOpenChannel = jest.fn();
 const tokenAddresses = new Map<string, string>();
-jest.mock('../../lib/raidenclient/RaidenClient', () => {
-  return jest.fn().mockImplementation(() => {
-    return {
-      tokenAddresses,
-      on: onListenerMock,
-      init: () => Promise.resolve(),
-      type: SwapClientType.Raiden,
-      address: mockRaidenAddress,
-      isDisabled: () => mockRaidenClientIsDisabled,
-      isOperational: () => !mockRaidenClientIsDisabled,
-      isMisconfigured: () => false,
-      close: closeMock,
-      openChannel: mockRaidenOpenChannel,
-    };
-  });
-});
+jest.mock('../../lib/swaps/SwapClient');
+const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
 
 const logger = new Logger({});
 logger.error = jest.fn();
@@ -77,7 +61,6 @@ const loggers = {
   p2p: logger,
   orderbook: logger,
   lnd: logger,
-  raiden: logger,
   connext: logger,
   swaps: logger,
   http: logger,
@@ -112,12 +95,6 @@ describe('Swaps.SwapClientManager', () => {
         cltvdelta: 576,
       },
     };
-    config.raiden = {
-      disable: false,
-      host: 'localhost',
-      port: 1234,
-      keystorepath: '',
-    };
     config.connext = {
       disable: false,
       host: 'localhost',
@@ -125,10 +102,7 @@ describe('Swaps.SwapClientManager', () => {
       webhookhost: 'localhost',
       webhookport: 4422,
     };
-    config.debug = {
-      raidenDirectChannelChecks: true,
-      testing: false,
-    };
+    config.strict = true;
     db = new DB(loggers.db, config.dbpath);
     unitConverter = new UnitConverter();
     unitConverter.init();
@@ -139,15 +113,13 @@ describe('Swaps.SwapClientManager', () => {
     jest.clearAllMocks();
   });
 
-  test('it initializes lnd-ltc, lnd-btc and raiden', async () => {
+  test('it initializes lnd-ltc and lnd-btc', async () => {
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
-    expect(swapClientManager['swapClients'].size).toEqual(3);
-    expect(onListenerMock).toHaveBeenCalledTimes(7);
+    expect(swapClientManager['swapClients'].size).toEqual(2);
+    expect(onListenerMock).toHaveBeenCalledTimes(6);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
-    expect(swapClientManager.get('WETH')).not.toBeUndefined();
-    swapClientManager.remove('WETH');
     expect(swapClientManager['swapClients'].size).toEqual(2);
     const lndClients = swapClientManager.getLndClientsMap();
     expect(lndClients.size).toEqual(2);
@@ -158,8 +130,6 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('it initializes lnd-ltc and lnd-btc', async () => {
-    config.raiden.disable = true;
-    mockRaidenClientIsDisabled = true;
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(2);
@@ -172,8 +142,6 @@ describe('Swaps.SwapClientManager', () => {
 
   test('it initializes lnd-btc', async () => {
     config.lnd.LTC!.disable = true;
-    config.raiden.disable = true;
-    mockRaidenClientIsDisabled = true;
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(1);
@@ -186,7 +154,6 @@ describe('Swaps.SwapClientManager', () => {
   test('it initializes nothing', async () => {
     config.lnd.BTC!.disable = true;
     config.lnd.LTC!.disable = true;
-    config.raiden.disable = true;
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(0);
@@ -197,14 +164,63 @@ describe('Swaps.SwapClientManager', () => {
     expect(closeMock).toHaveBeenCalledTimes(0);
   });
 
-  test('closes lnd-btc, lnd-ltc and raiden', async () => {
-    config.raiden.disable = false;
-    mockRaidenClientIsDisabled = false;
+  test('closes lnd-btc and lnd-ltc', async () => {
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
-    expect(swapClientManager['swapClients'].size).toEqual(3);
+    expect(swapClientManager['swapClients'].size).toEqual(2);
     swapClientManager.close();
-    expect(closeMock).toHaveBeenCalledTimes(3);
+    expect(closeMock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('reserved amounts', () => {
+    const currency = 'BTC';
+    const amount = 10000;
+    const setReservedInboundBtcAmount = jest.fn();
+
+    beforeEach(async () => {
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
+      await swapClientManager.init(db.models);
+      swapClientManager.swapClients.get(currency)!.setReservedInboundAmount = setReservedInboundBtcAmount;
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('it adds outbound reserved amounts', () => {
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount * 2);
+    });
+
+    test('it subtracts outbound reserved amounts', () => {
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
+      swapClientManager.subtractOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(0);
+    });
+
+    test('it adds inbound reserved amounts and sets amount on swap client', () => {
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount * 2);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount * 2, currency);
+    });
+
+    test('it subtracts inbound reserved amounts', () => {
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
+      swapClientManager.subtractInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(0);
+    });
   });
 
   describe('openChannel', () => {
@@ -261,30 +277,51 @@ describe('Swaps.SwapClientManager', () => {
         }),
       );
     });
-
-    test('it opens a channel using raiden', async () => {
-      mockRaidenClientIsDisabled = false;
-      const currency = 'WETH';
-      const amount = 5000000;
-      const expectedUnits = 50000000000000000;
-      const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
-      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-      const getClientSpy = jest.spyOn(swapClientManager, 'get');
-      await swapClientManager.init(db.models);
-      await swapClientManager.openChannel({ currency, amount, remoteIdentifier: peerRaidenAddress });
-      expect(getClientSpy).toHaveBeenCalledWith(currency);
-      expect(mockRaidenOpenChannel).toHaveBeenCalledTimes(1);
-      expect(mockRaidenOpenChannel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          currency,
-          units: expectedUnits,
-          remoteIdentifier: peerRaidenAddress,
-          // uris: undefined,
-          pushUnits: 0,
-        }),
-      );
-    });
-
   });
 
+  describe('tradingLimits', () => {
+    const setup = () => {
+      const btcClient = new mockedSwapClient();
+      btcClient.isConnected = jest.fn().mockImplementation(() => true);
+      btcClient.swapCapacities = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          maxOutboundChannelCapacity: 2000,
+          maxInboundChannelCapacity: 1500,
+          totalOutboundCapacity: 2000,
+          totalInboundCapacity: 1500,
+        });
+      });
+      swapClientManager.swapClients.set('BTC', btcClient);
+
+      const ltcClient = new mockedSwapClient();
+      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
+      ltcClient.swapCapacities = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          maxOutboundChannelCapacity: 7000,
+          maxInboundChannelCapacity: 5500,
+          totalOutboundCapacity: 7000,
+          totalInboundCapacity: 5500,
+        });
+      });
+      swapClientManager.swapClients.set('LTC', ltcClient);
+
+      const bchClient = new mockedSwapClient();
+      bchClient.isConnected = jest.fn().mockImplementation(() => false);
+      swapClientManager.swapClients.set('BCH', bchClient);
+    };
+
+    test('returns trading limits', async () => {
+      setup();
+      const btcTradingLimits = await swapClientManager.tradingLimits('BTC');
+
+      expect(btcTradingLimits).toBeTruthy();
+      expect(btcTradingLimits.maxSell).toEqual(2000);
+      expect(btcTradingLimits.maxBuy).toEqual(1500);
+    });
+
+    test('throws when swap client is not found', async () => {
+      setup();
+      await expect(swapClientManager.tradingLimits('BBB')).rejects.toMatchSnapshot();
+    });
+  });
 });

@@ -1,0 +1,60 @@
+name: Simulation tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+        node-version: [12.x]
+        go-version: [1.13.x]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build simulation tests
+        run: npm run test:sim:build
+
+      - name: Run simulation tests
+        run: npm run test:sim:run:integration
+
+      - name: Print simulation test logs
+        if: ${{ failure() }}
+        run: npm run test:sim:logs && rm -rf test/simulation/temp/logs
+
+      - name: Run simulation security tests
+        if: ${{ always() }}
+        run: rm -rf test/simulation/temp/logs && npm run test:sim:run:security
+
+      - name: Print simulation security test logs
+        if: ${{ failure() }}
+        run: npm run test:sim:logs && rm -rf test/simulation/temp/logs
+
+      - name: Run simulation instability tests
+        if: ${{ always() }}
+        run: rm -rf test/simulation/temp/logs && npm run test:sim:run:instability
+
+      - name: Print simulation instability test logs
+        if: ${{ failure() }}
+        run: npm run test:sim:logs

@@ -91,6 +91,10 @@ export const builder = (argv: Argv) => argv
     describe: 'whether to include own, peer or both orders',
     type: 'string',
     choices: ['Both', 'Own', 'Peer'],
+    coerce: (ownerStr: string) => {
+      const ownerLower = ownerStr.toLowerCase();
+      return ownerLower.charAt(0).toUpperCase() + ownerLower.slice(1);
+    },
     default: 'Both',
   })
   .option('limit', {

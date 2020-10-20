@@ -14,17 +14,12 @@ const removeDir = (dir: string) => {
 
 const backupdir = 'backup-test';
 
-const raidenDatabasePath = 'raiden';
 const xudDatabasePath = 'xud';
 
 const backups = {
   lnd: {
     event: 'lnd event',
     startup: 'lnd startup',
-  },
-  raiden: {
-    event: 'raiden event',
-    startup: 'raiden startup',
   },
   xud: {
     event: 'xud event',
@@ -35,7 +30,6 @@ const backups = {
 let channelBackupCallback: any;
 
 const onListenerMock = jest.fn((event, callback) => {
-
   if (event === 'channelBackup') {
     channelBackupCallback = callback;
   } else {
@@ -61,29 +55,20 @@ describe('Backup', () => {
   const backup = new Backup();
 
   beforeAll(async () => {
-    await Promise.all([
-      fs.promises.writeFile(
-        raidenDatabasePath,
-        backups.raiden.startup,
-      ),
-      fs.promises.writeFile(
-        xudDatabasePath,
-        backups.xud.startup,
-      ),
-    ]);
+    await fs.promises.writeFile(
+      xudDatabasePath,
+      backups.xud.startup,
+    );
 
     await backup.start({
       backupdir,
       loglevel: 'error',
       dbpath: xudDatabasePath,
-      raiden: {
-        dbpath: raidenDatabasePath,
-      },
     });
   });
 
-  afterAll(async () => {
-    await backup.stop();
+  afterAll(() => {
+    backup.stop();
   });
 
   test('should write LND backups on startup', () => {
@@ -106,39 +91,6 @@ describe('Backup', () => {
     ).toEqual(backups.lnd.event);
   });
 
-  test('should write Raiden backups on startup', () => {
-    expect(
-      fs.readFileSync(
-        path.join(backupdir, 'raiden'),
-        'utf8',
-      ),
-    ).toEqual(backups.raiden.startup);
-  });
-
-  test('should write Raiden backups on new event', async () => {
-    fs.writeFileSync(
-      raidenDatabasePath,
-      backups.raiden.event,
-    );
-
-    // Wait to make sure the file watcher handled the new file
-    await new Promise((resolve, reject) => {
-      setTimeout(reject, 3000);
-      backup.on('newBackup', (path) => {
-        if (path.endsWith(raidenDatabasePath)) {
-          resolve();
-        }
-      });
-    });
-
-    expect(
-      fs.readFileSync(
-        path.join(backupdir, 'raiden'),
-        'utf8',
-      ),
-    ).toEqual(backups.raiden.event);
-  });
-
   test('should write XUD database backups on startup', () => {
     expect(
       fs.readFileSync(
@@ -148,7 +100,7 @@ describe('Backup', () => {
     ).toEqual(backups.xud.startup);
   });
 
-  test('should write XUD database backups on new event', async () => {
+  test('should detect XUD database backups on new event', async () => {
     fs.writeFileSync(
       xudDatabasePath,
       backups.xud.event,
@@ -157,29 +109,19 @@ describe('Backup', () => {
     // Wait to make sure the file watcher handled the new file
     await new Promise((resolve, reject) => {
       setTimeout(reject, 3000);
-      backup.on('newBackup', (path) => {
+      backup.on('changeDetected', (path) => {
         if (path.endsWith(xudDatabasePath)) {
           resolve();
         }
       });
     });
-
-    expect(
-      fs.readFileSync(
-        path.join(backupdir, 'xud'),
-        'utf8',
-      ),
-    ).toEqual(backups.xud.event);
   });
 
   afterAll(async () => {
-    await backup.stop();
+    backup.stop();
 
     removeDir(backupdir);
 
-    await Promise.all([
-      fs.promises.unlink(xudDatabasePath),
-      fs.promises.unlink(raidenDatabasePath),
-    ]);
+    await fs.promises.unlink(xudDatabasePath);
   });
 });

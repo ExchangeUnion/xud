@@ -2,6 +2,8 @@ package xudtest
 
 import (
 	"context"
+	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/connexttest"
 	"sync"
 	"time"
 
@@ -23,8 +25,9 @@ type NetworkHarness struct {
 	Carol *HarnessNode
 	Dave  *HarnessNode
 
-	LndBtcNetwork *lntest.NetworkHarness
-	LndLtcNetwork *lntest.NetworkHarness
+	LndBtcNetwork  *lntest.NetworkHarness
+	LndLtcNetwork  *lntest.NetworkHarness
+	ConnextNetwork *connexttest.NetworkHarness
 
 	errorChan chan *XudError
 
@@ -47,37 +50,54 @@ type CtxSetter interface {
 	SetCtx(ctx context.Context, cancel context.CancelFunc)
 }
 
-func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, node *HarnessNode, envVars []string) (*HarnessNode, error) {
-	err := node.shutdown(true, true)
+func (n *NetworkHarness) newConnextClient(ctx context.Context, node *HarnessNode, envVars *[]string) (*connexttest.HarnessClient, error) {
+	if err := n.ConnextNetwork.TearDown(node.ConnextClient.ID); err != nil {
+		return nil, err
+	}
+
+	client, err := n.ConnextNetwork.NewClient(node.Name)
 	if err != nil {
 		return nil, err
 	}
-	delete(n.ActiveNodes, node.ID)
+	if err := client.Start(n.ConnextNetwork.ErrorChan); err != nil {
+		return nil, err
+	}
 
+	for _, kv := range *envVars {
+		if kv == "CLIENT_TYPE=ConnextClient" {
+			*envVars = append(*envVars, fmt.Sprintf("CLIENT_PID=%d", client.Cmd.Process.Pid))
+			break
+		}
+	}
+
+	return client, nil
+}
+
+func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, node *HarnessNode, envVars []string) (*HarnessNode, error) {
 	t := time.Now()
+
+	connextClient, err := n.newConnextClient(ctx, node, &envVars)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := node.shutdown(true, true); err != nil {
+		return nil, err
+	}
+	delete(n.ActiveNodes, node.ID)
 
 	customNode, err := n.newNode(node.Name, "/custom-xud-vol", true)
 	if err != nil {
 		return nil, err
 	}
-
 	customNode.SetEnvVars(envVars)
 	customNode.SetLnd(node.LndBtcNode, "BTC")
 	customNode.SetLnd(node.LndLtcNode, "LTC")
+	customNode.SetConnextClient(connextClient)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	errChan := make(chan error, 1)
-	go func() {
-		defer wg.Done()
-		if err := customNode.Start(n.errorChan); err != nil {
-			if err != nil {
-				errChan <- err
-				return
-			}
-		}
-	}()
-	wg.Wait()
+	if err := customNode.Start(n.errorChan); err != nil {
+		return nil, err
+	}
 
 	// Adjust the ctx deadline so that time spent here
 	// won't consume the timeout duration.
@@ -173,6 +193,14 @@ func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
 	n.Dave.SetLnd(ln.Dave, chain)
 }
 
+func (n *NetworkHarness) SetConnext(net *connexttest.NetworkHarness) {
+	n.ConnextNetwork = net
+	n.Alice.SetConnextClient(net.Alice)
+	n.Bob.SetConnextClient(net.Bob)
+	n.Carol.SetConnextClient(net.Carol)
+	n.Dave.SetConnextClient(net.Dave)
+}
+
 // ProcessErrors returns a channel used for reporting any fatal process errors.
 // If any of the active nodes within the harness' test network incur a fatal
 // error, that error is sent over this channel.
@@ -194,4 +222,13 @@ func (n *NetworkHarness) TearDownAll(kill bool, cleanup bool) error {
 	close(n.quit)
 
 	return nil
+}
+
+func (n *NetworkHarness) RestartNode(node *HarnessNode) error {
+	err := node.shutdown(true, false)
+	if err != nil {
+		return err
+	}
+
+	return node.Start(n.errorChan)
 }

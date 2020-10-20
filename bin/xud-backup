@@ -62,10 +62,6 @@ const { argv } = require('yargs')
       describe: 'Port for the lnd gRPC interface',
       type: 'number',
     },
-    'raiden.dbpath': {
-      describe: 'Path to the database of Raiden',
-      type: 'string',
-    },
   });
 
 // delete non-config keys from argv
@@ -77,3 +73,8 @@ delete argv.$0;
 const backup = new Backup();
 
 backup.start(argv);
+
+process.on('SIGTERM', () => {
+  backup.stop();
+  console.info('SIGTERM signal received.');
+});

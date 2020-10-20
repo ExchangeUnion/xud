@@ -62,7 +62,7 @@ export type SwapDeal = {
   destination?: string;
   /** The time when we created this swap deal locally. */
   createTime: number;
-  /** The time when we began executing the swap by sending payment. */
+  /** The time when we began executing the swap for an accepted deal. */
   executeTime?: number;
   /** The time when the swap either completed successfully or failed. */
   completeTime?: number;
@@ -82,6 +82,16 @@ export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHa
   quantity: number;
 };
 
+/** A swap that has been accepted. */
+export type SwapAccepted = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' > & {
+  amountReceiving: number;
+  amountSending: number;
+  currencyReceiving: string;
+  currencySending: string;
+  /** The quantity that was accepted. */
+  quantity: number;
+};
+
 export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey' > & {
   /** The quantity that was attempted and failed for the swap. */
   quantity: number;
@@ -96,6 +106,28 @@ export type Route = {
 export type SanitySwap = Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & {
   /** The currency for the swap. */
   currency: string;
+};
+
+export type SwapCapacities = {
+  /** Max outbound capacity for a distinct channel denominated in satoshis. */
+  maxOutboundChannelCapacity: number,
+  /** Max inbound capacity for a distinct channel denominated in satoshis. */
+  maxInboundChannelCapacity: number,
+  /** The total outbound capacity. */
+  totalOutboundCapacity: number,
+  /** The total inbound capacity. */
+  totalInboundCapacity: number,
+};
+
+export type TradingLimits = {
+  /** Maximum outbound limit for an order denominated in satoshis. */
+  maxSell: number,
+  /** Maximum inbound limit for an order denominated in satoshis. */
+  maxBuy: number,
+  /**  The outbound amount reserved for open orders. */
+  reservedOutbound: number,
+  /**  The inbound amount reserved for open orders. */
+  reservedInbound: number,
 };
 
 export type ResolveRequest = {
@@ -123,6 +155,8 @@ export type CloseChannelParams = {
    */
   destination?: string,
   force?: boolean,
+  /** The fee in sat per byte. */
+  fee?: number,
 };
 
 export type OpenChannelParams = {
@@ -135,4 +169,6 @@ export type OpenChannelParams = {
   uris?: string[],
   /** The balance to assign to the remote node. */
   pushUnits?: number,
+  /** The fee in sat per byte. */
+  fee?: number,
 };

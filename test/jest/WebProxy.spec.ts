@@ -13,6 +13,7 @@ describe('WebProxy', () => {
       xudir: getTempDir(true),
       dbpath: ':memory:',
       initdb: false,
+      noencrypt: true,
       webproxy: {
         port,
         disable: false,
@@ -29,9 +30,6 @@ describe('WebProxy', () => {
         BTC: {
           disable: true,
         },
-      },
-      raiden: {
-        disable: true,
       },
       connext: {
         disable: true,

@@ -1,15 +1,17 @@
+import { fromEvent, merge, Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
-import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
+import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
-import { TradingLimits } from '../swaps/SwapClient';
+import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -30,7 +32,6 @@ const argChecks = {
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
   POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
-  POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
     if (checkDecimalPlaces(price)) throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
@@ -45,6 +46,9 @@ const argChecks = {
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
     if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
+  },
+  VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType, fee?: number }) => {
+    if (swapClient === SwapClientType.Connext && fee) throw errors.INVALID_ARGUMENT('fee is not valid for connext');
   },
 };
 
@@ -79,7 +83,7 @@ class Service {
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
 
     let address = tokenAddress;
-    if (args.swapClient === SwapClientType.Raiden && address) {
+    if (args.swapClient === SwapClientType.Connext && address) {
       address = toEip55Address(address);
     }
 
@@ -106,10 +110,17 @@ class Service {
     return this.orderBook.removeOwnOrderByLocalId(orderId, true, quantity);
   }
 
-  /** Gets the total lightning network balance for a given currency. */
+  /*
+   * Removes all placed orders from the orderbook.
+   */
+  public removeAllOrders = async () => {
+    return this.orderBook.removeOwnOrders();
+  }
+
+  /** Gets the total balance for one or all currencies. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
-    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number, inactiveBalance: number }>();
+    const channelBalances = new Map<string, ChannelBalance>();
     const walletBalances = new Map<string, { confirmedBalance: number, unconfirmedBalance: number }>();
 
     if (currency) {
@@ -117,9 +128,11 @@ class Service {
 
       const swapClient = this.swapClientManager.get(currency.toUpperCase());
       if (swapClient) {
-        const channelBalance = await swapClient.channelBalance(currency);
+        const [channelBalance, walletBalance] = await Promise.all([
+          await swapClient.channelBalance(currency),
+          await swapClient.walletBalance(currency),
+        ]);
         channelBalances.set(currency, channelBalance);
-        const walletBalance = await swapClient.walletBalance(currency);
         walletBalances.set(currency, walletBalance);
       } else {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -130,26 +143,27 @@ class Service {
         if (swapClient.isConnected()) {
           balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
             channelBalances.set(currency, channelBalance);
-          }));
+          }).catch(this.logger.error));
           balancePromises.push(swapClient.walletBalance(currency).then((walletBalance) => {
             walletBalances.set(currency, walletBalance);
-          }));
+          }).catch(this.logger.error));
         }
       });
       await Promise.all(balancePromises);
     }
     const balances = new Map<string, {
       channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
-      walletBalance: number, unconfirmedWalletBalance: number,
-      totalBalance: number,
+      walletBalance: number, unconfirmedWalletBalance: number, totalBalance: number,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
-      const walletBalance = walletBalances.get(currency) as { confirmedBalance: number, unconfirmedBalance: number };
-      const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance + channelBalance.inactiveBalance +
-        walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
-      balances.set(
-        currency,
-        {
+      const walletBalance = walletBalances.get(currency);
+      if (walletBalance) {
+        // check to make sure we have a wallet balance, which isn't guaranteed since it may involve
+        // a separate call from the one to get channel balance. unless we have both wallet and
+        // channel balances for a given currency, we don't want to return any balance for it
+        const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance + channelBalance.inactiveBalance +
+          walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
+        balances.set(currency, {
           totalBalance,
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
@@ -157,11 +171,12 @@ class Service {
           walletBalance: walletBalance.confirmedBalance,
           unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
         });
+      }
     });
     return balances;
   }
 
-  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for a given currency. */
+  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for one or all currencies. */
   public tradingLimits = async (args: { currency: string }) => {
     const { currency } = args;
     const tradingLimitsMap = new Map<string, TradingLimits>();
@@ -169,20 +184,15 @@ class Service {
     if (currency) {
       argChecks.VALID_CURRENCY(args);
 
-      const swapClient = this.swapClientManager.get(currency.toUpperCase());
-      if (swapClient) {
-        const tradingLimits = await swapClient.tradingLimits(currency);
-        tradingLimitsMap.set(currency, tradingLimits);
-      } else {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-      }
+      const tradingLimits = await this.swapClientManager.tradingLimits(currency.toUpperCase());
+      tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
-          promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
+          promises.push(this.swapClientManager.tradingLimits(currency).then((tradingLimits) => {
             tradingLimitsMap.set(currency, tradingLimits);
-          }));
+          }).catch(this.logger.error));
         }
       });
       await Promise.all(promises);
@@ -226,9 +236,9 @@ class Service {
    * Closes any payment channels for a specified node and currency.
    */
   public closeChannel = async (
-    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number },
+    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number, fee?: number },
   ) => {
-    const { nodeIdentifier, currency, force, destination, amount } = args;
+    const { nodeIdentifier, currency, force, destination, amount, fee } = args;
     argChecks.VALID_CURRENCY({ currency });
 
     let remoteIdentifier: string | undefined;
@@ -242,12 +252,13 @@ class Service {
       remoteIdentifier = peer.getIdentifier(swapClientType, currency);
     }
 
-    await this.swapClientManager.closeChannel({
+    return await this.swapClientManager.closeChannel({
       currency,
       force,
       destination,
       amount,
       remoteIdentifier,
+      fee,
     });
   }
 
@@ -255,35 +266,37 @@ class Service {
    * Opens a payment channel to a specified node, currency and amount.
    */
   public openChannel = async (
-    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number },
+    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number, fee?: number },
   ) => {
-    const { nodeIdentifier, amount, currency, pushAmount } = args;
+    const { nodeIdentifier, amount, currency, pushAmount, fee } = args;
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
+    argChecks.VALID_FEE({ fee, swapClient: this.swapClientManager.getType(currency) });
 
     let remoteIdentifier: string | undefined;
     let uris: string[] | undefined;
 
-    try {
-      if (nodeIdentifier) {
-        const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
-        const swapClientType = this.swapClientManager.getType(currency);
-        if (swapClientType === undefined) {
-          throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-        }
-        const peer = this.pool.getPeer(nodePubKey);
-        remoteIdentifier = peer.getIdentifier(swapClientType, currency);
-        if (swapClientType === SwapClientType.Lnd) {
-          uris = peer.getLndUris(currency);
-        }
+    if (nodeIdentifier) {
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+      const swapClientType = this.swapClientManager.getType(currency);
+      if (swapClientType === undefined) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
+      const peer = this.pool.getPeer(nodePubKey);
+      remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+      if (swapClientType === SwapClientType.Lnd) {
+        uris = peer.getLndUris(currency);
+      }
+    }
 
-      await this.swapClientManager.openChannel({
+    try {
+      return await this.swapClientManager.openChannel({
         remoteIdentifier,
         uris,
         amount,
         currency,
         pushAmount,
+        fee,
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
@@ -370,10 +383,6 @@ class Service {
     }
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
-    const raiden = await this.swapClientManager.raidenClient?.getRaidenInfo();
-    if (raiden) {
-      raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
-    }
     const connext = await this.swapClientManager.connextClient?.getInfo();
     if (connext) {
       connext.chain = `${connext.chain ? connext.chain : ''}connext ${this.pool.getNetwork()}`;
@@ -381,7 +390,6 @@ class Service {
 
     return {
       lnd,
-      raiden,
       connext,
       nodePubKey,
       uris,
@@ -470,8 +478,8 @@ class Service {
       sellArray = sortOrders(sellArray, false);
 
       if (limit > 0) {
-        buyArray = buyArray.slice(0, limit);
-        sellArray = sellArray.slice(0, limit);
+        buyArray = buyArray.slice(-limit);
+        sellArray = sellArray.slice(-limit);
       }
 
       return {
@@ -520,7 +528,7 @@ class Service {
    */
   public tradeHistory = async (args: { limit: number }): Promise<ServiceTrade[]> => {
     const { limit } = args;
-    const trades = await this.orderBook.getTrades(limit);
+    const trades = await this.orderBook.getTrades(limit || undefined);
 
     const orderInstanceToServiceOrder = (order: OrderAttributes, quantity: number): ServiceOrder => {
       const isOwnOrder = !!order.localId;
@@ -604,25 +612,20 @@ class Service {
    */
   public placeOrder = async (
     args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
-      replaceOrderId?: string, immediateOrCancel: boolean },
+      replaceOrderId: string, immediateOrCancel: boolean },
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
-    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
-    argChecks.POSITIVE_QUANTITY(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
-
-    if (replaceOrderId) {
-      this.orderBook.removeOwnOrderByLocalId(orderId, false);
-    }
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
 
     const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
       price,
       quantity,
       isBuy: side === OrderSide.Buy,
-      localId: orderId,
+      localId: orderId || replaceOrderId,
     };
 
     /** Modified callback that converts Order to ServiceOrder before passing to callback. */
@@ -636,8 +639,14 @@ class Service {
       });
     } : undefined;
 
-    return price > 0 ? await this.orderBook.placeLimitOrder(order, immediateOrCancel, serviceCallback) :
-      await this.orderBook.placeMarketOrder(order, serviceCallback);
+    const placeOrderRequest = {
+      order,
+      immediateOrCancel,
+      replaceOrderId,
+      onUpdate: serviceCallback,
+    };
+    return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
+      await this.orderBook.placeMarketOrder(placeOrderRequest);
   }
 
   /** Removes a currency. */
@@ -666,7 +675,11 @@ class Service {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeOrders = (args: { existing: boolean }, callback: (order?: Order, orderRemoval?: OrderPortion) => void) => {
+  public subscribeOrders = (
+    args: { existing: boolean },
+    callback: (order?: Order, orderRemoval?: OrderPortion) => void,
+    cancelled$: Observable<void>,
+  ) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
@@ -678,37 +691,96 @@ class Service {
       });
     }
 
-    this.orderBook.on('peerOrder.incoming', order => callback(order));
-    this.orderBook.on('ownOrder.added', order => callback(order));
+    const orderAdded$ = merge(
+      fromEvent<PeerOrder>(this.orderBook, 'peerOrder.incoming'),
+      fromEvent<OwnOrder>(this.orderBook, 'ownOrder.added'),
+    ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
-    this.orderBook.on('peerOrder.invalidation', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('peerOrder.filled', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('ownOrder.filled', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('ownOrder.removed', orderRemoval => callback(undefined, orderRemoval));
+    orderAdded$.subscribe({
+      next: callback,
+      error: this.logger.error,
+    });
+
+    const orderRemoved$ = merge(
+      fromEvent<OrderPortion>(this.orderBook, 'peerOrder.invalidation'),
+      fromEvent<OrderPortion>(this.orderBook, 'peerOrder.filled'),
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.filled'),
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.removed'),
+    ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
+
+    orderRemoved$.subscribe({
+      next: (orderPortion) => { callback(undefined, orderPortion); },
+      error: this.logger.error,
+    });
   }
 
   /*
    * Subscribe to completed swaps.
    */
-  public subscribeSwaps = async (args: { includeTaker: boolean }, callback: (swapSuccess: SwapSuccess) => void) => {
-    this.swaps.on('swap.paid', (swapSuccess) => {
+  public subscribeSwaps = async (
+    args: { includeTaker: boolean },
+    callback: (swapSuccess: SwapSuccess) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapPaid = (swapSuccess: SwapSuccess) => {
       // always alert client for maker matches, taker matches only when specified
       if (swapSuccess.role === SwapRole.Maker || args.includeTaker) {
         callback(swapSuccess);
       }
+    };
+
+    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid')
+      .pipe(takeUntil(cancelled$));
+
+    swapPaid$.subscribe({
+      next: onSwapPaid,
+      error: this.logger.error,
+    });
+  }
+
+  /*
+   * Subscribe to completed swaps.
+   */
+  public subscribeSwapsAccepted = async (
+    _args: { },
+    callback: (swapAccepted: SwapAccepted) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapAccepted = (swapSuccess: SwapAccepted) => {
+      callback(swapSuccess);
+    };
+
+    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted')
+      .pipe(takeUntil(cancelled$));
+
+    swapAccepted.subscribe({
+      next: onSwapAccepted,
+      error: this.logger.error,
     });
   }
 
   /*
    * Subscribe to failed swaps.
    */
-  public subscribeSwapFailures = async (args: { includeTaker: boolean }, callback: (swapFailure: SwapFailure) => void) => {
-    this.swaps.on('swap.failed', (deal) => {
+  public subscribeSwapFailures = async (
+    args: { includeTaker: boolean },
+    callback: (swapFailure: SwapFailure) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapFailed = (deal: SwapDeal) => {
       this.logger.trace(`notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`);
       // always alert client for maker matches, taker matches only when specified
       if (deal.role === SwapRole.Maker || args.includeTaker) {
         callback(deal as SwapFailure);
       }
+    };
+
+    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed')
+      .pipe(takeUntil(cancelled$));
+
+    swapFailed$.subscribe({
+      next: onSwapFailed,
+      error: this.logger.error,
     });
   }
 
@@ -733,6 +805,13 @@ class Service {
    */
   public transferReceived = async (event: TransferReceivedEvent) => {
     this.swapClientManager.connextClient?.emit('transferReceived', event);
+  }
+
+  /**
+   * Notifies Connext client that a deposit has been confirmed.
+   */
+  public depositConfirmed = (hash: string) => {
+    this.swapClientManager.connextClient?.emit('depositConfirmed', hash);
   }
 
 }

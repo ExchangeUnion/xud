@@ -16,13 +16,12 @@ export type NodeState = {
   /** This node's listening external socket addresses to advertise to peers. */
   addresses: Address[];
   pairs: string[];
-  raidenAddress: string;
   connextIdentifier: string;
   /** An object mapping currency symbols to lnd pub keys. */
   lndPubKeys: { [currency: string]: string | undefined };
   /** An object mapping currency symbols to lnd listening uris */
   lndUris: { [currency: string]: string[] | undefined };
-  /** An object mapping currency symbols to token identifiers such as lnd chains or raiden token contract addresses. */
+  /** An object mapping currency symbols to token identifiers such as lnd chains or token contract addresses. */
   tokenIdentifiers: { [currency: string]: string | undefined };
 };
 

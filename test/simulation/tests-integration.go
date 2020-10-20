@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
@@ -16,6 +18,18 @@ var integrationTestCases = []*testCase{
 	{
 		name: "order matching and swap",
 		test: testOrderMatchingAndSwap,
+	},
+	{
+		name: "order matching and swap connext",
+		test: testOrderMatchingAndSwapConnext,
+	},
+	{
+		name: "dust order discarded",
+		test: testDustOrderDiscarded,
+	},
+	{
+		name: "order replacement",
+		test: testOrderReplacement,
 	},
 	{
 		name: "internal match and invalidation",
@@ -184,12 +198,17 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
-		OrderId:  "random_order_id",
+		OrderId:  "testOrderBroadcastAndInvalidation",
 		Side:     xudrpc.OrderSide_BUY,
 	}
 
 	order := ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+	_, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+
 	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
+	_, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)
@@ -241,6 +260,258 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 		Side:     xudrpc.OrderSide_SELL,
 	}
 	ht.act.placeOrderAndSwap(net.Bob, net.Alice, req)
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func testDustOrderDiscarded(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    0.02,
+		Quantity: 10000,
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Place a matching order on Bob.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    req.Price,
+		Quantity: 10099,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+
+	aliceOrderChan := subscribeOrders(ht.ctx, net.Alice)
+	res, err := net.Bob.Client.PlaceOrderSync(ht.ctx, req)
+
+	// verify that there is no remaining order
+	ht.assert.NoError(err)
+	ht.assert.Len(res.InternalMatches, 0)
+	ht.assert.Len(res.SwapFailures, 0)
+	ht.assert.Len(res.SwapSuccesses, 1)
+	ht.assert.Nil(res.RemainingOrder)
+
+	e := <-aliceOrderChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.orderUpdate)
+	orderRemoval := e.orderUpdate.GetOrderRemoval()
+	ht.assert.NotNil(orderRemoval)
+	ht.assert.Equal(req.PairId, orderRemoval.PairId)
+	ht.assert.True(orderRemoval.IsOwnOrder)
+
+	// verify that the order books are empty
+	srcNodeCount, destNodeCount, err := getOrdersCount(ht.ctx, net.Alice, net.Bob)
+	ht.assert.NoError(err)
+	ht.assert.Equal(0, int(srcNodeCount.Own))
+	ht.assert.Equal(0, int(srcNodeCount.Peer))
+	ht.assert.Equal(0, int(destNodeCount.Own))
+	ht.assert.Equal(0, int(destNodeCount.Peer))
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func testOrderReplacement(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	var originalQuantity uint64 = 1000000
+	originalPrice := 0.02
+	var newQuantity uint64 = 2000000
+	newPrice := 0.03
+	var replacedOrderID = "replaced_order_id"
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  replacedOrderID,
+		Price:    originalPrice,
+		Quantity: originalQuantity,
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Subscribe to orders on Bob
+	bobOrderChan := subscribeOrders(ht.ctx, net.Bob)
+
+	// Replace the order on Alice
+	req = &xudrpc.PlaceOrderRequest{
+		ReplaceOrderId: replacedOrderID,
+		Price:          newPrice,
+		Quantity:       newQuantity,
+		PairId:         req.PairId,
+		Side:           req.Side,
+	}
+	res, err := net.Alice.Client.PlaceOrderSync(ht.ctx, req)
+	order := res.RemainingOrder
+	ht.assert.NoError(err)
+	ht.assert.Len(res.InternalMatches, 0)
+	ht.assert.Len(res.SwapSuccesses, 0)
+	ht.assert.Len(res.SwapFailures, 0)
+	ht.assert.NotNil(res.RemainingOrder)
+	ht.assert.True(order.IsOwnOrder)
+	ht.assert.Equal(replacedOrderID, order.LocalId)
+
+	// Retrieve and verify the removed order event on Bob.
+	e := <-bobOrderChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.orderUpdate)
+	orderRemoval := e.orderUpdate.GetOrderRemoval()
+	ht.assert.NotNil(orderRemoval)
+	ht.assert.Equal(originalQuantity, orderRemoval.Quantity)
+	ht.assert.Equal(req.PairId, orderRemoval.PairId)
+	ht.assert.False(orderRemoval.IsOwnOrder)
+
+	// Retrieve and verify the added order event on Bob.
+	e = <-bobOrderChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.orderUpdate)
+	peerOrder := e.orderUpdate.GetOrder()
+	ht.assert.NotNil(peerOrder)
+
+	// Verify the peer order.
+	ht.assert.Equal(newPrice, peerOrder.Price)
+	ht.assert.Equal(req.PairId, peerOrder.PairId)
+	ht.assert.Equal(newQuantity, peerOrder.Quantity)
+	ht.assert.Equal(req.Side, peerOrder.Side)
+	ht.assert.False(peerOrder.IsOwnOrder)
+	ht.assert.Equal(net.Alice.PubKey(), peerOrder.NodeIdentifier.NodePubKey)
+
+	// Verify that only the replaced order is in the order books
+	srcNodeCount, destNodeCount, err := getOrdersCount(ht.ctx, net.Alice, net.Bob)
+	ht.assert.NoError(err)
+	ht.assert.Equal(1, int(srcNodeCount.Own))
+	ht.assert.Equal(0, int(srcNodeCount.Peer))
+	ht.assert.Equal(0, int(destNodeCount.Own))
+	ht.assert.Equal(1, int(destNodeCount.Peer))
+
+	// Cleanup.
+	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func waitConnextReady(node *xudtest.HarnessNode) error {
+	isReady := func() bool {
+		info, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+		if err != nil {
+			return false
+		}
+
+		return info.Connext.Address != ""
+	}
+
+	timeout := time.After(30 * time.Second)
+	for !isReady() {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for connext to be ready")
+		case <-time.After(1 * time.Second):
+		}
+	}
+
+	return nil
+}
+
+func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Wait for Alice's connext connection to catch-up.
+	err := waitConnextReady(net.Alice)
+	ht.assert.NoError(err)
+
+	// Fund Alice's wallet.
+	resInfo, err := net.Alice.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+	ht.assert.NoError(err)
+	amount := big.NewInt(2000000000000000000)
+	err = net.ConnextNetwork.Wallet.SendEth(resInfo.Connext.Address, amount)
+	ht.assert.NoError(err)
+
+	time.Sleep(15 * time.Second)
+
+	// Init Alice.
+	ETHTokenAddress := "0x0000000000000000000000000000000000000000"
+	ht.act.addCurrency(net.Alice, "ETH", 2, ETHTokenAddress, 18)
+	ht.act.addPair(net.Alice, "BTC", "ETH")
+	err = net.RestartNode(net.Alice)
+	ht.assert.NoError(err)
+
+	// Verify Alice ETH balance.
+	resBal, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(200000000), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(200000000), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].ChannelBalance)
+
+	// Wait for Bob's connext connection to catch-up.
+	err = waitConnextReady(net.Bob)
+	ht.assert.NoError(err)
+
+	// Init Bob.
+	ht.act.addCurrency(net.Bob, "ETH", 2, ETHTokenAddress, 18)
+	ht.act.addPair(net.Bob, "BTC", "ETH")
+	err = net.RestartNode(net.Bob)
+	ht.assert.NoError(err)
+
+	// Verify Bob ETH balance.
+	resBal, err = net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].ChannelBalance)
+
+	// Open channel from Alice.
+	err = openETHChannel(ht.ctx, net.Alice, 40000, 0)
+	ht.assert.NoError(err)
+	// wait for 1 block for the deposit transaction to confirm
+	time.Sleep(15 * time.Second)
+
+	// Verify Alice ETH balance.
+	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(199997900), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-40000, resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(40000), resBal.Balances["ETH"].ChannelBalance)
+
+	// wait for 1 block for node to collateralize ETH channel
+	time.Sleep(15 * time.Second)
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    40,
+		Quantity: 100,
+		PairId:   "BTC/ETH",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Place a matching order on Bob.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    req.Price,
+		Quantity: req.Quantity,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	ht.act.placeOrderAndSwap(net.Bob, net.Alice, req)
+
+	time.Sleep(5 * time.Second)
+
+	// Verify Alice ETH balance.
+	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(199993900), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-36000, resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(36000), resBal.Balances["ETH"].ChannelBalance)
+
+	// Verify Bob ETH balance.
+	resBal, err = net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(4000), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(4000), resBal.Balances["ETH"].ChannelBalance)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/shared"
 	"io"
 	"io/ioutil"
 	"net"
@@ -23,7 +24,6 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
-	"github.com/phayes/freeport"
 	"github.com/roasbeef/btcd/chaincfg/chainhash"
 	"github.com/roasbeef/btcd/wire"
 )
@@ -195,15 +195,15 @@ func newNode(cfg nodeConfig) (*HarnessNode, error) {
 	cfg.ReadMacPath = filepath.Join(cfg.DataDir, "readonly.macaroon")
 	cfg.InvoiceMacPath = filepath.Join(cfg.DataDir, "invoice.macaroon")
 
-	cfg.P2PPort, err = freeport.GetFreePort()
+	cfg.P2PPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	cfg.RPCPort, err = freeport.GetFreePort()
+	cfg.RPCPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	cfg.RESTPort, err = freeport.GetFreePort()
+	cfg.RESTPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +440,7 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 
 	opts := []grpc.DialOption{
 		grpc.WithBlock(),
-		grpc.WithTimeout(time.Second * 20),
+		grpc.WithTimeout(time.Second * 120),
 	}
 
 	tlsCreds, err := credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")

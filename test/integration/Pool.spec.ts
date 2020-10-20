@@ -71,8 +71,10 @@ describe('P2P Pool Tests', async () => {
     const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
     const openPromise = pool['openPeer'](peer, nodeKeyOne.pubKey);
-    expect(openPromise).to.be.fulfilled;
-    await openPromise;
+    await Promise.all([
+      openPromise,
+      new Promise(resolve => pool.on('peer.active', resolve)),
+    ]);
   });
 
   it('should close a peer', async () => {
@@ -81,34 +83,20 @@ describe('P2P Pool Tests', async () => {
     expect(pool['peers'].size).to.equal(0);
   });
 
-  it('should ban a peer', async () => {
-    await pool['nodes'].createNode({ nodePubKey: nodeKeyOne.pubKey, addresses: [] });
-    const banPromise = pool.banNode(nodeKeyOne.pubKey);
-    expect(banPromise).to.be.fulfilled;
-    await banPromise;
-    const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.pubKey);
-    expect(nodeReputationPromise.banned).to.be.true;
-  });
-
   it('should throw error when connecting to tor node with tor disabled', async () => {
     const address = addressUtils.fromString('3g2upl4pq6kufc4m.onion');
     const addPromise = pool.addOutbound(address, nodeKeyOne.pubKey, false, false);
     await expect(addPromise).to.be.rejectedWith(errors.NODE_TOR_ADDRESS(nodeKeyOne.pubKey, address).message);
   });
 
-  it('should unban a peer', async () => {
-    const unbanPromise = pool.unbanNode(nodeKeyOne.pubKey, false);
-    expect(unbanPromise).to.be.fulfilled;
-    await unbanPromise;
-    const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.pubKey);
-    expect(nodeReputationPromise.banned).to.be.false;
-  });
-
   it('should update a node on new handshake', async () => {
     const addresses = [{ host: '86.75.30.9', port: 8885 }];
     const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
-    await pool['openPeer'](peer, nodeKeyOne.pubKey);
+    await Promise.all([
+      await pool['openPeer'](peer, nodeKeyOne.pubKey),
+      new Promise(resolve => pool.on('peer.active', resolve)),
+    ]);
 
     const nodeInstance = await db.models.Node.findOne({
       where: {
@@ -131,8 +119,10 @@ describe('P2P Pool Tests', async () => {
       tryConnectNodeStub = sinon.stub();
       pool['tryConnectNode'] = tryConnectNodeStub;
       const openPromise = pool['openPeer'](dcPeer, nodeKeyOne.pubKey);
-      expect(openPromise).to.be.fulfilled;
-      await openPromise;
+      await Promise.all([
+        openPromise,
+        new Promise(resolve => pool.on('peer.active', resolve)),
+      ]);
     });
 
     it('should not reconnect upon shutdown inbound', async () => {

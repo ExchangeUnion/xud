@@ -56,7 +56,8 @@
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
-    - [RaidenInfo](#xudrpc.RaidenInfo)
+    - [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest)
+    - [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
     - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
@@ -69,7 +70,9 @@
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
+    - [SubscribeSwapsAcceptedRequest](#xudrpc.SubscribeSwapsAcceptedRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
+    - [SwapAccepted](#xudrpc.SwapAccepted)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [Trade](#xudrpc.Trade)
@@ -91,11 +94,9 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
-  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -235,6 +236,7 @@
 | force | [bool](#bool) |  | Whether to force close the channel in case the peer is offline or unresponsive. |
 | destination | [string](#string) |  | The on-chain address to send funds extracted from the channel. If unspecified, the funds return to the default wallet for the client closing the channel. |
 | amount | [uint64](#uint64) |  | For Connext only - the amount to extract from the channel. If 0 or unspecified, the entire off-chain balance for the specified currency will be extracted. |
+| fee | [uint64](#uint64) |  | A manual fee rate set in sat/byte that should be used when crafting the closure transaction. |
 
 
 
@@ -245,6 +247,11 @@
 
 ### CloseChannelResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_ids | [string](#string) | repeated | The id of the transaction per channel close. |
 
 
 
@@ -319,7 +326,7 @@
 | ----- | ---- | ----- | ----------- |
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
-| initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+| initialized_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
 
 
 
@@ -493,7 +500,6 @@
 | num_pairs | [uint32](#uint32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
 | lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
-| raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
 | alias | [string](#string) |  | The alias of this instance of xud. |
 | network | [string](#string) |  | The network of this node. |
 | pending_swap_hashes | [string](#string) | repeated |  |
@@ -724,6 +730,7 @@
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
 | amount | [uint64](#uint64) |  | The amount to be deposited into the channel denominated in satoshis. |
 | push_amount | [uint64](#uint64) |  | The balance amount to be pushed to the remote side of the channel denominated in satoshis. |
+| fee | [uint64](#uint64) |  | The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel. |
 
 
 
@@ -734,6 +741,11 @@
 
 ### OpenChannelResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_id | [string](#string) |  | The id of the transaction that opened the channel. |
 
 
 
@@ -846,7 +858,6 @@
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [uint32](#uint32) |  | The time in seconds that we have been connected to this peer. |
-| raiden_address | [string](#string) |  | The raiden address for this peer |
 | alias | [string](#string) |  | The alias for this peer&#39;s public key |
 
 
@@ -927,19 +938,26 @@
 
 
 
-<a name="xudrpc.RaidenInfo"></a>
+<a name="xudrpc.RemoveAllOrdersRequest"></a>
 
-### RaidenInfo
+### RemoveAllOrdersRequest
+
+
+
+
+
+
+
+<a name="xudrpc.RemoveAllOrdersResponse"></a>
+
+### RemoveAllOrdersResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [string](#string) |  |  |
-| address | [string](#string) |  |  |
-| channels | [Channels](#xudrpc.Channels) |  |  |
-| version | [string](#string) |  |  |
-| chain | [string](#string) |  |  |
+| removed_order_ids | [string](#string) | repeated | The local order ids that were successfully removed. |
+| on_hold_order_ids | [string](#string) | repeated | The local order ids that were on hold and failed to be removed. |
 
 
 
@@ -1038,8 +1056,6 @@
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | password | [string](#string) |  | The password in utf-8 with which to encrypt the restored xud node key as well as any restored underlying wallets. |
 | lnd_backups | [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry) | repeated | A map between the currency of the LND and its multi channel SCB |
-| raiden_database | [bytes](#bytes) |  | The Raiden database backup |
-| raiden_database_path | [string](#string) |  | Path to where the Raiden database backup should be written |
 | xud_database | [bytes](#bytes) |  | The XUD database backup |
 
 
@@ -1072,7 +1088,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | restored_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
-| restored_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+| restored_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
 
 
 
@@ -1114,6 +1130,16 @@
 
 
 
+<a name="xudrpc.SubscribeSwapsAcceptedRequest"></a>
+
+### SubscribeSwapsAcceptedRequest
+
+
+
+
+
+
+
 <a name="xudrpc.SubscribeSwapsRequest"></a>
 
 ### SubscribeSwapsRequest
@@ -1123,6 +1149,31 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | include_taker | [bool](#bool) |  | Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls. These swap results are also returned in the responses for the respective calls. |
+
+
+
+
+
+
+<a name="xudrpc.SwapAccepted"></a>
+
+### SwapAccepted
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order_id | [string](#string) |  | The global UUID for the order that was accepted to be swapped. |
+| local_id | [string](#string) |  | The local id for the order that was accepted to be swapped. |
+| pair_id | [string](#string) |  | The trading pair that the swap is for. |
+| quantity | [uint64](#uint64) |  | The order quantity that was accepted to be swapped. |
+| price | [double](#double) |  | The price for the swap. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
+| r_hash | [string](#string) |  | The hex-encoded payment hash for the swap. |
+| amount_receiving | [uint64](#uint64) |  | The amount received denominated in satoshis. |
+| amount_sending | [uint64](#uint64) |  | The amount sent denominated in satoshis. |
+| currency_receiving | [string](#string) |  | The ticker symbol of the currency received. |
+| currency_sending | [string](#string) |  | The ticker symbol of the currency sent. |
 
 
 
@@ -1237,8 +1288,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| MaxSell | [uint64](#uint64) |  | Max outbound capacity for a distinct channel denominated in satoshis. |
-| MaxBuy | [uint64](#uint64) |  | Max inbound capacity for a distinct channel denominated in satoshis. |
+| max_sell | [uint64](#uint64) |  | Maximum outbound limit for an order denominated in satoshis. |
+| max_buy | [uint64](#uint64) |  | Maximum inbound limit for an order denominated in satoshis. |
+| reserved_outbound | [uint64](#uint64) |  | The outbound amount reserved for open orders. |
+| reserved_inbound | [uint64](#uint64) |  | The inbound amount reserved for open orders. |
 
 
 
@@ -1341,7 +1394,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | unlocked_lnds | [string](#string) | repeated | The list of lnd clients that were unlocked. |
-| unlocked_raiden | [bool](#bool) |  | Whether raiden was unlocked. |
 | locked_lnds | [string](#string) | repeated | The list of lnd clients that could not be unlocked. |
 
 
@@ -1393,7 +1445,7 @@
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | LND | 0 |  |
-| RAIDEN | 1 |  |
+| CONNEXT | 2 |  |
 
 
 
@@ -1467,11 +1519,13 @@ The primary service for interacting with a running xud node.
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Executes a swap on a maker peer order. |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. shell: xucli removecurrency &lt;currency&gt; |
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeorder &lt;order_id&gt; [quantity] |
+| RemoveAllOrders | [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest) | [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse) | Removes all orders from the order book. Removed orders become immediately unavailable for swaps, and peers are notified that the orders are no longer valid. Any portion of the orders that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeallorders |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. shell: xucli removepair &lt;pair_id&gt; |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. shell: xucli shutdown |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
+| SubscribeSwapsAccepted | [SubscribeSwapsAcceptedRequest](#xudrpc.SubscribeSwapsAcceptedRequest) | [SwapAccepted](#xudrpc.SwapAccepted) stream | Subscribes to accepted swaps. This stream emits a message when the local xud node accepts a swap request from a peer, but before the swap has actually succeeded. |
 | TradeHistory | [TradeHistoryRequest](#xudrpc.TradeHistoryRequest) | [TradeHistoryResponse](#xudrpc.TradeHistoryResponse) | Gets a list of completed trades. shell: xucli tradehistory [limit] |
 | TradingLimits | [TradingLimitsRequest](#xudrpc.TradingLimitsRequest) | [TradingLimitsResponse](#xudrpc.TradingLimitsResponse) | Gets the trading limits for one or all currencies. shell: xucli tradinglimits [currency] |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. shell: xucli unban &lt;node_identifier&gt; [reconnect] |
@@ -1486,7 +1540,7 @@ A service for interacting with a locked or uninitalized xud node.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. shell: xucli create |
-| RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. shell: xucli restore [backup_directory] [raiden_database_path] |
+| RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. shell: xucli restore [backup_directory] |
 | UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. shell: xucli unlock |
 
  

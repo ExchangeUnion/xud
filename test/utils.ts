@@ -1,11 +1,12 @@
+import fs from 'fs';
 import net from 'net';
-import { SinonSpy } from 'sinon';
-import uuidv1 from 'uuid';
 import os from 'os';
 import path from 'path';
-import fs from 'fs';
+import { SinonSpy } from 'sinon';
+import uuidv1 from 'uuid';
+import { SwapPhase, SwapRole, SwapState } from '../lib/constants/enums';
+import { OwnOrder, PeerOrder } from '../lib/orderbook/types';
 import { ms } from '../lib/utils/utils';
-import { PeerOrder, OwnOrder } from '../lib/orderbook/types';
 
 /**
  * Discovers and returns a dynamically assigned, unused port available for testing.
@@ -90,8 +91,10 @@ export const createPeerOrder = (
   id: uuidv1(),
 });
 
-export const getValidDeal = () => {
+export const getValidDeal = (phase = SwapPhase.SendingPayment, role = SwapRole.Maker) => {
   return {
+    phase,
+    role,
     proposedQuantity: 10000,
     pairId: 'LTC/BTC',
     orderId: '53bc8a30-81f0-11e9-9259-a5617f44d209',
@@ -111,9 +114,7 @@ export const getValidDeal = () => {
     destination: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
     peerPubKey: '021ea6d67c850a0811b01c78c8117dca044b224601791a4186bf5748f667f73517',
     localId: '53bc8a30-81f0-11e9-9259-a5617f44d209',
-    phase: 3,
-    state: 0,
-    role: 1,
+    state: SwapState.Active,
     createTime: 1559120485138,
     takerMaxTimeLock: 100,
   };

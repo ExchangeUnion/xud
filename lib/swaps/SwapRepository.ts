@@ -1,12 +1,11 @@
-import * as db from '../db/types';
-import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
+import * as db from '../db/types';
 
 class SwapRepository {
 
   constructor(private models: Models) {}
 
-  public getSwapDeals = (): Bluebird<db.SwapDealInstance[]> => {
+  public getSwapDeals = (): Promise<db.SwapDealInstance[]> => {
     return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order] });
   }
 
@@ -19,7 +18,7 @@ class SwapRepository {
     });
   }
 
-  public saveSwapDeal = async (swapDeal: db.SwapDealFactory, swapOrder?: db.OrderFactory) => {
+  public saveSwapDeal = async (swapDeal: db.SwapDealCreationAttributes, swapOrder?: db.OrderCreationAttributes) => {
     if (swapOrder) {
       await this.models.Order.upsert(swapOrder);
     }

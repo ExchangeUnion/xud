@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/roasbeef/btcutil"
@@ -44,8 +45,8 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			node.SetPubKey(res.NodePubKey)
 
 			// Add currencies
-			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "")
-			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "")
+			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "", 8)
+			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "", 8)
 
 			// Add pairs to the node.
 			a.addPair(node, "LTC", "BTC")
@@ -58,9 +59,40 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 	}
 }
 
-func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string) {
+func (a *actions) initConnext(net *xudtest.NetworkHarness, node *xudtest.HarnessNode, fund bool) {
+	// Wait for node's connext connection to catch-up.
+	err := waitConnextReady(node)
+	a.assert.NoError(err)
+
+	// Fund node's wallet.
+	if fund {
+		resInfo, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+		a.assert.NoError(err)
+		amount := big.NewInt(2000000000000000000)
+		err = net.ConnextNetwork.Wallet.SendEth(resInfo.Connext.Address, amount)
+		a.assert.NoError(err)
+
+		time.Sleep(15 * time.Second)
+	}
+
+	// Init node.
+	ETHTokenAddress := "0x0000000000000000000000000000000000000000"
+	a.addCurrency(node, "ETH", 2, ETHTokenAddress, 18)
+	a.addPair(node, "BTC", "ETH")
+	err = net.RestartNode(node)
+	a.assert.NoError(err)
+
+	// Verify node's ETH balance.
+	if fund {
+		resBal, err := node.Client.GetBalance(a.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+		a.assert.NoError(err)
+		a.assert.Equal(uint64(200000000), resBal.Balances["ETH"].WalletBalance)
+	}
+}
+
+func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string, decimalPlaces uint32) {
 	if len(tokenAddress) > 0 {
-		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress}
+		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress, DecimalPlaces: decimalPlaces}
 		_, err := node.Client.AddCurrency(a.ctx, req)
 		a.assert.NoError(err)
 	} else {
@@ -522,6 +554,15 @@ func closeLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, node *lntes
 	}
 
 	if _, err := ln.WaitForChannelClose(ctx, closeChanStream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func openETHChannel(ctx context.Context, srcNode *xudtest.HarnessNode, amt uint64, pushAmt uint64) error {
+	req := &xudrpc.OpenChannelRequest{NodeIdentifier: "", Currency: "ETH", Amount: amt, PushAmount: pushAmt}
+	if _, err := srcNode.Client.OpenChannel(ctx, req); err != nil {
 		return err
 	}
 

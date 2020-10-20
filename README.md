@@ -1,19 +1,20 @@
 # Exchange Union Daemon
 
 [![Discord](https://img.shields.io/discord/547402601885466658.svg)](https://discord.gg/YgDhMSn)
-[![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud)
+[![CI Status](https://github.com/ExchangeUnion/xud/workflows/CI/badge.svg)](https://github.com/ExchangeUnion/xud/actions?query=workflow%3ACI)
+[![SimTest Status](https://github.com/ExchangeUnion/xud/workflows/Simulation%20tests/badge.svg)](https://github.com/ExchangeUnion/xud/actions?query=workflow%3A%22Simulation+tests%22)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/87238907485845eb879bd61c65561775)](https://www.codacy.com/app/sangaman/xud?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ExchangeUnion/xud&amp;utm_campaign=Badge_Grade)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 
 ![xud logo](logo.png)
 
-The Exchange Union Daemon ([`xud`](https://github.com/ExchangeUnion/xud)) is the reference implementation powering [OpenDEX](https://opendex.network), a decentralized exchange built on top of the [Lightning](https://lightning.network/) and [Connext](https://connext.network/) network. `xud` brings individual traders, market makers and exchanges onto OpenDEX to form a single global trading network and liquidity pool.
+The Exchange Union Daemon ([`xud`](https://github.com/ExchangeUnion/xud)) is the reference implementation powering [OpenDEX](https://opendex.network), a decentralized exchange built on top of the [Lightning](https://lightning.network/) and [Connext](https://connext.network/) networks. `xud` brings individual traders, market makers and exchanges onto OpenDEX to form a single global trading network and liquidity pool.
 
-Get started trading 👉 [here](https://docs.exchangeunion.com/start-trading/user-guide) 👈
+Get started 👉 [here](https://docs.exchangeunion.com/start-earning/market-maker-guide) 👈
 
 ## OpenDEX Network Specification Compliance
-`xud` implements the [OpenDEX protocol](https://opendex.network) and fully conforms to its so-called [BOLD](https://opendex.network/read/bold-00) specifications. BOLD stands for:
+`xud` implements the [OpenDEX protocol](https://opendex.network) and fully conforms to its so-called [BOLD](https://opendex.network/read/00-introduction) specifications. BOLD stands for:
 Basis of L3 DEX. The naming is intentionally derived from [BOLT](https://github.com/lightningnetwork/lightning-rfc), the Lightning Network specifications and role model of OpenDEX. The specifications are currently being drafted by several implementers based around the world, including the developers of `xud`. The BOLDs, as well as `xud`s implementation of it is still a work-in-progress. The current status of `xud`'s BOLD compliance is:
   - [X] [BOLD #1: Message Format](https://opendex.network/read/01-message-format)
   - [X] [BOLD #2: Peer Protocol](https://opendex.network/read/02-peer-protocol)
@@ -33,11 +34,11 @@ Basis of L3 DEX. The naming is intentionally derived from [BOLT](https://github.
 The daemon has been designed to be as developer friendly as possible in order to facilitate application development on top of `xud`.
 * [docs.exchangeunion.com](https://docs.exchangeunion.com): the starting point and up-to-date collection of guides, links and examples
 * [api.exchangeunion.com](https://api.exchangeunion.com): The automatically generated gRPC API documentation
-* [typedoc.exchangeunion.com](https://typedoc.exchangeunion.com/): The automatically generated code documentation
+* [typedoc.exchangeunion.com](https://typedoc.exchangeunion.com): The automatically generated code documentation
 
 ## Installation
 
-This section contains brief instructions for installing `xud` manually, without treating setup of dependencies like `bitcoind` or `lnd`. It is mainly geared towards developers. For all other users, we recommend our streamlined [xud-docker](https://docs.exchangeunion.com/start-trading) setup.
+This section contains brief instructions for installing `xud` manually, without treating setup of dependencies like `bitcoind` or `lnd`. It is mainly geared towards developers. For all other users, we recommend our streamlined [xud-docker](https://docs.exchangeunion.com/start-earning/market-maker-guide) setup.
 
 If you already have [Node.js](https://nodejs.org/en/download/) installed, you can install `xud` via npm by running
 

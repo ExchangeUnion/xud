@@ -46,6 +46,9 @@ export class Order extends jspb.Message {
     getIsBuy(): boolean;
     setIsBuy(value: boolean): void;
 
+    getReplaceOrderId(): string;
+    setReplaceOrderId(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Order.AsObject;
@@ -64,6 +67,7 @@ export namespace Order {
         price: number,
         quantity: number,
         isBuy: boolean,
+        replaceOrderId: string,
     }
 }
 
@@ -128,9 +132,6 @@ export class NodeState extends jspb.Message {
     setPairsList(value: Array<string>): void;
     addPairs(value: string, index?: number): string;
 
-    getRaidenAddress(): string;
-    setRaidenAddress(value: string): void;
-
 
     getLndPubKeysMap(): jspb.Map<string, string>;
     clearLndPubKeysMap(): void;
@@ -161,7 +162,6 @@ export namespace NodeState {
     export type AsObject = {
         addressesList: Array<Address.AsObject>,
         pairsList: Array<string>,
-        raidenAddress: string,
 
         lndPubKeysMap: Array<[string, string]>,
 

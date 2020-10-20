@@ -1,12 +1,14 @@
 /* tslint:disable no-floating-promises no-null-keyword */
-import grpc, { status } from 'grpc';
+import grpc, { ServerWritableStream, status } from 'grpc';
+import { fromEvent } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
 import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
-import { SwapFailure, SwapSuccess } from '../swaps/types';
+import { SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
 /**
@@ -96,6 +98,25 @@ const createSwapFailure = (swapFailure: SwapFailure) => {
 };
 
 /**
+ * Creates an xudrpc SwapAccepted message from a [[SwapAccepted]].
+ */
+const createSwapAccepted = (swapAccepted: SwapAccepted) => {
+  const grpcSwapAccepted = new xudrpc.SwapAccepted();
+  grpcSwapAccepted.setOrderId(swapAccepted.orderId);
+  grpcSwapAccepted.setLocalId(swapAccepted.localId);
+  grpcSwapAccepted.setQuantity(swapAccepted.quantity);
+  grpcSwapAccepted.setRHash(swapAccepted.rHash);
+  grpcSwapAccepted.setPrice(swapAccepted.price);
+  grpcSwapAccepted.setAmountReceiving(swapAccepted.amountReceiving);
+  grpcSwapAccepted.setAmountSending(swapAccepted.amountSending);
+  grpcSwapAccepted.setCurrencyReceiving(swapAccepted.currencyReceiving);
+  grpcSwapAccepted.setCurrencySending(swapAccepted.currencySending);
+  grpcSwapAccepted.setPeerPubKey(swapAccepted.peerPubKey);
+  grpcSwapAccepted.setPairId(swapAccepted.pairId);
+  return grpcSwapAccepted;
+};
+
+/**
  * Creates an xudrpc PlaceOrderResponse message from a [[PlaceOrderResult]].
  */
 const createPlaceOrderResponse = (result: PlaceOrderResult) => {
@@ -137,6 +158,12 @@ const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
       break;
   }
   return placeOrderEvent;
+};
+
+const getCancelled$ = (call: ServerWritableStream<any>) => {
+  return fromEvent<void>(call, 'cancelled').pipe(
+    take(1),
+  );
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -234,8 +261,10 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.closeChannel(call.request.toObject());
+      const txIds = await this.service.closeChannel(call.request.toObject());
       const response = new xudrpc.CloseChannelResponse();
+      response.setTransactionIdsList(txIds);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -253,6 +282,26 @@ class GrpcService {
       const quantityOnHold = this.service.removeOrder(call.request.toObject());
       const response = new xudrpc.RemoveOrderResponse();
       response.setQuantityOnHold(quantityOnHold);
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.removeAllOrders]]
+   */
+  public removeAllOrders: grpc.handleUnaryCall<xudrpc.RemoveAllOrdersRequest, xudrpc.RemoveAllOrdersResponse> = async (_, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      const { removedOrderLocalIds, onHoldOrderLocalIds } = await this.service.removeAllOrders();
+
+      const response = new xudrpc.RemoveAllOrdersResponse();
+      response.setRemovedOrderIdsList(removedOrderLocalIds);
+      response.setOnHoldOrderIdsList(onHoldOrderLocalIds);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -299,8 +348,10 @@ class GrpcService {
       const limitsMap = response.getLimitsMap();
       tradingLimitsResponse.forEach((tradingLimitsObj, currency) => {
         const tradingLimits = new xudrpc.TradingLimits();
-        tradingLimits.setMaxsell(tradingLimitsObj.maxSell);
-        tradingLimits.setMaxbuy(tradingLimitsObj.maxBuy);
+        tradingLimits.setMaxSell(tradingLimitsObj.maxSell);
+        tradingLimits.setMaxBuy(tradingLimitsObj.maxBuy);
+        tradingLimits.setReservedInbound(tradingLimitsObj.reservedInbound);
+        tradingLimits.setReservedOutbound(tradingLimitsObj.reservedOutbound);
         limitsMap.set(currency, tradingLimits);
       });
       callback(null, response);
@@ -317,8 +368,10 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.openChannel(call.request.toObject());
+      const txId = await this.service.openChannel(call.request.toObject());
       const response = new xudrpc.OpenChannelResponse();
+      response.setTransactionId(txId);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -367,8 +420,9 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.walletWithdraw(call.request.toObject());
+      const txId = await this.service.walletWithdraw(call.request.toObject());
       const response = new xudrpc.WithdrawResponse();
+      response.setTransactionId(txId);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -431,6 +485,7 @@ class GrpcService {
             // these cases suggest something went very wrong with our swap request
             code = status.INTERNAL;
             break;
+          case SwapFailureReason.InsufficientBalance:
           case SwapFailureReason.NoRouteFound:
           case SwapFailureReason.SendPaymentFailure:
           case SwapFailureReason.SwapClientNotSetup:
@@ -503,22 +558,6 @@ class GrpcService {
       getInfoResponse.lnd.forEach((lndInfo, currency) => {
         lndMap.set(currency, getLndInfo(lndInfo));
       });
-
-      if (getInfoResponse.raiden) {
-        const raiden = new xudrpc.RaidenInfo();
-        raiden.setStatus(getInfoResponse.raiden.status);
-        if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) {
-          const channels = new xudrpc.Channels();
-          channels.setActive(getInfoResponse.raiden.channels.active);
-          // channels.setSettled(getInfoResponse.raiden.channels.settled);
-          channels.setClosed(getInfoResponse.raiden.channels.closed);
-          raiden.setChannels(channels);
-        }
-        if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
-        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
-        response.setRaiden(raiden);
-      }
 
       if (getInfoResponse.connext) {
         const connext = new xudrpc.ConnextInfo();
@@ -708,7 +747,6 @@ class GrpcService {
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
-        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);
@@ -822,10 +860,12 @@ class GrpcService {
    * See [[Service.subscribeOrders]]
    */
   public subscribeOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeOrdersRequest, xudrpc.OrderUpdate> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelled$ = getCancelled$(call);
+
     this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
       const orderUpdate = new xudrpc.OrderUpdate();
       if (order) {
@@ -840,21 +880,22 @@ class GrpcService {
         orderUpdate.setOrderRemoval(grpcOrderRemoval);
       }
       call.write(orderUpdate);
-    });
-    this.addStream(call);
+    },
+    cancelled$);
   }
 
   /*
    * See [[Service.subscribeSwapFailures]]
    */
   public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelled$ = getCancelled$(call);
     this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
       call.write(createSwapFailure(result));
-    });
+    }, cancelled$);
     this.addStream(call);
   }
 
@@ -862,13 +903,29 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelled$ = getCancelled$(call);
     this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
       call.write(createSwapSuccess(result));
-    });
+    }, cancelled$);
+    this.addStream(call);
+  }
+
+  /*
+   * See [[Service.subscribeSwapFailures]]
+   */
+  public subscribeSwapsAccepted: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsAcceptedRequest, xudrpc.SwapAccepted> = (call) => {
+    if (!this.isReady(this.service, call)) {
+      return;
+    }
+
+    const cancelled$ = getCancelled$(call);
+    this.service.subscribeSwapsAccepted(call.request.toObject(), (result: SwapAccepted) => {
+      call.write(createSwapAccepted(result));
+    }, cancelled$);
     this.addStream(call);
   }
 }

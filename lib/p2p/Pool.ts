@@ -2,25 +2,22 @@ import assert from 'assert';
 import { EventEmitter } from 'events';
 import net, { Server, Socket } from 'net';
 import semver from 'semver';
-import { DisconnectionReason, ReputationEvent, XuNetwork, SwapFailureReason } from '../constants/enums';
+import { DisconnectionReason, ReputationEvent, SwapFailureReason, XuNetwork } from '../constants/enums';
 import { Models } from '../db/DB';
-import { ReputationEventInstance } from '../db/types';
 import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
-import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
+import { IncomingOrder, OrderInvalidation, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
 import { getExternalIp } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import Network from './Network';
-import NodeList, { reputationEventWeight } from './NodeList';
+import NodeList from './NodeList';
 import P2PRepository from './P2PRepository';
 import { Packet, PacketType } from './packets';
 import * as packets from './packets/types';
 import Peer, { PeerInfo } from './Peer';
 import { Address, NodeConnectionInfo, NodeState, PoolConfig } from './types';
-
-const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
@@ -30,8 +27,8 @@ type NodeReputationInfo = {
 interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
-  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
-  on(event: 'peer.active', listener: (peerPubKey?: string) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderInvalidation, peer: string) => void): this;
+  on(event: 'peer.active', listener: (peerPubKey: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
   /** Adds a listener to be called when a peer's advertised but inactive pairs should be verified. */
   on(event: 'peer.verifyPairs', listener: (peer: Peer) => void): this;
@@ -44,8 +41,8 @@ interface Pool {
   on(event: 'packet.swapFailed', listener: (packet: packets.SwapFailedPacket) => void): this;
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
-  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
-  emit(event: 'peer.active', peerPubKey?: string): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderInvalidation, peer: string): boolean;
+  emit(event: 'peer.active', peerPubKey: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
   /** Notifies listeners that a peer's advertised but inactive pairs should be verified. */
   emit(event: 'peer.verifyPairs', peer: Peer): boolean;
@@ -93,20 +90,23 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** Points to config comes during construction. */
   private config: PoolConfig;
-  private testing: boolean;
+  private strict: boolean;
   private repository: P2PRepository;
   private network: Network;
   private logger: Logger;
   private nodeKey: NodeKey;
+  /** The minimum version of xud we accept for peers */
+  private minCompatibleVersion: string;
 
-  constructor({ config, xuNetwork, logger, models, nodeKey, version, testing = false }: {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version, strict = true, minCompatibleVersion }: {
     config: PoolConfig,
     xuNetwork: XuNetwork,
     logger: Logger,
     models: Models,
     nodeKey: NodeKey,
     version: string,
-    testing?: boolean,
+    strict?: boolean,
+    minCompatibleVersion?: string,
   }) {
     super();
 
@@ -116,15 +116,19 @@ class Pool extends EventEmitter {
     this.alias = pubKeyToAlias(nodeKey.pubKey);
     this.version = version;
     this.config = config;
-    this.testing = testing;
+    this.strict = strict;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
 
+    // we use the provided minCompatibleVersion if one is specified
+    // otherwise we attempt to read the minCompatibleVersion from package.json
+    // otherwise we use our own version as the minimum
+    this.minCompatibleVersion = minCompatibleVersion ?? require('../../package.json').minCompatibleVersion ?? version;
+
     this.nodeState = {
       addresses: [],
       pairs: [],
-      raidenAddress: '',
       connextIdentifier: '',
       lndPubKeys: {},
       lndUris: {},
@@ -246,18 +250,6 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Updates our raiden address and supported token addresses, then sends a node state update
-   * packet to currently connected peers to notify them of the change.
-   */
-  public updateRaidenState = (tokenAddresses: Map<string, string>, raidenAddress?: string) => {
-    this.nodeState.raidenAddress = raidenAddress || '';
-    tokenAddresses.forEach((tokenAddress, currency) => {
-      this.nodeState.tokenIdentifiers[currency] = tokenAddress;
-    });
-    this.sendNodeStateUpdate();
-  }
-
-  /**
    * Updates our connext public key and supported token addresses, then sends a node state update
    * packet to currently connected peers to notify them of the change.
    */
@@ -307,13 +299,12 @@ class Pool extends EventEmitter {
   }
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEventInstance[]) => {
-      this.logger.warn(`node ${nodePubKey} was banned`);
+    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEvent[]) => {
+      this.logger.info(`node ${nodePubKey} was banned due to ${ReputationEvent[events[0]]}`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        const lastNegativeEvents = events.filter(e => reputationEventWeight[e.event] < 0).slice(0, 10);
-        return peer.close(DisconnectionReason.Banned, JSON.stringify(lastNegativeEvents));
+        return peer.close(DisconnectionReason.Banned, JSON.stringify(events));
       }
       return;
     });
@@ -433,7 +424,7 @@ class Pool extends EventEmitter {
    * @return true if the specified node exists and the event was added, false otherwise
    */
   public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
-    const node = await this.repository.getNode(nodePubKey);
+    const node = this.nodes.get(nodePubKey);
     if (node) {
       const { reputationScore, banned } = node;
       return {
@@ -442,7 +433,7 @@ class Pool extends EventEmitter {
       };
     } else {
       this.logger.warn(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) not found`);
-      throw errors.NODE_UNKNOWN(nodePubKey);
+      throw errors.NODE_NOT_FOUND(nodePubKey);
     }
   }
 
@@ -470,6 +461,8 @@ class Pool extends EventEmitter {
     if (this.peers.has(nodePubKey)) {
       throw errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
     }
+
+    this.logger.debug(`creating new outbound socket connection to ${address.host}:${address.port}`);
 
     const pendingPeer = this.pendingOutboundPeers.get(nodePubKey);
     if (pendingPeer) {
@@ -599,11 +592,12 @@ class Pool extends EventEmitter {
 
     this.peers.set(peerPubKey, peer);
     peer.active = true;
-    this.emit('peer.active', peerPubKey);
     this.logger.verbose(`opened connection to ${peer.label} at ${addressUtils.toString(peer.address)}`);
 
     // begin the process to handle a just opened peer, but return from this method immediately
-    this.handleOpenedPeer(peer).catch(this.logger.error);
+    this.handleOpenedPeer(peer).then(() => {
+      this.emit('peer.active', peerPubKey);
+    }).catch(this.logger.error);
   }
 
   private handleOpenedPeer = async (peer: Peer) => {
@@ -662,7 +656,7 @@ class Pool extends EventEmitter {
     } else {
       const banned = await this.nodes.ban(nodePubKey);
       if (!banned) {
-        throw errors.NODE_UNKNOWN(nodePubKey);
+        throw errors.NODE_NOT_FOUND(nodePubKey);
       }
     }
   }
@@ -671,10 +665,10 @@ class Pool extends EventEmitter {
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.unBan(nodePubKey);
       if (!unbanned) {
-        throw errors.NODE_UNKNOWN(nodePubKey);
+        throw errors.NODE_NOT_FOUND(nodePubKey);
       }
 
-      const node = await this.repository.getNode(nodePubKey);
+      const node = this.nodes.get(nodePubKey);
       if (node) {
         const Node: NodeConnectionInfo = {
           nodePubKey,
@@ -701,8 +695,19 @@ class Pool extends EventEmitter {
   }
 
   // A wrapper for [[NodeList.addReputationEvent]].
-  public addReputationEvent = (nodePubKey: string, event: ReputationEvent) => {
-    return this.nodes.addReputationEvent(nodePubKey, event);
+  public addReputationEvent = async (nodePubKey: string, event: ReputationEvent) => {
+    // when in strict mode, we add all reputation events
+    // otherwise, we only add manual or severe reputation events to prevent unintentional bans
+    if (this.strict
+      || event === ReputationEvent.ManualBan
+      || event === ReputationEvent.ManualUnban
+      || event === ReputationEvent.SwapAbuse
+      || event === ReputationEvent.SwapMisbehavior
+      || event === ReputationEvent.WireProtocolErr
+      || event === ReputationEvent.InvalidAuth) {
+      this.logger.debug(`Peer (${nodePubKey}): reputation event: ${ReputationEvent[event]}`);
+      await this.nodes.addReputationEvent(nodePubKey, event);
+    }
   }
 
   public sendToPeer = async (nodePubKey: string, packet: Packet) => {
@@ -750,7 +755,9 @@ class Pool extends EventEmitter {
     const orderInvalidationPacket = new packets.OrderInvalidationPacket({ id, pairId, quantity });
     this.peers.forEach(async (peer) => {
       if (!nodeToExclude || peer.nodePubKey !== nodeToExclude) {
-        await peer.sendPacket(orderInvalidationPacket);
+        if (peer.isPairActive(pairId)) {
+          await peer.sendPacket(orderInvalidationPacket);
+        }
       }
     });
 
@@ -758,6 +765,8 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
+    const address = addressUtils.fromSocket(socket);
+    this.logger.debug(`new inbound socket connection from ${address.host}:${address.port}`);
     const peer = Peer.fromInbound(socket, this.logger, this.network);
     this.bindPeer(peer);
     this.pendingInboundPeers.add(peer);
@@ -789,20 +798,33 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.Order: {
         const receivedOrder: OutgoingOrder = (packet as packets.OrderPacket).body!;
-        this.logger.verbose(`received order from ${peer.label}: ${JSON.stringify(receivedOrder)}`);
-        const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
+        this.logger.trace(`received order from ${peer.label}: ${JSON.stringify(receivedOrder)}`);
+        const { id, pairId } = receivedOrder;
 
-        if (peer.isPairActive(incomingOrder.pairId)) {
+        if (peer.isPairActive(pairId)) {
+          if (receivedOrder.replaceOrderId) {
+            const orderInvalidation: OrderInvalidation = {
+              pairId,
+              id: receivedOrder.replaceOrderId,
+            };
+            this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey!);
+          }
+
+          const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
           this.emit('packet.order', incomingOrder);
         } else {
-          this.logger.debug(`received order ${incomingOrder.id} for deactivated trading pair`);
+          this.logger.debug(`received order ${id} for deactivated trading pair`);
         }
         break;
       }
       case PacketType.OrderInvalidation: {
-        const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.verbose(`received order invalidation from ${peer.label}: ${JSON.stringify(orderPortion)}`);
-        this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
+        const orderInvalidation = (packet as packets.OrderInvalidationPacket).body!;
+        if (peer.isPairActive(orderInvalidation.pairId)) {
+          this.logger.trace(`received order invalidation from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
+          this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey as string);
+        } else {
+          this.logger.trace(`received order invalidation for inactive pair from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
+        }
         break;
       }
       case PacketType.GetOrders: {
@@ -813,14 +835,17 @@ class Pool extends EventEmitter {
       }
       case PacketType.Orders: {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
-        this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.label}`);
-        receivedOrders.forEach((order) => {
-          if (peer.isPairActive(order.pairId)) {
-            this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
-          } else {
-            this.logger.debug(`received order ${order.id} for deactivated trading pair`);
-          }
-        });
+        if (receivedOrders.length > 0) {
+          this.logger.debug(`received ${receivedOrders.length} orders from ${peer.label}`);
+          receivedOrders.forEach((order) => {
+            if (peer.isPairActive(order.pairId)) {
+              this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
+            } else {
+              this.logger.debug(`received order ${order.id} for deactivated trading pair`);
+            }
+          });
+        }
+
         break;
       }
       case PacketType.GetNodes: {
@@ -884,9 +909,9 @@ class Pool extends EventEmitter {
       throw errors.MALFORMED_VERSION(addressUtils.toString(peer.address), peer.version);
     }
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
-    if (semver.compare(peer.version, minCompatibleVersion) === -1) {
+    if (semver.compare(peer.version, this.minCompatibleVersion) === -1) {
       await peer.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(peer.address), minCompatibleVersion, peer.version);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(peer.address), this.minCompatibleVersion, peer.version);
     }
 
     if (!this.connected) {
@@ -964,12 +989,7 @@ class Pool extends EventEmitter {
     peer.once('close', () => this.handlePeerClose(peer));
 
     peer.on('reputation', async (event) => {
-      this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        if (this.testing && event !== ReputationEvent.ManualBan && event !== ReputationEvent.ManualUnban) {
-          // we don't add non-manual reputation events when in debug/testing mode to preven unintentional bans
-          return;
-        }
         await this.addReputationEvent(peer.nodePubKey, event);
       }
     });
@@ -1068,11 +1088,7 @@ class Pool extends EventEmitter {
    * pub key cannot be found for the provided alias.
    */
   public resolveAlias = (alias: string) => {
-    const nodePubKey = this.nodes.getPubKeyForAlias(alias);
-    if (!nodePubKey) {
-      throw errors.UNKNOWN_ALIAS(alias);
-    }
-    return nodePubKey;
+    return this.nodes.getPubKeyForAlias(alias);
   }
 }
 

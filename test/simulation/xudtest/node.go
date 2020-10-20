@@ -3,6 +3,7 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/shared"
 	"net"
 	"os"
 	"os/exec"
@@ -12,11 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ExchangeUnion/xud-simulation/connexttest"
+
+	"context"
+
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/go-errors/errors"
-	"github.com/phayes/freeport"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -62,6 +65,8 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, "--initdb=false")
 	args = append(args, "--regtest")
 	args = append(args, "--loglevel=trace")
+	args = append(args, "--noencrypt")
+	args = append(args, "--strict")
 
 	if cfg.NoBalanceChecks {
 		args = append(args, "--nobalancechecks=true")
@@ -97,6 +102,9 @@ func (cfg nodeConfig) genArgs() []string {
 	if !cfg.ConnextDisable {
 		args = append(args, fmt.Sprintf("--connext.host=%v", cfg.ConnextHost))
 		args = append(args, fmt.Sprintf("--connext.port=%v", cfg.ConnextPort))
+		args = append(args, "--connext.webhookhost=127.0.0.1")
+		args = append(args, fmt.Sprintf("--connext.webhookport=%v", cfg.HTTPPort))
+
 	} else {
 		args = append(args, "--connext.disable")
 	}
@@ -116,8 +124,9 @@ type HarnessNode struct {
 	ID     int
 	pubKey string
 
-	LndBtcNode *lntest.HarnessNode
-	LndLtcNode *lntest.HarnessNode
+	LndBtcNode    *lntest.HarnessNode
+	LndLtcNode    *lntest.HarnessNode
+	ConnextClient *connexttest.HarnessClient
 
 	// processExit is a channel that's closed once it's detected that the
 	// process this instance of HarnessNode is bound to has exited.
@@ -151,27 +160,26 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 		XUDPath:         xudPath,
 		NoBalanceChecks: noBalanceChecks,
 		RaidenDisable:   true,
-		ConnextDisable:  true,
 	}
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
-	cfg.P2PPort, err = freeport.GetFreePort()
+	cfg.P2PPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	cfg.RPCPort, err = freeport.GetFreePort()
+	cfg.RPCPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	cfg.HTTPPort, err = freeport.GetFreePort()
+	cfg.HTTPPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
 
 	cfg.RaidenHost = "127.0.0.1"
-	cfg.RaidenPort, err = freeport.GetFreePort()
+	cfg.RaidenPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
@@ -199,6 +207,12 @@ func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
 		hn.Cfg.LndLtcMacPath = lndNode.Cfg.AdminMacPath
 		hn.LndLtcNode = lndNode
 	}
+}
+
+func (hn *HarnessNode) SetConnextClient(client *connexttest.HarnessClient) {
+	hn.Cfg.ConnextHost = "0.0.0.0"
+	hn.Cfg.ConnextPort = client.Cfg.Port
+	hn.ConnextClient = client
 }
 
 func (hn *HarnessNode) SetEnvVars(envVars []string) {
@@ -245,7 +259,6 @@ func (hn *HarnessNode) Start(errorChan chan<- *XudError) error {
 
 		// Signal any onlookers that this process has exited.
 		close(hn.ProcessExit)
-		hn.Client = nil
 	}()
 
 	// Since Stop uses the XudClient to stop the node, if we fail to get a
@@ -343,11 +356,7 @@ func (hn *HarnessNode) stop(kill bool) error {
 	}
 
 	if hn.Client != nil {
-		ctx := context.Background()
-		req := xudrpc.ShutdownRequest{}
-		if _, err := hn.Client.Shutdown(ctx, &req); err != nil {
-			return fmt.Errorf("RPC Shutdown failure: %v", err)
-		}
+		_, _ = hn.Client.Shutdown(context.Background(), &xudrpc.ShutdownRequest{})
 	}
 
 	// Wait for xud process and other goroutines to exit.
@@ -367,7 +376,6 @@ func (hn *HarnessNode) stop(kill bool) error {
 
 	hn.quit = nil
 	hn.ProcessExit = nil
-	hn.Client = nil
 	return nil
 }
 

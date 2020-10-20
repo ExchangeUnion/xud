@@ -12,6 +12,7 @@ export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = 
   instanceid,
   network,
   initdb: false,
+  noencrypt: true,
   xudir: getTempDir(uniqueXudir),
   dbpath: ':memory:',
   loglevel: 'error',
@@ -33,9 +34,6 @@ export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = 
       disable: true,
       nomacaroons: true,
     },
-  },
-  raiden: {
-    disable: true,
   },
   connext: {
     disable: true,
@@ -83,14 +81,17 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should update the node state', (done) => {
-    const raidenAddress = '0xbb9bc244d798123fde783fcc1c72d3bb8c189413';
+    const btcPubKey = '0395033b252c6f40e3756984162d68174e2bd8060a129c0d3462a9370471c6d28f';
     const nodeTwoPeer = nodeOne['pool'].getPeer(nodeTwoPubKey);
     nodeTwoPeer.on('nodeStateUpdate', () => {
-      expect(nodeTwoPeer['nodeState']!.raidenAddress).to.equal(raidenAddress);
+      expect(nodeTwoPeer['nodeState']!.lndPubKeys['BTC']).to.equal(btcPubKey);
       done();
     });
 
-    nodeTwo['pool'].updateRaidenState(new Map(), raidenAddress);
+    nodeTwo['pool'].updateLndState({
+      currency: 'BTC',
+      pubKey: btcPubKey,
+    });
   });
 
   it('should fail connecting to the same node', async () => {

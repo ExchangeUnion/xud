@@ -33,7 +33,7 @@ service XudInit {
   rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
 
   /* Restores an xud instance and underlying wallets from a seed.
-   * shell: xucli restore [backup_directory] [raiden_database_path] */
+   * shell: xucli restore [backup_directory] */
   rpc RestoreNode(RestoreNodeRequest) returns (RestoreNodeResponse) { }
 
   /* Unlocks and decrypts the xud node key and any underlying wallets.
@@ -229,6 +229,17 @@ service Xud {
     };
   }
 
+  /* Removes all orders from the order book. Removed orders become immediately unavailable for swaps,
+   * and peers are notified that the orders are no longer valid. Any portion of the orders that is
+   * on hold due to ongoing swaps will not be removed until after the swap attempts complete.
+   * shell: xucli removeallorders */
+  rpc RemoveAllOrders(RemoveAllOrdersRequest) returns (RemoveAllOrdersResponse) {
+    option (google.api.http) = {
+      post: "/v1/removeallorders"
+      body: "*"
+    };
+  }
+
   /* Removes a trading pair from the list of currently supported trading pair. This call will
    * effectively cancel any standing orders for that trading pair. Peers are informed when a pair
    * is no longer supported so that they will know to stop sending orders for it.
@@ -259,6 +270,16 @@ service Xud {
     };
   }
 
+  /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
+   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
+   * the client to get real-time notifications when swap attempts are failing. It can be used for
+   * status monitoring, debugging, and testing purposes. */
+  rpc SubscribeSwapFailures(SubscribeSwapsRequest) returns (stream SwapFailure) {
+    option (google.api.http) = {
+      get: "/v1/subscribeswapfailures"
+    };
+  }
+
   /* Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are
    * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
    * the client to get real-time notifications when its orders are filled by a peer. It can be used
@@ -270,13 +291,11 @@ service Xud {
     };
   }
 
-  /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
-   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
-   * the client to get real-time notifications when swap attempts are failing. It can be used for
-   * status monitoring, debugging, and testing purposes. */
-  rpc SubscribeSwapFailures(SubscribeSwapsRequest) returns (stream SwapFailure) {
+  /* Subscribes to accepted swaps. This stream emits a message when the local xud node 
+   * accepts a swap request from a peer, but before the swap has actually succeeded. */
+  rpc SubscribeSwapsAccepted(SubscribeSwapsAcceptedRequest) returns (stream SwapAccepted) {
     option (google.api.http) = {
-      get: "/v1/subscribeswapfailures"
+      get: "/v1/subscribeswapsaccepted"
     };
   }
 
@@ -390,9 +409,15 @@ message CloseChannelRequest {
   // For Connext only - the amount to extract from the channel. If 0 or unspecified,
   // the entire off-chain balance for the specified currency will be extracted.
   uint64 amount = 5 [json_name = "amount"];
+  // A manual fee rate set in sat/byte that should be used when crafting the closure
+  // transaction.
+  uint64 fee = 6 [json_name = "fee"];
 }
 
-message CloseChannelResponse {}
+message CloseChannelResponse {
+  // The id of the transaction per channel close.
+  repeated string transaction_ids = 1 [json_name = "transaction_ids"];
+}
 
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
@@ -411,8 +436,8 @@ message CreateNodeResponse {
   repeated string seed_mnemonic = 1;
   // The list of lnd clients that were initialized.
   repeated string initialized_lnds = 2;
-  // Whether raiden was initialized.
-  bool initialized_raiden = 3;
+  // Whether the connext wallet was initialized.
+  bool initialized_connext = 3;
 }
 
 message Currency {
@@ -420,7 +445,7 @@ message Currency {
   string currency = 1 [json_name = "currency"];
   enum SwapClient {
     LND = 0;
-    RAIDEN = 1;
+    CONNEXT = 2;
   }
   // The payment channel network client to use for executing swaps.
   SwapClient swap_client = 2 [json_name = "swap_client"];
@@ -469,7 +494,7 @@ message GetBalanceRequest {
 }
 message GetBalanceResponse {
   // A map between currency ticker symbols and their balances.
-  map<string, Balance> balances = 1 [json_name = "orders"];
+  map<string, Balance> balances = 1 [json_name = "balances"];
 }
 
 message GetInfoRequest {}
@@ -487,7 +512,6 @@ message GetInfoResponse {
   // The number of active, standing orders in the order book.
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
-  RaidenInfo raiden = 8 [json_name = "raiden"];
   // The alias of this instance of xud.
   string alias = 9 [json_name = "alias"];
   // The network of this node.
@@ -572,9 +596,14 @@ message OpenChannelRequest {
   uint64 amount = 3 [json_name = "amount"];
   // The balance amount to be pushed to the remote side of the channel denominated in satoshis.
   uint64 push_amount = 4 [json_name = "push_amount"];
+  // The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel.
+  uint64 fee = 5 [json_name = "fee"];
 }
 
-message OpenChannelResponse {}
+message OpenChannelResponse {
+  // The id of the transaction that opened the channel.
+  string transaction_id = 1 [json_name = "transaction_id"];
+}
 
 message Order {
   // The price of the order.
@@ -650,8 +679,6 @@ message Peer {
   string xud_version = 6 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
   uint32 seconds_connected = 7 [json_name = "seconds_connected"];
-  // The raiden address for this peer
-  string raiden_address = 8 [json_name = "raiden_address"];
   // The alias for this peer's public key
   string alias = 9 [json_name = "alias"];
 }
@@ -697,14 +724,6 @@ message PlaceOrderEvent {
   }
 }
 
-message RaidenInfo {
-  string status = 1 [json_name = "status"];
-  string address = 2 [json_name = "address"];
-  Channels channels = 3 [json_name = "channels"];
-  string version = 4 [json_name = "version"];
-  string chain = 5 [json_name = "chain"];
-}
-
 message ConnextInfo {
   string status = 1 [json_name = "status"];
   string address = 2 [json_name = "address"];
@@ -731,6 +750,15 @@ message RemoveOrderResponse {
   uint64 quantity_on_hold = 1 [json_name = "hold"];
 }
 
+message RemoveAllOrdersRequest {}
+
+message RemoveAllOrdersResponse {
+  // The local order ids that were successfully removed.
+  repeated string removed_order_ids = 1 [json_name = "removed_order_ids"];
+  // The local order ids that were on hold and failed to be removed.
+  repeated string on_hold_order_ids = 2 [json_name = "on_hold_order_ids"];
+}
+
 message RemovePairRequest {
   // The trading pair ticker to remove in a format such as "LTC/BTC".
   string pair_id = 1 [json_name = "pair_id"];
@@ -747,19 +775,15 @@ message RestoreNodeRequest {
   // A map between the currency of the LND and its multi channel SCB
   map<string, bytes> lnd_backups = 3;
 
-  // The Raiden database backup
-  bytes raiden_database = 4;
-  // Path to where the Raiden database backup should be written
-  string raiden_database_path = 5;
-
   // The XUD database backup
   bytes xud_database = 6;
 }
 message RestoreNodeResponse {
   // The list of lnd clients that were initialized.
   repeated string restored_lnds = 1;
-  // Whether raiden was initialized.
-  bool restored_raiden = 2;
+
+  // Whether the connext wallet was initialized.
+  bool restored_connext = 2;
 }
 
 message ShutdownRequest {}
@@ -770,10 +794,37 @@ message SubscribeOrdersRequest {
   bool existing = 1 [json_name = "existing"];
 }
 
+message SubscribeSwapsAcceptedRequest { }
+
 message SubscribeSwapsRequest {
   // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
   // These swap results are also returned in the responses for the respective calls.
   bool include_taker = 1 [json_name = "include_taker"];
+}
+
+message SwapAccepted {
+  // The global UUID for the order that was accepted to be swapped.
+  string order_id = 1;
+  // The local id for the order that was accepted to be swapped.
+  string local_id = 2 [json_name = "local_id"];
+  // The trading pair that the swap is for.
+  string pair_id = 3 [json_name = "pair_id"];
+  // The order quantity that was accepted to be swapped.
+  uint64 quantity = 4 [json_name = "quantity"];
+  // The price for the swap.
+  double price = 5 [json_name = "price"];
+  // The node pub key of the peer that executed this order.
+  string peer_pub_key = 6 [json_name = "peer_pub_key"];
+  // The hex-encoded payment hash for the swap.
+  string r_hash = 7 [json_name = "r_hash"];
+  // The amount received denominated in satoshis.
+  uint64 amount_receiving = 8 [json_name = "amount_receiving"];
+  // The amount sent denominated in satoshis.
+  uint64 amount_sending = 9 [json_name = "amount_sending"];
+  // The ticker symbol of the currency received.
+  string currency_receiving = 10 [json_name = "currency_receiving"];
+  // The ticker symbol of the currency sent.
+  string currency_sending = 11 [json_name = "currency_sending"];
 }
 
 message SwapFailure {
@@ -853,10 +904,14 @@ message TradeHistoryResponse {
 }
 
 message TradingLimits {
-  // Max outbound capacity for a distinct channel denominated in satoshis.
-  uint64 MaxSell = 1 [json_name = "max_sell"];
-  // Max inbound capacity for a distinct channel denominated in satoshis.
-  uint64 MaxBuy = 2 [json_name = "max_buy"];
+  // Maximum outbound limit for an order denominated in satoshis.
+  uint64 max_sell = 1 [json_name = "max_sell"];
+  // Maximum inbound limit for an order denominated in satoshis.
+  uint64 max_buy = 2 [json_name = "max_buy"];
+  // The outbound amount reserved for open orders.
+  uint64 reserved_outbound = 3 [json_name = "reserved_outbound"];
+  // The inbound amount reserved for open orders.
+  uint64 reserved_inbound = 4 [json_name = "reserved_outbound"];
 }
 
 message TradingLimitsRequest {
@@ -885,8 +940,6 @@ message UnlockNodeRequest {
 message UnlockNodeResponse {
   // The list of lnd clients that were unlocked.
   repeated string unlocked_lnds = 1;
-  // Whether raiden was unlocked.
-  bool unlocked_raiden = 2;
   // The list of lnd clients that could not be unlocked.
   repeated string locked_lnds = 3;
 }

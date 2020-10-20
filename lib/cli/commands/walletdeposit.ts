@@ -11,7 +11,7 @@ export const builder = (argv: Argv) => argv
     description: 'the ticker symbol of the currency to deposit.',
     type: 'string',
   })
-  .example('$0 deposit BTC', 'get a BTC deposit address');
+  .example('$0 walletdeposit BTC', 'get a BTC deposit address');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new DepositRequest();

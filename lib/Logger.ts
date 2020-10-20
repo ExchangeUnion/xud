@@ -4,6 +4,7 @@ import colors from 'colors/safe';
 import { getTsString } from './utils/utils';
 
 enum Level {
+  Alert = 'alert',
   Error = 'error',
   Warn = 'warn',
   Info = 'info',
@@ -13,12 +14,13 @@ enum Level {
 }
 
 const LevelPriorities = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  verbose: 3,
-  debug: 4,
-  trace: 5,
+  alert: 0,
+  error: 1,
+  warn: 2,
+  info: 3,
+  verbose: 4,
+  debug: 5,
+  trace: 6,
 };
 
 export enum Context {
@@ -28,7 +30,6 @@ export enum Context {
   P2P = 'P2P',
   OrderBook = 'ORDERBOOK',
   Lnd = 'LND',
-  Raiden = 'RAIDEN',
   Connext = 'CONNEXT',
   Swaps = 'SWAPS',
   Http = 'HTTP',
@@ -43,7 +44,6 @@ type Loggers = {
   p2p: Logger,
   orderbook: Logger,
   lnd: Logger,
-  raiden: Logger,
   connext: Logger,
   swaps: Logger,
   http: Logger,
@@ -119,7 +119,6 @@ class Logger {
       p2p: new Logger({ ...object, context: Context.P2P }),
       orderbook: new Logger({ ...object, context: Context.OrderBook }),
       lnd: new Logger({ ...object, context: Context.Lnd }),
-      raiden: new Logger({ ...object, context: Context.Raiden }),
       connext: new Logger({ ...object, context: Context.Connext }),
       swaps: new Logger({ ...object, context: Context.Swaps }),
       http: new Logger({ ...object, context: Context.Http }),
@@ -154,6 +153,7 @@ class Logger {
   private getLevel = (level: string, colorize: boolean): string => {
     if (colorize) {
       switch (level) {
+        case 'alert': return colors.bgRed(level);
         case 'error': return colors.red(level);
         case 'warn': return colors.yellow(level);
         case 'info': return colors.green(level);
@@ -169,6 +169,10 @@ class Logger {
     if (this.logger) {
       this.logger.log(level, msg);
     }
+  }
+
+  public alert = (msg: string) => {
+    this.log(Level.Alert, msg);
   }
 
   public error = (msg: Error | string, err?: any) => {

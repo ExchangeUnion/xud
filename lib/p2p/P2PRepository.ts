@@ -1,5 +1,6 @@
 import { Models } from '../db/DB';
-import { NodeAttributes, NodeFactory, NodeInstance, ReputationEventAttributes, ReputationEventFactory, ReputationEventInstance } from '../db/types';
+import { NodeAttributes, NodeCreationAttributes, NodeInstance, ReputationEventAttributes, ReputationEventCreationAttributes,
+  ReputationEventInstance } from '../db/types';
 
 class P2PRepository {
 
@@ -22,6 +23,7 @@ class P2PRepository {
       where: {
         nodeId: node.id,
       },
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -29,7 +31,7 @@ class P2PRepository {
    * Adds a node to the database if it doesn't already exist.
    * @returns the created node instance, or undefined if it already existed.
    */
-  public addNodeIfNotExists = async (node: NodeFactory) => {
+  public addNodeIfNotExists = async (node: NodeCreationAttributes) => {
     try {
       const createdNode = await this.models.Node.create(<NodeAttributes>node);
       return createdNode;
@@ -42,11 +44,11 @@ class P2PRepository {
     }
   }
 
-  public addReputationEvent = async (event: ReputationEventFactory) => {
+  public addReputationEvent = async (event: ReputationEventCreationAttributes) => {
     return this.models.ReputationEvent.create(<ReputationEventAttributes>event);
   }
 
-  public addNodes = async (nodes: NodeFactory[]) => {
+  public addNodes = async (nodes: NodeCreationAttributes[]) => {
     return this.models.Node.bulkCreate(<NodeAttributes[]>nodes);
   }
   /*public deleteNode = async (nodePubKey: string) => {

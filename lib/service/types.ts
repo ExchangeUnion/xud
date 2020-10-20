@@ -1,13 +1,12 @@
 import { ConnextInfo } from '../connextclient/types';
 import { OrderSide, SwapRole } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
+import Logger from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
 import { Order, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
-import { RaidenInfo } from '../raidenclient/types';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import Logger from 'lib/Logger';
 
 /**
  * The components required by the API service layer.
@@ -34,7 +33,6 @@ export type XudInfo = {
   numPairs: number;
   orders: { peer: number, own: number };
   lnd: Map<string, LndInfo>;
-  raiden?: RaidenInfo;
   connext?: ConnextInfo;
   pendingSwapHashes: string[];
 };
