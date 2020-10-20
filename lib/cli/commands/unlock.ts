@@ -10,7 +10,7 @@ export const describe = 'unlock local xud node';
 export const builder = {};
 
 const formatOutput = (response: UnlockNodeResponse.AsObject) => {
-  console.log('xud was unlocked succesfully');
+  console.log('xud was unlocked successfully');
   if (response.unlockedLndsList.length) {
     console.log(`The following wallets were unlocked: ${response.unlockedLndsList.join(', ')}`);
   }
