@@ -6,7 +6,6 @@ import { pubKeyToAlias } from '../utils/aliasUtils';
 import errors from './errors';
 import P2PRepository from './P2PRepository';
 import { Address } from './types';
-import errors from './errors';
 import AddrMan from './AddrMan';
 
 export const reputationEventWeight = {
@@ -186,7 +185,7 @@ class NodeList extends EventEmitter {
    */
   public load = async (): Promise<void> => {
     const nodes = await this.repository.getNodes();
-
+    console.log(nodes);
     const reputationLoadPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       this.addNode(node, "none");
@@ -204,14 +203,14 @@ class NodeList extends EventEmitter {
   /**
    * Persists a node to the database and adds it to the address manager.
    */
-  public createNode = async (nodeFactory: NodeFactory, sourceIP: string) => {
+  public createNode = async (nodeCreationAttributes: NodeCreationAttributes, sourceIP: string) => {
     // fetch node if already exists
-    let existingNode = await this.repository.getNode(nodeFactory.nodePubKey);
+    let existingNode = await this.repository.getNode(nodeCreationAttributes.nodePubKey);
     if (existingNode) {
       // duplicates are okay because nodes seen multiple times get greater representation in Address Manager
       this.addNode(existingNode, sourceIP);
     } else {
-      let node = await this.repository.addNodeIfNotExists(nodeFactory);
+      let node = await this.repository.addNodeIfNotExists(nodeCreationAttributes);
       if (node) {
         // TODO node.reputationScore = 0;
         this.addNode(node,sourceIP);
@@ -340,6 +339,7 @@ class NodeList extends EventEmitter {
 
   private addNode = (node: NodeInstance, sourceIP: string) => {
     const { nodePubKey } = node;
+    console.log(nodePubKey);
     const alias = pubKeyToAlias(nodePubKey);
     if (this.aliasToPubKeyMap.has(alias)) {
       this.aliasToPubKeyMap.set(alias, 'CONFLICT');

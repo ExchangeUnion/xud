@@ -354,12 +354,17 @@ class AddrMan {
       this.MakeTried(nId);
     }
   }
-  // Add an entry to the "new" table. The addr node was advertised by a peer.
+  // Add an entry to the "new" table. The addr node was either a seed or advertised by a peer.
   public Add = (addr: NodeInstance, sourceIP: string, nTimePenalty?: number): boolean => {
     let fNew = false;
     let [nId, entry] = this.Find(addr);
+    console.log(nId);
 
-    if (!nTimePenalty || (addr.lastAddress.host == sourceIP)) {
+    const {host, port} = JSON.parse(addr.addressesText);
+
+    console.log(host);
+    console.log(port);
+    if (!nTimePenalty || (host == sourceIP)) {
       nTimePenalty = 0;
     }
 
@@ -428,6 +433,7 @@ class AddrMan {
   }
   // Mark and entry as attempted to connect
   public Attempt = (addr: NodeInstance, fCountFailure: boolean, nTime: number): void => {
+    console.log("attempting")
     let [nId, info] = this.Find(addr);
 
     if (!(nId && info)) {
