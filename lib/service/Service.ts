@@ -249,10 +249,10 @@ class Service extends EventEmitter {
     const { nodeIdentifier, currency, force, destination, amount, fee } = args;
     argChecks.VALID_CURRENCY({ currency });
 
+    const swapClientType = this.swapClientManager.getType(currency);
     let remoteIdentifier: string | undefined;
     if (nodeIdentifier) {
       const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
-      const swapClientType = this.swapClientManager.getType(currency);
       if (swapClientType === undefined) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
@@ -260,7 +260,7 @@ class Service extends EventEmitter {
       remoteIdentifier = peer.getIdentifier(swapClientType, currency);
     }
 
-    return await this.swapClientManager.closeChannel({
+    const closeChannelTxs = await this.swapClientManager.closeChannel({
       currency,
       force,
       destination,
@@ -268,6 +268,15 @@ class Service extends EventEmitter {
       remoteIdentifier,
       fee,
     });
+    if (closeChannelTxs.length === 0) {
+      if (swapClientType === SwapClientType.Connext) {
+        throw errors.NO_CHANNELS_TO_CLOSE('connext');
+      } else {
+        throw errors.NO_CHANNELS_TO_CLOSE(nodeIdentifier);
+      }
+    }
+
+    return closeChannelTxs;
   }
 
   /*

@@ -55,6 +55,7 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.QUANTITY_ON_HOLD:
     case swapErrorCodes.SWAP_CLIENT_NOT_FOUND:
     case swapErrorCodes.SWAP_CLIENT_MISCONFIGURED:
+    case serviceErrorCodes.NO_CHANNELS_TO_CLOSE:
       code = status.FAILED_PRECONDITION;
       break;
     case lndErrorCodes.UNAVAILABLE:

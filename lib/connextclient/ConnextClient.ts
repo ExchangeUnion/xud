@@ -775,6 +775,10 @@ class ConnextClient extends SwapClient {
     }
     const amount = units || freeBalanceOffChain;
 
+    if (amount === 0) {
+      return []; // there is nothing to withdraw and no tx to return
+    }
+
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,
       amount: amount.toLocaleString('fullwide', { useGrouping: false }),
