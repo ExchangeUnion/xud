@@ -702,8 +702,9 @@ class ConnextClient extends SwapClient {
 
   public getRoute = async () => {
     /** A placeholder route value that assumes a fixed lock time of 100 for Connext. */
+    const currentHeight = await this.getHeight();
     return {
-      getTotalTimeLock: () => 101,
+      getTotalTimeLock: () => currentHeight + 101,
     };
   }
 
