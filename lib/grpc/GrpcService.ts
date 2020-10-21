@@ -350,8 +350,8 @@ class GrpcService {
         const tradingLimits = new xudrpc.TradingLimits();
         tradingLimits.setMaxSell(tradingLimitsObj.maxSell);
         tradingLimits.setMaxBuy(tradingLimitsObj.maxBuy);
-        tradingLimits.setReservedSell(tradingLimitsObj.reservedSell);
-        tradingLimits.setReservedBuy(tradingLimitsObj.reservedBuy);
+        tradingLimits.setReservedInbound(tradingLimitsObj.reservedInbound);
+        tradingLimits.setReservedOutbound(tradingLimitsObj.reservedOutbound);
         limitsMap.set(currency, tradingLimits);
       });
       callback(null, response);

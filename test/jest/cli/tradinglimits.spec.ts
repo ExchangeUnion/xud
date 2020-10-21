@@ -21,8 +21,8 @@ describe('displayLimits', () => {
       limitsMap: [['BTC', {
         maxBuy: 12345,
         maxSell: 67890,
-        reservedBuy: 25000,
-        reservedSell: 75000,
+        reservedInbound: 25000,
+        reservedOutbound: 75000,
       }]],
     });
 
