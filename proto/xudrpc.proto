@@ -904,14 +904,14 @@ message TradeHistoryResponse {
 }
 
 message TradingLimits {
-  // Maximum outbound limit for an order denominated in satoshis.
+  // Maximum outbound limit for a sell order denominated in satoshis.
   uint64 max_sell = 1 [json_name = "max_sell"];
-  // Maximum inbound limit for an order denominated in satoshis.
+  // Maximum inbound limit for a buy order denominated in satoshis.
   uint64 max_buy = 2 [json_name = "max_buy"];
-  // The outbound amount reserved for open orders.
-  uint64 reserved_outbound = 3 [json_name = "reserved_outbound"];
-  // The inbound amount reserved for open orders.
-  uint64 reserved_inbound = 4 [json_name = "reserved_inbound"];
+  // The outbound amount reserved for open sell orders.
+  uint64 reserved_sell = 3 [json_name = "reserved_sell"];
+  // The inbound amount reserved for open buy orders.
+  uint64 reserved_buy = 4 [json_name = "reserved_buy"];
 }
 
 message TradingLimitsRequest {
