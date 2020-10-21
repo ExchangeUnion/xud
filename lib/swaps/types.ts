@@ -120,14 +120,14 @@ export type SwapCapacities = {
 };
 
 export type TradingLimits = {
-  /** Maximum outbound limit for a sell order denominated in satoshis. */
+  /** Maximum outbound limit for an order denominated in satoshis. */
   maxSell: number,
-  /** Maximum inbound limit for a buy order denominated in satoshis. */
+  /** Maximum inbound limit for an order denominated in satoshis. */
   maxBuy: number,
-  /**  The outbound amount reserved for open sell orders. */
-  reservedSell: number,
-  /**  The inbound amount reserved for open buy orders. */
-  reservedBuy: number,
+  /**  The outbound amount reserved for open orders. */
+  reservedOutbound: number,
+  /**  The inbound amount reserved for open orders. */
+  reservedInbound: number,
 };
 
 export type ResolveRequest = {
