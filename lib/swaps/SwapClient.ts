@@ -126,12 +126,6 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
-  public abstract totalOutboundAmount(currency?: string): number;
-  /**
-   * Checks whether there is sufficient inbound capacity to receive the specified amount
-   * and throws an error if there isn't, otherwise does nothing.
-   */
-  public abstract checkInboundCapacity(inboundAmount: number, currency?: string): void;
   public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
 

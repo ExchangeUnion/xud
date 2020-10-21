@@ -100,6 +100,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
     return {
       canRouteToPeer: jest.fn().mockReturnValue(true),
       isConnected: jest.fn().mockReturnValue(true),
+      checkSwapCapacities: jest.fn(),
       get: jest.fn().mockReturnValue({ maximumOutboundCapacity: () => Number.MAX_SAFE_INTEGER }),
     };
   });
@@ -222,77 +223,7 @@ describe('OrderBook', () => {
   });
 
   describe('placeOrder', () => {
-    test('insufficient outbound balance throws when balancechecks enabled', async () => {
-      orderbook['nobalancechecks'] = false;
-      const quantity = 10000;
-      const price = 0.01;
-      const order: OwnLimitOrder = {
-        quantity,
-        pairId,
-        price,
-        localId,
-        isBuy: false,
-      };
-      Swaps['calculateInboundOutboundAmounts'] = () => {
-        return {
-          inboundCurrency: 'BTC',
-          inboundAmount: quantity * price,
-          inboundUnits: quantity * price,
-          outboundCurrency: 'LTC',
-          outboundAmount: quantity,
-          outboundUnits: quantity,
-        };
-      };
-      swaps.swapClientManager.get = jest.fn().mockReturnValue({
-        totalOutboundAmount: () => 1,
-      });
-      await expect(orderbook.placeLimitOrder({ order }))
-        .rejects.toMatchSnapshot();
-    });
-
-    test('checks swap client for insufficient inbound balance when balancechecks enabled', async () => {
-      orderbook['nobalancechecks'] = false;
-      const quantity = 10000;
-      const price = 0.01;
-      const isBuy = false;
-      const order: OwnLimitOrder = {
-        quantity,
-        pairId,
-        price,
-        localId,
-        isBuy,
-      };
-      const inboundCurrency = 'BTC';
-      const outboundCurrency = 'LTC';
-      const inboundAmount = quantity * price;
-      Swaps['calculateInboundOutboundAmounts'] = jest.fn().mockReturnValue({
-        inboundCurrency,
-        outboundCurrency,
-        inboundAmount,
-        inboundUnits: inboundAmount,
-        outboundAmount: quantity,
-        outboundUnits: quantity,
-      });
-      const inboundSwapClient = {
-        checkInboundCapacity: jest.fn(),
-      };
-      swaps.swapClientManager.get = jest.fn().mockImplementation((currency) => {
-        if (currency === inboundCurrency) {
-          return inboundSwapClient;
-        } else if (currency === outboundCurrency) {
-          return { totalOutboundAmount: () => quantity };
-        }
-        throw 'unexpected currency';
-      });
-
-      await orderbook.placeLimitOrder({ order });
-      expect(Swaps['calculateInboundOutboundAmounts']).toHaveBeenCalledWith(quantity, price, isBuy, pairId);
-      expect(inboundSwapClient.checkInboundCapacity).toHaveBeenCalledWith(inboundAmount, inboundCurrency);
-      expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith('BTC', quantity * price);
-      expect(swaps.swapClientManager.addOutboundReservedAmount).toHaveBeenCalledWith('LTC', quantity);
-    });
-
-    test('market order checks swap client for insufficient inbound balance using best quoted price', async () => {
+    test('market order checks swap clients for insufficient inbound balance using best quoted price', async () => {
       const quantity = 20000000;
       const price = 4000;
       const usdtPairId = 'BTC/USDT';
@@ -315,33 +246,13 @@ describe('OrderBook', () => {
         isBuy,
         pairId: usdtPairId,
       };
-      const inboundCurrency = 'USDT';
-      const outboundCurrency = 'BTC';
-      const inboundAmount = quantity * price;
-      Swaps['calculateInboundOutboundAmounts'] = jest.fn().mockReturnValue({
-        inboundCurrency,
-        outboundCurrency,
-        inboundAmount,
-        inboundUnits: inboundAmount * 10 ** 10,
-        outboundAmount: quantity,
-        outboundUnits: quantity,
-      });
-      const inboundSwapClient = {
-        checkInboundCapacity: jest.fn(),
-      };
-      swaps.swapClientManager.get = jest.fn().mockImplementation((currency) => {
-        if (currency === inboundCurrency) {
-          return inboundSwapClient;
-        } else if (currency === outboundCurrency) {
-          return { totalOutboundAmount: () => quantity };
-        }
-        throw 'unexpected currency';
-      });
+      swaps.swapClientManager.checkSwapCapacities = jest.fn();
 
       await orderbook.placeMarketOrder({ order });
 
-      expect(Swaps['calculateInboundOutboundAmounts']).toHaveBeenCalledWith(quantity, price, isBuy, usdtPairId);
-      expect(inboundSwapClient.checkInboundCapacity).toHaveBeenCalledWith(inboundAmount, inboundCurrency);
+      expect(swaps.swapClientManager.checkSwapCapacities).toHaveBeenCalledWith(
+        expect.objectContaining({ ...order, price }),
+      );
     });
 
     test('placeLimitOrder adds to order book', async () => {
@@ -354,18 +265,7 @@ describe('OrderBook', () => {
         price,
         isBuy: false,
       };
-      const inboundCurrency = 'BTC';
-      const outboundCurrency = 'LTC';
-      const inboundAmount = quantity * price;
-      const outboundAmount = quantity;
-      Swaps['calculateInboundOutboundAmounts'] = jest.fn().mockReturnValue({
-        inboundCurrency,
-        outboundCurrency,
-        inboundAmount,
-        outboundAmount,
-        inboundUnits: inboundAmount,
-        outboundUnits: outboundAmount,
-      });
+
       await orderbook.placeLimitOrder({ order });
       expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
       expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith('BTC', quantity * price);
