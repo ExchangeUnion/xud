@@ -1,4 +1,3 @@
-// TODO(karl): cleanup unused types
 /**
  * The configurable options for the connext client.
  */
@@ -29,7 +28,7 @@ export type ConnextBlockNumberResponse = {
 /**
  * The payload for tokenPayment call.
  */
-export type TokenPaymentRequest = {
+export type ConnextTransferRequest = {
   type: "HashlockTransfer";
   channelAddress: string;
   amount: string;
@@ -50,16 +49,12 @@ export type TokenPaymentRequest = {
  */
 export type ConnextErrorResponse = { message: string };
 
-/**
- * The response for initWallet call.
- */
-export type ConnextInitWalletResponse = { success: boolean };
-
 export type ConnextConfig = {
   publicIdentifier: string;
   signerAddress: string;
   index: number;
 };
+
 /**
  * The response for /config call.
  */

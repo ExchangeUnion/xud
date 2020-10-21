@@ -19,7 +19,6 @@ import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
   ConnextErrorResponse,
-  ConnextInitWalletResponse,
   ConnextConfig,
   ConnextConfigResponse,
   ConnextChannelResponse,
@@ -27,7 +26,7 @@ import {
   ConnextTransferResponse,
   ConnextClientConfig,
   ConnextInfo,
-  TokenPaymentRequest,
+  ConnextTransferRequest,
   ConnextTransfer,
   ExpectedIncomingTransfer,
   ProvidePreimageEvent,
@@ -239,14 +238,6 @@ class ConnextClient extends SwapClient {
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
-  }
-
-  /**
-   * Initiates wallet for the Connext client
-   */
-  public initWallet = async (seedMnemonic: string) => {
-    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic });
-    return await parseResponseBody<ConnextInitWalletResponse>(res);
   }
 
   public initConnextClient = async (seedMnemonic: string) => {
@@ -885,8 +876,11 @@ class ConnextClient extends SwapClient {
   }
 
   public deposit = async () => {
-    const clientConfig = await this.getClientConfig();
-    return clientConfig.signerAddress;
+    if (this.channelAddress) {
+      return this.channelAddress;
+    }
+    const channelAddress = await this.getChannel();
+    return channelAddress;
   }
 
   public openChannel = async ({ currency, units }: OpenChannelParams) => {
@@ -942,7 +936,7 @@ class ConnextClient extends SwapClient {
    * @param amount
    * @param lockHash
    */
-  private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<ConnextTransferResponse> => {
+  private executeHashLockTransfer = async (payload: ConnextTransferRequest): Promise<ConnextTransferResponse> => {
     const lockHash = payload.details.lockHash;
     this.logger.debug(`sending payment of ${payload.amount} with hash ${lockHash} to ${payload.recipient}`);
     this.outgoingTransferHashes.add(lockHash);
