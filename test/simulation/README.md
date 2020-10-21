@@ -117,7 +117,7 @@ Below is a list of implemented (checked) and planned (unchecked) test cases.
 
 - [x] Placed order should get broadcasted over the network, and added to connected peers' order books.
 - [x] Removed order should get invalidated over the network, and removed from connected peers' order books.
-- [x] Added trading pairs and currencies should trigger broadcast of active orders from already-connected peers. 
+- [x] Added trading pairs and currencies should trigger broadcast of active orders from connected peers' order books. 
 - [ ] Placed order should get internal matches, and trigger order invalidation over the network.
 - [ ] Peer disconnection should trigger orders removal to all his orders.
 

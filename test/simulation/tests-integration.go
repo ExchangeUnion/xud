@@ -242,7 +242,7 @@ func testInternalMatchAndInvalidation(net *xudtest.NetworkHarness, ht *harnessTe
 // testRuntimeAddPairActiveOrders implements:
 // Added trading pairs and currencies should trigger broadcast of active orders from already-connected peers.
 func testRuntimeAddPairActiveOrders(net *xudtest.NetworkHarness, ht *harnessTest) {
-	// Remove a previously-added pairs/currencies from both Alice and Bob.
+	// Remove previously-added pairs/currencies from both Alice and Bob.
 	ht.act.removePair(net.Alice, "LTC/BTC")
 	ht.act.removePair(net.Alice, "BTC/ETH")
 	ht.act.removeCurrency(net.Alice, "LTC")
@@ -280,7 +280,7 @@ func testRuntimeAddPairActiveOrders(net *xudtest.NetworkHarness, ht *harnessTest
 	ht.assert.Len(res.SwapFailures, 0)
 	ht.assert.NotNil(res.RemainingOrder)
 
-	// Bob should receive the order once his LTC/BTC is re-added.
+	// Bob should receive the order once his LTC/BTC pair is re-added.
 	bobOrdersChan := subscribeOrders(ht.ctx, net.Bob)
 	ht.act.addCurrency(net.Bob, "BTC", xudrpc.Currency_LND, "", 8)
 	ht.act.addCurrency(net.Bob, "LTC", xudrpc.Currency_LND, "", 8)
@@ -310,7 +310,7 @@ func testRuntimeAddPairActiveOrders(net *xudtest.NetworkHarness, ht *harnessTest
 	ht.assert.Len(res.SwapFailures, 0)
 	ht.assert.NotNil(res.RemainingOrder)
 
-	// Bob should receive the order once his BTC/ETH is re-added.
+	// Bob should receive the order once his BTC/ETH pair is re-added.
 	bobOrdersChan = subscribeOrders(ht.ctx, net.Bob)
 	ht.act.addCurrency(net.Bob, "ETH", xudrpc.Currency_CONNEXT, connexttest.ETHTokenAddress, 18)
 	ht.act.addPair(net.Bob, "BTC", "ETH")
