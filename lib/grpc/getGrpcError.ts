@@ -22,6 +22,7 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.MIN_QUANTITY_VIOLATED:
     case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
     case swapErrorCodes.REMOTE_IDENTIFIER_MISSING:
+    case orderErrorCodes.DUPLICATE_PAIR_CURRENCIES:
       code = status.INVALID_ARGUMENT;
       break;
     case orderErrorCodes.PAIR_DOES_NOT_EXIST:
