@@ -2051,11 +2051,11 @@ export class TradingLimits extends jspb.Message {
     getMaxBuy(): number;
     setMaxBuy(value: number): void;
 
-    getReservedOutbound(): number;
-    setReservedOutbound(value: number): void;
+    getReservedSell(): number;
+    setReservedSell(value: number): void;
 
-    getReservedInbound(): number;
-    setReservedInbound(value: number): void;
+    getReservedBuy(): number;
+    setReservedBuy(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -2072,8 +2072,8 @@ export namespace TradingLimits {
     export type AsObject = {
         maxSell: number,
         maxBuy: number,
-        reservedOutbound: number,
-        reservedInbound: number,
+        reservedSell: number,
+        reservedBuy: number,
     }
 }
 
