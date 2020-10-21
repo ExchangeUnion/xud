@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`displayLimits should print a table 1`] = `
+Array [
+  Array [
+    "
+Trading Limits:",
+  ],
+  Array [
+    "┌──────────┬────────────┬───────────┬───────────────────┬──────────────────┐
+│ Currency │ Max Buy    │ Max Sell  │ Reserved Outbound │ Reserved Inbound │
+├──────────┼────────────┼───────────┼───────────────────┼──────────────────┤
+│ BTC      │ 0.00012345 │ 0.0006789 │ 0.00075           │ 0.00025          │
+└──────────┴────────────┴───────────┴───────────────────┴──────────────────┘",
+  ],
+]
+`;

@@ -17,6 +17,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
   return jest.fn().mockImplementation(() => {
     return {
       getType: () => SwapClientType.Lnd,
+      getOutboundReservedAmount: () => 0,
     };
   });
 });
@@ -204,22 +205,28 @@ describe('Service', () => {
     const setup = () => {
       service = new Service(components);
       components.swapClientManager.swapClients = new Map();
-      components.swapClientManager.get = jest.fn().mockImplementation((arg) => {
-        return components.swapClientManager.swapClients.get(arg);
+      components.swapClientManager.tradingLimits = jest.fn().mockImplementation((currency) => {
+        if (currency === 'BTC') {
+          return Promise.resolve({
+            maxSell: 2000,
+            maxBuy: 1500,
+          });
+        } else if (currency === 'LTC') {
+          return Promise.resolve({
+            maxSell: 7000,
+            maxBuy: 5500,
+          });
+        } else {
+          return Promise.resolve();
+        }
       });
 
       const btcClient = new mockedSwapClient();
-      btcClient.isConnected = jest.fn().mockImplementation(() => true);
-      btcClient.tradingLimits = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ maxSell: 2000, maxBuy: 1500 });
-      });
+      btcClient.isConnected = jest.fn().mockReturnValue(true);
       components.swapClientManager.swapClients.set('BTC', btcClient);
 
       const ltcClient = new mockedSwapClient();
-      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
-      ltcClient.tradingLimits = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ maxSell: 7000, maxBuy: 5500 });
-      });
+      ltcClient.isConnected = jest.fn().mockReturnValue(true);
       components.swapClientManager.swapClients.set('LTC', ltcClient);
 
       const bchClient = new mockedSwapClient();
@@ -257,11 +264,6 @@ describe('Service', () => {
     test('throws in case of invalid currency', async () => {
       setup();
       await expect(service.tradingLimits({ currency: 'A' })).rejects.toMatchSnapshot();
-    });
-
-    test('throws when swap client is not found', async () => {
-      setup();
-      await expect(service.tradingLimits({ currency: 'BBB' })).rejects.toMatchSnapshot();
     });
   });
 

@@ -9,18 +9,24 @@ const HEADERS = [
   colors.blue('Currency'),
   colors.blue('Max Buy'),
   colors.blue('Max Sell'),
+  colors.blue('Reserved Outbound'),
+  colors.blue('Reserved Inbound'),
 ];
 
 const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
   const formatted: any[] = [];
-  tradingLimits.limitsMap.forEach((limits) => {
-    const element = [];
-    element.push(
-      limits[0],
-      `${satsToCoinsStr(limits[1].maxbuy)}`,
-      `${satsToCoinsStr(limits[1].maxsell)}`,
+  tradingLimits.limitsMap.forEach((tradingLimitElement) => {
+    const currency = tradingLimitElement[0];
+    const tradingLimit = tradingLimitElement[1];
+    const row = [];
+    row.push(
+      currency,
+      `${satsToCoinsStr(tradingLimit.maxBuy)}`,
+      `${satsToCoinsStr(tradingLimit.maxSell)}`,
+      `${satsToCoinsStr(tradingLimit.reservedOutbound)}`,
+      `${satsToCoinsStr(tradingLimit.reservedInbound)}`,
     );
-    formatted.push(element);
+    formatted.push(row);
   });
   return formatted;
 };
@@ -32,7 +38,7 @@ const createTable = () => {
   return table;
 };
 
-const displayLimits = (limits: TradingLimitsResponse.AsObject) => {
+export const displayLimits = (limits: TradingLimitsResponse.AsObject) => {
   const table = createTable();
   const formatted = formatTradingLimits(limits);
   formatted.forEach(limits => table.push(limits));

@@ -154,6 +154,9 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 	}
 	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
 
+	// brief wait for collateralization to complete for Alice
+	time.Sleep(1 * time.Second)
+
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
 		OrderId:  "testMakerCrashedDuringSwapConnextIn",
@@ -283,6 +286,9 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 		Side:     xudrpc.OrderSide_SELL,
 	}
 	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
+
+	// brief wait for collateralization to complete for Alice
+	time.Sleep(1 * time.Second)
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
@@ -511,6 +517,9 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 		Side:     xudrpc.OrderSide_SELL,
 	}
 	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
+
+	// brief wait for collateralization to complete for Alice
+	time.Sleep(1 * time.Second)
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{

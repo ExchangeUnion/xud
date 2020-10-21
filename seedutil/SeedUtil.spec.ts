@@ -143,6 +143,36 @@ describe('SeedUtil generate', () => {
   });
 });
 
+describe('SeedUtil derivechild', () => {
+  test('it errors without a client type', async () => {
+    const cmd = `./seedutil/seedutil derivechild ${VALID_SEED.seedWords.slice(0, 24).join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow('client is required');
+  });
+
+  test('it errors with 23 words', async () => {
+    const cmd = `./seedutil/seedutil derivechild -client BTC ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it succeeds with 24 words, no aezeed password', async () => {
+    const cmd = `./seedutil/seedutil derivechild -client BTC ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
+    const result = await executeCommand(cmd);
+    // the mnemonic will change each time due to the salt, but the deciphered seed should stay the same
+    const decipherCmd = `./seedutil/seedutil decipher ${result}`;
+    await expect(executeCommand(decipherCmd)).resolves.toMatchSnapshot();
+  });
+
+  test('it succeeds with 24 words, valid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil derivechild -aezeedpass=${VALID_SEED.seedPassword} -client BTC ${VALID_SEED.seedWords.join(' ')}`;
+    const result = await executeCommand(cmd);
+    // the mnemonic will change each time due to the salt, but the deciphered seed should stay the same
+    const decipherCmd = `./seedutil/seedutil decipher -aezeedpass=${VALID_SEED.seedPassword} ${result}`;
+    await expect(executeCommand(decipherCmd)).resolves.toMatchSnapshot();
+  });
+});
+
 describe('SeedUtil keystore', () => {
   beforeEach(async () => {
     await deleteDir(DEFAULT_KEYSTORE_PATH);

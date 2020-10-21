@@ -6,3 +6,10 @@ Object {
   "message": "swapClient for currency BTC not found",
 }
 `;
+
+exports[`Swaps.SwapClientManager tradingLimits throws when swap client is not found 1`] = `
+Object {
+  "code": "7.1",
+  "message": "swapClient for currency BBB not found",
+}
+`;

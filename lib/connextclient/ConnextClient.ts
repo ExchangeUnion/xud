@@ -10,12 +10,11 @@ import SwapClient, {
   ClientStatus,
   PaymentState,
   WalletBalance,
-  TradingLimits,
   SwapClientInfo,
   PaymentStatus,
   WithdrawArguments,
 } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -115,8 +114,8 @@ class ConnextClient extends SwapClient {
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
   private requestCollateralPromises = new Map<string, Promise<any>>();
-  private _totalOutboundAmount = new Map<string, number>();
-  private _maxChannelInboundAmount = new Map<string, number>();
+  private outboundAmounts = new Map<string, number>();
+  private inboundAmounts = new Map<string, number>();
 
   /** The minimum incremental quantity that we may use for collateral requests. */
   private static MIN_COLLATERAL_REQUEST_SIZES: { [key: string]: number | undefined } = {
@@ -261,11 +260,7 @@ class ConnextClient extends SwapClient {
   }
 
   public totalOutboundAmount = (currency: string): number => {
-    return this._totalOutboundAmount.get(currency) || 0;
-  }
-
-  public maxChannelOutboundAmount = (currency: string): number => {
-    return this._totalOutboundAmount.get(currency) || 0;
+    return this.outboundAmounts.get(currency) || 0;
   }
 
   /**
@@ -291,7 +286,7 @@ class ConnextClient extends SwapClient {
   }
 
   public checkInboundCapacity = (inboundAmount: number, currency: string) => {
-    const inboundCapacity = this._maxChannelInboundAmount.get(currency) || 0;
+    const inboundCapacity = this.inboundAmounts.get(currency) || 0;
     if (inboundCapacity < inboundAmount) {
       // we do not have enough inbound capacity to receive the specified inbound amount so we must request collateral
       this.logger.debug(`collateral of ${inboundCapacity} for ${currency} is insufficient for order amount ${inboundAmount}`);
@@ -310,7 +305,7 @@ class ConnextClient extends SwapClient {
   }
 
   public setReservedInboundAmount = (reservedInboundAmount: number, currency: string) => {
-    const inboundCapacity = this._maxChannelInboundAmount.get(currency) || 0;
+    const inboundCapacity = this.inboundAmounts.get(currency) || 0;
     if (inboundCapacity < reservedInboundAmount) {
       // we do not have enough inbound capacity to fill all open orders, so we will request more
       this.logger.debug(`collateral of ${inboundCapacity} for ${currency} is insufficient for reserved order amount of ${reservedInboundAmount}`);
@@ -663,9 +658,9 @@ class ConnextClient extends SwapClient {
       units: Number(nodeFreeBalanceOffChain),
     });
 
-    this._totalOutboundAmount.set(currency, freeBalanceAmount);
-    if (nodeFreeBalanceAmount !== this._maxChannelInboundAmount.get(currency)) {
-      this._maxChannelInboundAmount.set(currency, nodeFreeBalanceAmount);
+    this.outboundAmounts.set(currency, freeBalanceAmount);
+    if (nodeFreeBalanceAmount !== this.inboundAmounts.get(currency)) {
+      this.inboundAmounts.set(currency, nodeFreeBalanceAmount);
       this.logger.debug(`new inbound capacity (collateral) for ${currency} of ${nodeFreeBalanceAmount}`);
     }
 
@@ -676,11 +671,15 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  public tradingLimits = async (currency: string): Promise<TradingLimits> => {
-    await this.channelBalance(currency); // refreshes the max outbound balance
+  public swapCapacities = async (currency: string): Promise<SwapCapacities> => {
+    await this.channelBalance(currency); // refreshes the balances
+    const outboundAmount = this.outboundAmounts.get(currency) ?? 0;
+    const inboundAmount = this.inboundAmounts.get(currency) ?? 0;
     return {
-      maxSell: this.maxChannelOutboundAmount(currency),
-      maxBuy: this._maxChannelInboundAmount.get(currency) ?? 0,
+      maxOutboundChannelCapacity: outboundAmount,
+      maxInboundChannelCapacity: inboundAmount,
+      totalOutboundCapacity: outboundAmount,
+      totalInboundCapacity: inboundAmount,
     };
   }
 

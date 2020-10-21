@@ -201,12 +201,17 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
-		OrderId:  "random_order_id",
+		OrderId:  "testOrderBroadcastAndInvalidation",
 		Side:     xudrpc.OrderSide_BUY,
 	}
 
 	order := ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+	_, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+
 	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
+	_, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)

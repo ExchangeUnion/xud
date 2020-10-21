@@ -1,8 +1,8 @@
-import Logger from '../Logger';
 import { EventEmitter } from 'events';
-import { SwapDeal, Route, CloseChannelParams, OpenChannelParams } from './types';
 import { SwapClientType } from '../constants/enums';
+import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
+import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
 
 enum ClientStatus {
   /** The starting status before a client has initialized. */
@@ -43,13 +43,6 @@ type WalletBalance = {
   confirmedBalance: number,
   /** The unconfirmed balance of a wallet (with 0 confirmations). */
   unconfirmedBalance: number,
-};
-
-type TradingLimits = {
-  /** Max outbound capacity for a distinct channel denominated in satoshis. */
-  maxSell: number,
-  /** Max inbound capacity for a distinct channel denominated in satoshis. */
-  maxBuy: number,
 };
 
 export type SwapClientInfo = {
@@ -131,10 +124,9 @@ abstract class SwapClient extends EventEmitter {
    * @param currency the currency whose trading limits to query for, otherwise all/any
    * currencies supported by this client are included in the trading limits.
    */
-  public abstract tradingLimits(currency?: string): Promise<TradingLimits>;
+  public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
   public abstract totalOutboundAmount(currency?: string): number;
-  public abstract maxChannelOutboundAmount(currency?: string): number;
   /**
    * Checks whether there is sufficient inbound capacity to receive the specified amount
    * and throws an error if there isn't, otherwise does nothing.
@@ -398,4 +390,4 @@ abstract class SwapClient extends EventEmitter {
 }
 
 export default SwapClient;
-export { ClientStatus, ChannelBalance, WalletBalance, TradingLimits };
+export { ClientStatus, ChannelBalance, WalletBalance };

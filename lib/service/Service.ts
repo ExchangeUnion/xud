@@ -8,10 +8,10 @@ import OrderBook from '../orderbook/OrderBook';
 import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
-import { TradingLimits } from '../swaps/SwapClient';
+import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapDeal, SwapFailure, SwapSuccess, SwapAccepted } from '../swaps/types';
+import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -110,10 +110,17 @@ class Service {
     return this.orderBook.removeOwnOrderByLocalId(orderId, true, quantity);
   }
 
+  /*
+   * Removes all placed orders from the orderbook.
+   */
+  public removeAllOrders = async () => {
+    return this.orderBook.removeOwnOrders();
+  }
+
   /** Gets the total balance for one or all currencies. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
-    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number, inactiveBalance: number }>();
+    const channelBalances = new Map<string, ChannelBalance>();
     const walletBalances = new Map<string, { confirmedBalance: number, unconfirmedBalance: number }>();
 
     if (currency) {
@@ -146,8 +153,7 @@ class Service {
     }
     const balances = new Map<string, {
       channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
-      walletBalance: number, unconfirmedWalletBalance: number,
-      totalBalance: number,
+      walletBalance: number, unconfirmedWalletBalance: number, totalBalance: number,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
       const walletBalance = walletBalances.get(currency);
@@ -178,18 +184,13 @@ class Service {
     if (currency) {
       argChecks.VALID_CURRENCY(args);
 
-      const swapClient = this.swapClientManager.get(currency.toUpperCase());
-      if (swapClient) {
-        const tradingLimits = await swapClient.tradingLimits(currency);
-        tradingLimitsMap.set(currency, tradingLimits);
-      } else {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-      }
+      const tradingLimits = await this.swapClientManager.tradingLimits(currency.toUpperCase());
+      tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
-          promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
+          promises.push(this.swapClientManager.tradingLimits(currency).then((tradingLimits) => {
             tradingLimitsMap.set(currency, tradingLimits);
           }).catch(this.logger.error));
         }

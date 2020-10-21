@@ -116,8 +116,9 @@ class NodeKey {
   }
 
   /**
-   * Derives a child seed from the private key for the swap client
+   * Derives a child mnemonic seed from the private key for the swap client.
    * @param swapClient the swap client to create the seed for
+   * @returns a BIP39 mnemonic
    */
   public childSeed = (swapClient: SwapClientType) => {
     const privKeyHex = this.privKey.toString('hex');
