@@ -9,8 +9,8 @@ const HEADERS = [
   colors.blue('Currency'),
   colors.blue('Max Buy'),
   colors.blue('Max Sell'),
-  colors.blue('Reserved Outbound'),
-  colors.blue('Reserved Inbound'),
+  colors.blue('Reserved Buy'),
+  colors.blue('Reserved Sell'),
 ];
 
 const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
@@ -23,8 +23,8 @@ const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
       currency,
       `${satsToCoinsStr(tradingLimit.maxBuy)}`,
       `${satsToCoinsStr(tradingLimit.maxSell)}`,
-      `${satsToCoinsStr(tradingLimit.reservedOutbound)}`,
-      `${satsToCoinsStr(tradingLimit.reservedInbound)}`,
+      `${satsToCoinsStr(tradingLimit.reservedBuy)}`,
+      `${satsToCoinsStr(tradingLimit.reservedSell)}`,
     );
     formatted.push(row);
   });
