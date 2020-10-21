@@ -117,9 +117,12 @@ class ConnextClient extends SwapClient {
   private host: string;
   private webhookport: number;
   private webhookhost: string;
+  private nodeUrl: string;
+  private nodeIdentifier: string;
   private unitConverter: UnitConverter;
   private network: string;
   private seed: string | undefined;
+  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '36000';
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
@@ -162,6 +165,8 @@ class ConnextClient extends SwapClient {
     this.host = config.host;
     this.webhookhost = config.webhookhost;
     this.webhookport = config.webhookport;
+    this.nodeUrl = config.nodeUrl;
+    this.nodeIdentifier = config.nodeIdentifier;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
     this.network = network;
@@ -760,13 +765,10 @@ class ConnextClient extends SwapClient {
     const channel = await parseResponseBody<ConnextChannelResponse>(res);
     if (channel.length === 0) {
       await this.sendRequest('/request-setup', 'POST', {
-        // TODO(karl): P1 - values from config
-        aliceUrl: 'http://35.246.190.50:80',
-        aliceIdentifier: 'indra6WRA6HQQTDQD1FC3KmdbpePijdcgLTqAdi2xy2Q2HqNeGn4cBh',
-        // aliceUrl: 'http://192.168.63.131:8007',
-        // aliceIdentifier: "indra8Uz1BdpA9hV5uTm6QUv5jj1PsUyCH8m8ciA94voCzsxVmrBRor",
-        chainId: '1337',
-        timeout: '36000',
+        aliceUrl: this.nodeUrl,
+        aliceIdentifier: this.nodeIdentifier,
+        chainId: CHAIN_IDENTIFIERS[this.network],
+        timeout: this.CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT,
         bobIdentifier: this.publicIdentifier
       });
       return (await this.getChannel());
