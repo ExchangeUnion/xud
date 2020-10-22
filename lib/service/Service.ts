@@ -3,7 +3,7 @@ import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
-import Logger from '../Logger';
+import Logger, { Level, LevelPriority } from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
 import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
@@ -18,6 +18,7 @@ import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
+import { EventEmitter } from 'events';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -52,8 +53,13 @@ const argChecks = {
   },
 };
 
+interface Service {
+  on(event: 'logLevel', listener: (level: Level) => void): this;
+  emit(event: 'logLevel', level: Level): boolean;
+}
+
 /** A class containing the available RPC methods for an unlocked, running instance of xud. */
-class Service {
+class Service extends EventEmitter {
   public shutdown: () => void;
   /** Whether the service is disabled - in other words whether xud is locked. */
   public disabled = false;
@@ -66,6 +72,8 @@ class Service {
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
+    super();
+
     this.shutdown = components.shutdown;
     this.orderBook = components.orderBook;
     this.swapClientManager = components.swapClientManager;
@@ -404,6 +412,11 @@ class Service {
       },
       pendingSwapHashes: this.swaps.getPendingSwapHashes(),
     };
+  }
+
+  public setLogLevel = async (args: { logLevel: number }) => {
+    const level = LevelPriority[args.logLevel] as Level;
+    this.emit('logLevel', level);
   }
 
   private toServiceOrder = (order: Order, includeAliases = false): ServiceOrder => {

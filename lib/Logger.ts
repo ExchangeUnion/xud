@@ -23,6 +23,16 @@ const LevelPriorities = {
   trace: 6,
 };
 
+enum LevelPriority {
+  alert,
+  error,
+  warn,
+  info,
+  verbose,
+  debug,
+  trace,
+}
+
 export enum Context {
   Global = 'GLOBAL',
   DB = 'DB',
@@ -138,6 +148,12 @@ class Logger {
     });
   }
 
+  public setLogLevel = (level: Level) => {
+    this.logger?.transports.forEach((transport) => {
+      transport.level = level;
+    });
+  }
+
   private getLogFormat = (colorize: boolean, dateFormat?: string) => {
     const { format } = winston;
 
@@ -219,4 +235,4 @@ class Logger {
 }
 
 export default Logger;
-export { Level, Loggers };
+export { Level, Loggers, LevelPriority };

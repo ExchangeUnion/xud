@@ -6,7 +6,7 @@ import { Models } from '../db/DB';
 import lndErrors from '../lndclient/errors';
 import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
-import { Loggers } from '../Logger';
+import { Loggers, Level } from '../Logger';
 import { Currency } from '../orderbook/types';
 import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
@@ -216,6 +216,12 @@ class SwapClientManager extends EventEmitter {
     const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
     assert(inboundReservedAmount && inboundReservedAmount >= amount);
     this.inboundReservedAmounts.set(currency, inboundReservedAmount - amount);
+  }
+
+  public setLogLevel = (level: Level) => {
+    for (const client of this.swapClients.values()) {
+      client.logger.setLogLevel(level);
+    }
   }
 
   /**

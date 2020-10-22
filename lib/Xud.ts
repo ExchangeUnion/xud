@@ -213,6 +213,13 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
+      this.service.on('logLevel', (level) => {
+        this.swapClientManager?.setLogLevel(level);
+        Object.values(loggers).forEach((logger) => {
+          logger.setLogLevel(level);
+        });
+      });
+
       if (this.swapClientManager.connextClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(

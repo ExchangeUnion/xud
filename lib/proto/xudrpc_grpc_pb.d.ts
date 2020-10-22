@@ -97,6 +97,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     removeOrder: IXudService_IRemoveOrder;
     removeAllOrders: IXudService_IRemoveAllOrders;
     removePair: IXudService_IRemovePair;
+    setLogLevel: IXudService_ISetLogLevel;
     shutdown: IXudService_IShutdown;
     subscribeOrders: IXudService_ISubscribeOrders;
     subscribeSwapFailures: IXudService_ISubscribeSwapFailures;
@@ -306,6 +307,15 @@ interface IXudService_IRemovePair extends grpc.MethodDefinition<xudrpc_pb.Remove
     responseSerialize: grpc.serialize<xudrpc_pb.RemovePairResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.RemovePairResponse>;
 }
+interface IXudService_ISetLogLevel extends grpc.MethodDefinition<xudrpc_pb.SetLogLevelRequest, xudrpc_pb.SetLogLevelResponse> {
+    path: string; // "/xudrpc.Xud/SetLogLevel"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.SetLogLevelRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.SetLogLevelRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.SetLogLevelResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.SetLogLevelResponse>;
+}
 interface IXudService_IShutdown extends grpc.MethodDefinition<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse> {
     path: string; // "/xudrpc.Xud/Shutdown"
     requestStream: boolean; // false
@@ -413,6 +423,7 @@ export interface IXudServer {
     removeOrder: grpc.handleUnaryCall<xudrpc_pb.RemoveOrderRequest, xudrpc_pb.RemoveOrderResponse>;
     removeAllOrders: grpc.handleUnaryCall<xudrpc_pb.RemoveAllOrdersRequest, xudrpc_pb.RemoveAllOrdersResponse>;
     removePair: grpc.handleUnaryCall<xudrpc_pb.RemovePairRequest, xudrpc_pb.RemovePairResponse>;
+    setLogLevel: grpc.handleUnaryCall<xudrpc_pb.SetLogLevelRequest, xudrpc_pb.SetLogLevelResponse>;
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
     subscribeOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate>;
     subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapFailure>;
@@ -490,6 +501,9 @@ export interface IXudClient {
     removePair(request: xudrpc_pb.RemovePairRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
+    setLogLevel(request: xudrpc_pb.SetLogLevelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
@@ -582,6 +596,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public removePair(request: xudrpc_pb.RemovePairRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
+    public setLogLevel(request: xudrpc_pb.SetLogLevelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    public setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    public setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
