@@ -16,6 +16,7 @@ const errorCodes = {
   INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.12'),
   MIN_QUANTITY_VIOLATED: codesPrefix.concat('.13'),
   QUANTITY_ON_HOLD: codesPrefix.concat('.15'),
+  DUPLICATE_PAIR_CURRENCIES: codesPrefix.concat('.16'),
 };
 
 const errors = {
@@ -74,6 +75,10 @@ const errors = {
   QUANTITY_ON_HOLD: (localId: string, holdQuantity: number) => ({
     message: `order with local id ${localId} has a quantity of ${holdQuantity} satoshis on hold, try again later`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
+  }),
+  DUPLICATE_PAIR_CURRENCIES: (baseCurrency: string, quoteCurrency: string) => ({
+    message: `base asset (${baseCurrency}) and quote asset (${quoteCurrency}) have to be different`,
+    code: errorCodes.DUPLICATE_PAIR_CURRENCIES,
   }),
 };
 

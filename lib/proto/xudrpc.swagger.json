@@ -548,6 +548,33 @@
         ]
       }
     },
+    "/v1/setloglevel": {
+      "post": {
+        "summary": "Set the logging level.\nshell: xucli loglevel \u003clevel\u003e",
+        "operationId": "SetLogLevel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcSetLogLevelResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcSetLogLevelRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/shutdown": {
       "post": {
         "summary": "Begin gracefully shutting down xud.\nshell: xucli shutdown",
@@ -1277,6 +1304,19 @@
         }
       }
     },
+    "xudrpcLogLevel": {
+      "type": "string",
+      "enum": [
+        "ALERT",
+        "ERROR",
+        "WARN",
+        "INFO",
+        "VERBOSE",
+        "DEBUG",
+        "TRACE"
+      ],
+      "default": "ALERT"
+    },
     "xudrpcNodeIdentifier": {
       "type": "object",
       "properties": {
@@ -1664,6 +1704,17 @@
         "INTERNAL"
       ],
       "default": "TAKER"
+    },
+    "xudrpcSetLogLevelRequest": {
+      "type": "object",
+      "properties": {
+        "log_level": {
+          "$ref": "#/definitions/xudrpcLogLevel"
+        }
+      }
+    },
+    "xudrpcSetLogLevelResponse": {
+      "type": "object"
     },
     "xudrpcShutdownRequest": {
       "type": "object"

@@ -1678,6 +1678,44 @@ export namespace RestoreNodeResponse {
     }
 }
 
+export class SetLogLevelRequest extends jspb.Message { 
+    getLogLevel(): LogLevel;
+    setLogLevel(value: LogLevel): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SetLogLevelRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SetLogLevelRequest): SetLogLevelRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SetLogLevelRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SetLogLevelRequest;
+    static deserializeBinaryFromReader(message: SetLogLevelRequest, reader: jspb.BinaryReader): SetLogLevelRequest;
+}
+
+export namespace SetLogLevelRequest {
+    export type AsObject = {
+        logLevel: LogLevel,
+    }
+}
+
+export class SetLogLevelResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SetLogLevelResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: SetLogLevelResponse): SetLogLevelResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SetLogLevelResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SetLogLevelResponse;
+    static deserializeBinaryFromReader(message: SetLogLevelResponse, reader: jspb.BinaryReader): SetLogLevelResponse;
+}
+
+export namespace SetLogLevelResponse {
+    export type AsObject = {
+    }
+}
+
 export class ShutdownRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
@@ -2285,4 +2323,14 @@ export enum Role {
     TAKER = 0,
     MAKER = 1,
     INTERNAL = 2,
+}
+
+export enum LogLevel {
+    ALERT = 0,
+    ERROR = 1,
+    WARN = 2,
+    INFO = 3,
+    VERBOSE = 4,
+    DEBUG = 5,
+    TRACE = 6,
 }

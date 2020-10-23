@@ -40,7 +40,6 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   })
   .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
   .example(`$0 ${command} max LTC/BTC .01`, `place a limit order to ${command} max LTC @ 0.01 BTC`)
-  .example(`$0 ${command} max BTC/USDT mkt`, `place a market order to ${command} max BTC for USDT`)
   .example(`$0 ${command} 3 BTC/USDT mkt`, `place a market order to ${command} 3 BTC for USDT`)
   .example(`$0 ${command} 1 BTC/USDT market`, `place a market order to ${command} 1 BTC for USDT`);
 };

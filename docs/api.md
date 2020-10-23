@@ -67,6 +67,8 @@
     - [RestoreNodeRequest](#xudrpc.RestoreNodeRequest)
     - [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry)
     - [RestoreNodeResponse](#xudrpc.RestoreNodeResponse)
+    - [SetLogLevelRequest](#xudrpc.SetLogLevelRequest)
+    - [SetLogLevelResponse](#xudrpc.SetLogLevelResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
@@ -91,6 +93,7 @@
   
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
+    - [LogLevel](#xudrpc.LogLevel)
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
@@ -1096,6 +1099,31 @@
 
 
 
+<a name="xudrpc.SetLogLevelRequest"></a>
+
+### SetLogLevelRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_level | [LogLevel](#xudrpc.LogLevel) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.SetLogLevelResponse"></a>
+
+### SetLogLevelResponse
+
+
+
+
+
+
+
 <a name="xudrpc.ShutdownRequest"></a>
 
 ### ShutdownRequest
@@ -1463,6 +1491,23 @@
 
 
 
+<a name="xudrpc.LogLevel"></a>
+
+### LogLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALERT | 0 |  |
+| ERROR | 1 |  |
+| WARN | 2 |  |
+| INFO | 3 |  |
+| VERBOSE | 4 |  |
+| DEBUG | 5 |  |
+| TRACE | 6 |  |
+
+
+
 <a name="xudrpc.OrderSide"></a>
 
 ### OrderSide
@@ -1522,6 +1567,7 @@ The primary service for interacting with a running xud node.
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeorder &lt;order_id&gt; [quantity] |
 | RemoveAllOrders | [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest) | [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse) | Removes all orders from the order book. Removed orders become immediately unavailable for swaps, and peers are notified that the orders are no longer valid. Any portion of the orders that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeallorders |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. shell: xucli removepair &lt;pair_id&gt; |
+| SetLogLevel | [SetLogLevelRequest](#xudrpc.SetLogLevelRequest) | [SetLogLevelResponse](#xudrpc.SetLogLevelResponse) | Set the logging level. shell: xucli loglevel &lt;level&gt; |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. shell: xucli shutdown |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |

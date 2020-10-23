@@ -290,6 +290,9 @@ class OrderBook extends EventEmitter {
 
   public addPair = async (pair: Pair) => {
     const pairId = derivePairId(pair);
+    if (pair.baseCurrency.toLowerCase() === pair.quoteCurrency.toLowerCase()) {
+      throw errors.DUPLICATE_PAIR_CURRENCIES(pair.baseCurrency, pair.quoteCurrency);
+    }
     if (this.pairInstances.has(pairId)) {
       throw errors.PAIR_ALREADY_EXISTS(pairId);
     }
