@@ -1017,6 +1017,8 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | quantity_on_hold | [uint64](#uint64) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
+| remaining_quantity | [uint64](#uint64) |  | Remaining portion of the order if it was a partial removal. |
+| removed_quantity | [uint64](#uint64) |  | Successfully removed portion of the order. |
 
 
 
