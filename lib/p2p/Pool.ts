@@ -1041,6 +1041,7 @@ class Pool extends EventEmitter {
     return new Promise<void>((resolve) => {
       if (this.server) {
         this.server.once('close', resolve);
+        this.server.removeAllListeners();
       } else {
         resolve();
       }
