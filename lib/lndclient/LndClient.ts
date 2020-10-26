@@ -207,7 +207,10 @@ class LndClient extends SwapClient {
   /** Lnd specific procedure to mark the client as locked. */
   private lock = () => {
     if (!this.walletUnlocker) {
-      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials, {
+        'grpc.ssl_target_name_override': 'localhost',
+        'grpc.default_authority': 'localhost',
+      });
     }
     if (this.lightning) {
       this.lightning.close();
@@ -466,7 +469,10 @@ class LndClient extends SwapClient {
     }
 
     this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-    this.lightning = new LightningClient(this.uri, this.credentials);
+    this.lightning = new LightningClient(this.uri, this.credentials, {
+      'grpc.ssl_target_name_override': 'localhost',
+      'grpc.default_authority': 'localhost',
+    });
 
     try {
       await this.waitForClientReady(this.lightning);
