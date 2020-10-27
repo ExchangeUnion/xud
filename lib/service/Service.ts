@@ -694,13 +694,20 @@ class Service extends EventEmitter {
     cancelled$: Observable<void>,
   ) => {
     if (args.existing) {
+      function setAlias(pool: Pool) {
+        return (order: PeerOrder) => {
+          order.alias = pool.getNodeAlias(order.peerPubKey)!;
+          callback(order);
+        };
+      }
+
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
         ownOrders.buyArray.forEach(order => callback(order));
-        peerOrders.buyArray.forEach(order => callback(order));
+        peerOrders.buyArray.forEach(setAlias(this.pool));
         ownOrders.sellArray.forEach(order => callback(order));
-        peerOrders.sellArray.forEach(order => callback(order));
+        peerOrders.sellArray.forEach(setAlias(this.pool));
       });
     }
 

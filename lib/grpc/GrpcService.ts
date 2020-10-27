@@ -53,6 +53,7 @@ const createOrder = (order: Order) => {
   } else {
     const nodeIdentifier = new xudrpc.NodeIdentifier();
     nodeIdentifier.setNodePubKey(order.peerPubKey);
+    nodeIdentifier.setAlias(order.alias);
     grpcOrder.setNodeIdentifier(nodeIdentifier);
     grpcOrder.setIsOwnOrder(false);
   }

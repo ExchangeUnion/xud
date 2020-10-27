@@ -780,7 +780,7 @@ class Pool extends EventEmitter {
             this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey!);
           }
 
-          const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
+          const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey!, alias: peer.alias! };
           this.emit('packet.order', incomingOrder);
         } else {
           this.logger.debug(`received order ${id} for deactivated trading pair`);
@@ -809,7 +809,7 @@ class Pool extends EventEmitter {
           this.logger.debug(`received ${receivedOrders.length} orders from ${peer.label}`);
           receivedOrders.forEach((order) => {
             if (peer.isPairActive(order.pairId)) {
-              this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
+              this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey!, alias: peer.alias! });
             } else {
               this.logger.debug(`received order ${order.id} for deactivated trading pair`);
             }

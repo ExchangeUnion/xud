@@ -67,7 +67,9 @@ type Local = {
 /** Properties that apply only to orders placed by remote peers. */
 type Remote = {
   /** The nodePubKey of the node which created this order. */
-  peerPubKey: string;
+  peerPubKey: string,
+  /** The alias of the node which created this order. */
+  alias: string;
 };
 
 /** Properties that uniquely identify an order and make it ready to enter the order book. */
