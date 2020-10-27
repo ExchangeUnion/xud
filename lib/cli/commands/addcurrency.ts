@@ -29,6 +29,14 @@ export const builder = (argv: Argv) => argv
   .option('token_address', {
     description: 'the contract address for tokens such as ERC20',
     type: 'string',
+    coerce: (address) => {
+      if (address.startsWith('0x')) {
+        return address;
+      }
+      // yargs converts only number addresses into decimal, so we need to revert it to hexadecimal
+      const hexAddress = address.toString(16);
+      return `0x${hexAddress.padStart(41 - hexAddress.length, '0')}`;
+    },
   })
   .example('$0 addcurrency BTC Lnd', 'add BTC')
   .example('$0 addcurrency ETH Connext 18 0x0000000000000000000000000000000000000000', 'add ETH');
