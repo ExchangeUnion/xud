@@ -254,6 +254,44 @@
         ]
       }
     },
+    "/v1/initswapclient": {
+      "get": {
+        "summary": "Initializes a payment channel network client a.k.a swap client using the xud master key and\npassword to seed and encrypt its wallet \u0026 addresses.\nshell: xucli initclient \u003cswap_client\u003e [currency]",
+        "operationId": "InitSwapClient",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcInitSwapClientResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "swap_client",
+            "description": "The swap client to initialize.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "LND",
+              "CONNEXT"
+            ],
+            "default": "LND"
+          },
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency the swap client is for, if applicable.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.\nshell: xucli getnodeinfo \u003cnode_identifier\u003e",
@@ -836,14 +874,6 @@
     }
   },
   "definitions": {
-    "CurrencySwapClient": {
-      "type": "string",
-      "enum": [
-        "LND",
-        "CONNEXT"
-      ],
-      "default": "LND"
-    },
     "ListOrdersRequestOwner": {
       "type": "string",
       "enum": [
@@ -1067,7 +1097,7 @@
           "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
         },
         "swap_client": {
-          "$ref": "#/definitions/CurrencySwapClient",
+          "$ref": "#/definitions/xudrpcSwapClient",
           "description": "The payment channel network client to use for executing swaps."
         },
         "token_address": {
@@ -1222,6 +1252,9 @@
           "description": "Whether the node is currently banned."
         }
       }
+    },
+    "xudrpcInitSwapClientResponse": {
+      "type": "object"
     },
     "xudrpcListCurrenciesResponse": {
       "type": "object",
@@ -1769,6 +1802,14 @@
           "description": "The ticker symbol of the currency sent."
         }
       }
+    },
+    "xudrpcSwapClient": {
+      "type": "string",
+      "enum": [
+        "LND",
+        "CONNEXT"
+      ],
+      "default": "LND"
     },
     "xudrpcSwapFailure": {
       "type": "object",

@@ -362,8 +362,8 @@ export class Currency extends jspb.Message {
     getCurrency(): string;
     setCurrency(value: string): void;
 
-    getSwapClient(): Currency.SwapClient;
-    setSwapClient(value: Currency.SwapClient): void;
+    getSwapClient(): SwapClient;
+    setSwapClient(value: SwapClient): void;
 
     getTokenAddress(): string;
     setTokenAddress(value: string): void;
@@ -385,16 +385,10 @@ export class Currency extends jspb.Message {
 export namespace Currency {
     export type AsObject = {
         currency: string,
-        swapClient: Currency.SwapClient,
+        swapClient: SwapClient,
         tokenAddress: string,
         decimalPlaces: number,
     }
-
-    export enum SwapClient {
-    LND = 0,
-    CONNEXT = 2,
-    }
-
 }
 
 export class DepositRequest extends jspb.Message { 
@@ -691,6 +685,48 @@ export namespace GetNodeInfoResponse {
     export type AsObject = {
         reputationscore: number,
         banned: boolean,
+    }
+}
+
+export class InitSwapClientRequest extends jspb.Message { 
+    getSwapClient(): SwapClient;
+    setSwapClient(value: SwapClient): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): InitSwapClientRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: InitSwapClientRequest): InitSwapClientRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: InitSwapClientRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): InitSwapClientRequest;
+    static deserializeBinaryFromReader(message: InitSwapClientRequest, reader: jspb.BinaryReader): InitSwapClientRequest;
+}
+
+export namespace InitSwapClientRequest {
+    export type AsObject = {
+        swapClient: SwapClient,
+        currency: string,
+    }
+}
+
+export class InitSwapClientResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): InitSwapClientResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: InitSwapClientResponse): InitSwapClientResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: InitSwapClientResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): InitSwapClientResponse;
+    static deserializeBinaryFromReader(message: InitSwapClientResponse, reader: jspb.BinaryReader): InitSwapClientResponse;
+}
+
+export namespace InitSwapClientResponse {
+    export type AsObject = {
     }
 }
 
@@ -2309,6 +2345,16 @@ export namespace WithdrawResponse {
     }
 }
 
+export enum LogLevel {
+    ALERT = 0,
+    ERROR = 1,
+    WARN = 2,
+    INFO = 3,
+    VERBOSE = 4,
+    DEBUG = 5,
+    TRACE = 6,
+}
+
 export enum OrderSide {
     BUY = 0,
     SELL = 1,
@@ -2321,12 +2367,7 @@ export enum Role {
     INTERNAL = 2,
 }
 
-export enum LogLevel {
-    ALERT = 0,
-    ERROR = 1,
-    WARN = 2,
-    INFO = 3,
-    VERBOSE = 4,
-    DEBUG = 5,
-    TRACE = 6,
+export enum SwapClient {
+    LND = 0,
+    CONNEXT = 2,
 }

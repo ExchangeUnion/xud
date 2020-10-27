@@ -7,6 +7,7 @@ import { Order, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
+import NodeKey from 'lib/nodekey/NodeKey';
 
 /**
  * The components required by the API service layer.
@@ -18,6 +19,7 @@ export type ServiceComponents = {
   /** The version of the local xud instance. */
   version: string;
   swaps: Swaps;
+  nodeKey: NodeKey;
   logger: Logger;
   /** The function to be called to shutdown the parent process */
   shutdown: () => void;

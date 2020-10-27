@@ -1,5 +1,6 @@
 import { Owner, SwapClientType } from '../../lib/constants/enums';
 import Logger from '../../lib/Logger';
+import NodeKey from '../../lib/nodekey/NodeKey';
 import Orderbook from '../../lib/orderbook/OrderBook';
 import Peer from '../../lib/p2p/Peer';
 import Pool from '../../lib/p2p/Pool';
@@ -26,6 +27,8 @@ jest.mock('../../lib/swaps/SwapClient');
 const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
 jest.mock('../../lib/p2p/Pool');
 const mockedPool = <jest.Mock<Pool>><any>Pool;
+jest.mock('../../lib/nodekey/NodeKey');
+const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
 jest.mock('../../lib/p2p/Peer');
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
@@ -62,6 +65,7 @@ describe('Service', () => {
       swaps: new mockedSwaps(),
       version: '1.0.0',
       shutdown: jest.fn(),
+      nodeKey: new mockedNodeKey(),
       logger: new mockedLogger(),
     };
     peer = new mockedPeer();

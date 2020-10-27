@@ -336,6 +336,23 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.initSwapClient]]
+   */
+  public initSwapClient: grpc.handleUnaryCall<xudrpc.InitSwapClientRequest, xudrpc.InitSwapClientResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      await this.service.initSwapClient(call.request.toObject());
+      const response = new xudrpc.InitSwapClientResponse();
+
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.tradingLimits]]
    */
   public tradingLimits: grpc.handleUnaryCall<xudrpc.TradingLimitsRequest, xudrpc.TradingLimitsResponse> = async (call, callback) => {

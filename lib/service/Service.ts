@@ -1,9 +1,11 @@
+import { EventEmitter } from 'events';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger, { Level, LevelPriority } from '../Logger';
+import NodeKey from '../nodekey/NodeKey';
 import OrderBook from '../orderbook/OrderBook';
 import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
@@ -13,12 +15,12 @@ import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
+import { encipher } from '../utils/seedutil';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
-import { EventEmitter } from 'events';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -68,6 +70,7 @@ class Service extends EventEmitter {
   private pool: Pool;
   private version: string;
   private swaps: Swaps;
+  private nodeKey: NodeKey;
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
@@ -79,6 +82,7 @@ class Service extends EventEmitter {
     this.swapClientManager = components.swapClientManager;
     this.pool = components.pool;
     this.swaps = components.swaps;
+    this.nodeKey = components.nodeKey;
     this.logger = components.logger;
 
     this.version = components.version;
@@ -106,6 +110,25 @@ class Service extends EventEmitter {
   /** Adds a trading pair. */
   public addPair = async (args: { baseCurrency: string, quoteCurrency: string }) => {
     await this.orderBook.addPair(args);
+  }
+
+  /** Initializes a swap client using the xud master key & password. */
+  public initSwapClient = async (args: { swapClient: SwapClientType | number, currency: string }) => {
+    argChecks.VALID_SWAP_CLIENT(args);
+    const { currency, swapClient } = args;
+
+    if (currency) {
+      argChecks.VALID_CURRENCY(args);
+    }
+
+    const decipheredSeed = this.nodeKey.privKey.slice(0, 19);
+    const decipheredSeedHex = decipheredSeed.toString('hex');
+    const seedMnemonic = await encipher(decipheredSeedHex);
+    await this.swapClientManager.initSwapClient({
+      seedMnemonic,
+      currency,
+      swapClientType: swapClient,
+    });
   }
 
   /*

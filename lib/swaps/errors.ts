@@ -21,8 +21,8 @@ const errors = {
     message: `swapClient for currency ${currency} not found`,
     code: errorCodes.SWAP_CLIENT_NOT_FOUND,
   }),
-  SWAP_CLIENT_NOT_CONFIGURED: (currency: string) => ({
-    message: `swapClient for currency ${currency} is not configured`,
+  SWAP_CLIENT_NOT_CONFIGURED: (currencyOrClientType: string) => ({
+    message: `swap client for ${currencyOrClientType} is not configured`,
     code: errorCodes.SWAP_CLIENT_NOT_CONFIGURED,
   }),
   PAYMENT_HASH_NOT_FOUND: (rHash: string) => ({

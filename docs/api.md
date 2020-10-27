@@ -33,6 +33,8 @@
     - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
+    - [InitSwapClientRequest](#xudrpc.InitSwapClientRequest)
+    - [InitSwapClientResponse](#xudrpc.InitSwapClientResponse)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
     - [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse)
     - [ListOrdersRequest](#xudrpc.ListOrdersRequest)
@@ -91,11 +93,11 @@
     - [WithdrawRequest](#xudrpc.WithdrawRequest)
     - [WithdrawResponse](#xudrpc.WithdrawResponse)
   
-    - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
     - [LogLevel](#xudrpc.LogLevel)
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
+    - [SwapClient](#xudrpc.SwapClient)
   
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
@@ -345,7 +347,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
-| swap_client | [Currency.SwapClient](#xudrpc.Currency.SwapClient) |  | The payment channel network client to use for executing swaps. |
+| swap_client | [SwapClient](#xudrpc.SwapClient) |  | The payment channel network client to use for executing swaps. |
 | token_address | [string](#string) |  | The contract address for layered tokens such as ERC20. |
 | decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
 
@@ -554,6 +556,32 @@
 | ----- | ---- | ----- | ----------- |
 | reputationScore | [sint32](#sint32) |  | The node&#39;s reputation score. Points are subtracted for unexpected or potentially malicious behavior. Points are added when swaps are successfully executed. |
 | banned | [bool](#bool) |  | Whether the node is currently banned. |
+
+
+
+
+
+
+<a name="xudrpc.InitSwapClientRequest"></a>
+
+### InitSwapClientRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| swap_client | [SwapClient](#xudrpc.SwapClient) |  | The swap client to initialize. |
+| currency | [string](#string) |  | The ticker symbol of the currency the swap client is for, if applicable. |
+
+
+
+
+
+
+<a name="xudrpc.InitSwapClientResponse"></a>
+
+### InitSwapClientResponse
+
 
 
 
@@ -1465,18 +1493,6 @@
  
 
 
-<a name="xudrpc.Currency.SwapClient"></a>
-
-### Currency.SwapClient
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LND | 0 |  |
-| CONNEXT | 2 |  |
-
-
-
 <a name="xudrpc.ListOrdersRequest.Owner"></a>
 
 ### ListOrdersRequest.Owner
@@ -1532,6 +1548,18 @@
 | INTERNAL | 2 |  |
 
 
+
+<a name="xudrpc.SwapClient"></a>
+
+### SwapClient
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LND | 0 |  |
+| CONNEXT | 2 |  |
+
+
  
 
  
@@ -1554,6 +1582,7 @@ The primary service for interacting with a running xud node.
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. shell: xucli getbalance [currency] |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. shell: xucli getinfo |
 | GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Gets general information about a node. shell: xucli getnodeinfo &lt;node_identifier&gt; |
+| InitSwapClient | [InitSwapClientRequest](#xudrpc.InitSwapClientRequest) | [InitSwapClientResponse](#xudrpc.InitSwapClientResponse) | Initializes a payment channel network client a.k.a swap client using the xud master key and password to seed and encrypt its wallet &amp; addresses. shell: xucli initclient &lt;swap_client&gt; [currency] |
 | ListOrders | [ListOrdersRequest](#xudrpc.ListOrdersRequest) | [ListOrdersResponse](#xudrpc.ListOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. shell: xucli listorders [pair_id] [include_own_orders] [limit] |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. shell: xucli listcurrencies |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. shell: xucli listpairs |

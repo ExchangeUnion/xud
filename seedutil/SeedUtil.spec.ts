@@ -47,6 +47,8 @@ const ERRORS = {
   INVALID_AEZEED: 'invalid aezeed',
   KEYSTORE_FILE_ALREADY_EXISTS: 'account already exists',
   INVALID_PASSPHRASE: 'invalid passphrase',
+  INVALID_HEX_LENGTH: 'invalid hex length',
+  MISSING_HEX_STRING: 'missing hex string',
 };
 
 const PASSWORD = 'wasspord';
@@ -75,31 +77,42 @@ const VALID_SEED_NO_PASS = {
 const DEFAULT_KEYSTORE_PATH = `${process.cwd()}/seedutil/keystore`;
 
 describe('SeedUtil encipher', () => {
+  const decipheredSeedHex = '000f4b90d9f9720bfac78aaea09a5193b34811';
   test('it errors with no arguments', async () => {
     await expect(executeCommand('./seedutil/seedutil encipher'))
-      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+      .rejects.toThrow(ERRORS.MISSING_HEX_STRING);
   });
 
-  test('it errors with 23 words', async () => {
-    const cmd = `./seedutil/seedutil encipher ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
+  test('it errors with insufficient hex length', async () => {
+    const cmd = './seedutil/seedutil encipher 000f4b90d9f9720bfac78aaea09a5193';
     await expect(executeCommand(cmd))
-      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+      .rejects.toThrow(ERRORS.INVALID_HEX_LENGTH);
   });
 
-  test('it errors with 24 words and invalid aezeed password', async () => {
-    const cmd = `./seedutil/seedutil encipher ${VALID_SEED.seedWords.join(' ')}`;
+  test('it errors with excess hex length', async () => {
+    const cmd = './seedutil/seedutil encipher 000f4b90d9f9720bfac78aaea09a5193b34811aabbcc';
     await expect(executeCommand(cmd))
-      .rejects.toThrow(ERRORS.INVALID_AEZEED);
+      .rejects.toThrow(ERRORS.INVALID_HEX_LENGTH);
   });
 
-  test('it succeeds with 24 words, valid aezeed password', async () => {
-    const cmd = `./seedutil/seedutil encipher -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
-    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  test('it enciphers with valid aezeed password and deciphers back to same seed', async () => {
+    const cmd = `./seedutil/seedutil encipher -aezeedpass=${VALID_SEED.seedPassword} ${decipheredSeedHex}`;
+
+    const mnemonic = await executeCommand(cmd);
+
+    const decipherCmd = `./seedutil/seedutil decipher -aezeedpass=${VALID_SEED.seedPassword} ${mnemonic}`;
+    const decipherOutput = await executeCommand(decipherCmd);
+    expect(decipherOutput.trim()).toEqual(decipheredSeedHex);
   });
 
-  test('it succeeds with 24 words, no aezeed password', async () => {
-    const cmd = `./seedutil/seedutil encipher ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
-    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  test('it enciphers with no aezeed password and deciphers back to same seed', async () => {
+    const cmd = `./seedutil/seedutil encipher ${decipheredSeedHex}`;
+
+    const mnemonic = await executeCommand(cmd);
+
+    const decipherCmd = `./seedutil/seedutil decipher ${mnemonic}`;
+    const decipherOutput = await executeCommand(decipherCmd);
+    expect(decipherOutput.trim()).toEqual(decipheredSeedHex);
   });
 });
 

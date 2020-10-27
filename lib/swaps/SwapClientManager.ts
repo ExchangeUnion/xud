@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { EventEmitter } from 'events';
 import Config from '../Config';
 import ConnextClient from '../connextclient/ConnextClient';
@@ -6,13 +7,12 @@ import { Models } from '../db/DB';
 import lndErrors from '../lndclient/errors';
 import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
-import { Loggers, Level } from '../Logger';
+import { Level, Loggers } from '../Logger';
 import { Currency } from '../orderbook/types';
 import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
-import assert from 'assert';
 import { TradingLimits } from './types';
 
 export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
@@ -221,6 +221,34 @@ class SwapClientManager extends EventEmitter {
   public setLogLevel = (level: Level) => {
     for (const client of this.swapClients.values()) {
       client.logger.setLogLevel(level);
+    }
+  }
+
+  public initSwapClient = async ({ seedMnemonic, swapClientType, currency }: {
+    seedMnemonic: string[],
+    swapClientType: SwapClientType,
+    currency?: string,
+  }) => {
+    switch (swapClientType) {
+      case SwapClientType.Connext:
+        if (this.connextClient) {
+          // there is nothing to do to initialize the connext wallet currently
+        } else {
+          throw errors.SWAP_CLIENT_NOT_CONFIGURED(SwapClientType[swapClientType]);
+        }
+        break;
+      case SwapClientType.Lnd:
+        const lndClient = currency ? this.get(currency) : undefined;
+        if (!lndClient) {
+          throw errors.SWAP_CLIENT_NOT_FOUND(currency || '');
+        }
+        if (!isLndClient(lndClient)) {
+          throw new Error(`swap client for ${currency} is not Lnd`);
+        }
+        await lndClient.initWallet(this.walletPassword ?? '', seedMnemonic);
+        break;
+      default:
+        throw new Error('unrecognized swap client type');
     }
   }
 
