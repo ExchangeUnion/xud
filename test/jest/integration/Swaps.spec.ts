@@ -26,6 +26,7 @@ jest.mock('../../../lib/p2p/Pool', () => {
       addReputationEvent,
       on: jest.fn(),
       tryGetPeer: () => peer,
+      getNodeAlias: () => peer,
     };
   });
 });
@@ -91,6 +92,7 @@ describe('Swaps Integration', () => {
   beforeEach(() => {
     logger = new mockedLogger();
     logger.debug = jest.fn();
+    logger.info = jest.fn();
     logger.error = jest.fn();
     logger.warn = jest.fn();
     logger.trace = jest.fn();

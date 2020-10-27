@@ -1354,6 +1354,7 @@ class Swaps extends EventEmitter {
         peerPubKey: deal.peerPubKey,
         role: deal.role,
       };
+      this.logger.info(`Successfully executed swap ${deal.rHash} with peer ${deal.peerPubKey} (${this.pool.getNodeAlias(deal.peerPubKey)})`);
       this.emit('swap.paid', swapSuccess);
     };
 
