@@ -284,7 +284,8 @@ class Pool extends EventEmitter {
 
   private bindNodeList = () => {
     this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEvent[]) => {
-      this.logger.info(`node ${nodePubKey} was banned due to ${ReputationEvent[events[0]]}`);
+      const banReasonText = (events[0] !== ReputationEvent.ManualBan && ReputationEvent[events[0]]) ? `due to ${ReputationEvent[events[0]]}` : 'manually';
+      this.logger.info(`node ${nodePubKey} was banned ${banReasonText}`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
