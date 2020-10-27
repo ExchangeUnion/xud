@@ -769,7 +769,9 @@ class ConnextClient extends SwapClient {
       throw errors.CURRENCY_MISSING;
     }
 
-    const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
+    const { freeBalanceOffChain } = await this.getBalance(currency);
+    const availableUnits = Number(freeBalanceOffChain);
+    const amount = units || availableUnits;
 
     if (amount === 0) {
       return []; // there is nothing to withdraw and no tx to return
