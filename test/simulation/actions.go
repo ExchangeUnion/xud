@@ -45,8 +45,8 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			node.SetPubKey(res.NodePubKey)
 
 			// Add currencies
-			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "", 8)
-			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "", 8)
+			a.addCurrency(node, "BTC", xudrpc.SwapClient_LND, "", 8)
+			a.addCurrency(node, "LTC", xudrpc.SwapClient_LND, "", 8)
 
 			// Add pairs to the node.
 			a.addPair(node, "LTC", "BTC")
@@ -90,7 +90,7 @@ func (a *actions) initConnext(net *xudtest.NetworkHarness, node *xudtest.Harness
 	}
 }
 
-func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string, decimalPlaces uint32) {
+func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.SwapClient, tokenAddress string, decimalPlaces uint32) {
 	if len(tokenAddress) > 0 {
 		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress, DecimalPlaces: decimalPlaces}
 		_, err := node.Client.AddCurrency(a.ctx, req)
