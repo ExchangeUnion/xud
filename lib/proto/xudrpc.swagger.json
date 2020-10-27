@@ -1669,6 +1669,10 @@
           "type": "string",
           "format": "uint64",
           "description": "Successfully removed portion of the order."
+        },
+        "pair_id": {
+          "type": "string",
+          "title": "Removed order's pairId. (e.g. ETH/BTC)"
         }
       }
     },

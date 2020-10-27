@@ -874,6 +874,7 @@ class OrderBook extends EventEmitter {
     const order = this.getOwnOrderByLocalId(localId);
 
     let remainingQuantityToRemove = quantityToRemove || order.quantity;
+    const orderQuantity = order.quantity;
     let onHoldQuantity = order.hold;
     let removedQuantity = 0;
 
@@ -944,10 +945,12 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', paidHandler);
     }
 
+    const remainingFromOrder = orderQuantity - removedQuantity;
     return {
       removedQuantity,
       onHoldQuantity,
-      remainingQuantity: (order.quantity - removedQuantity) >= onHoldQuantity ? (order.quantity - removedQuantity) : 0,
+      pairId: order.pairId,
+      remainingQuantity: remainingFromOrder > onHoldQuantity ? remainingFromOrder : 0,
     };
   }
 
