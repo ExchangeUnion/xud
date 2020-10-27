@@ -1131,9 +1131,6 @@ class LndClient extends SwapClient {
       }
     });
 
-    if (closePromises.length === 0) {
-      throw swapErrors.NO_CHANNELS_TO_CLOSE(remoteIdentifier);
-    }
     return Promise.all(closePromises);
   }
 

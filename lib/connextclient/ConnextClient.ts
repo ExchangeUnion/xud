@@ -768,7 +768,12 @@ class ConnextClient extends SwapClient {
     if (!currency) {
       throw errors.CURRENCY_MISSING;
     }
+
     const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
+
+    if (amount === 0) {
+      return []; // there is nothing to withdraw and no tx to return
+    }
 
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,

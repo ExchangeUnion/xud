@@ -252,7 +252,7 @@ class Service {
       remoteIdentifier = peer.getIdentifier(swapClientType, currency);
     }
 
-    return await this.swapClientManager.closeChannel({
+    const closeChannelTxs = await this.swapClientManager.closeChannel({
       currency,
       force,
       destination,
@@ -260,6 +260,11 @@ class Service {
       remoteIdentifier,
       fee,
     });
+    if (closeChannelTxs.length === 0) {
+      throw errors.NO_CHANNELS_TO_CLOSE(nodeIdentifier);
+    }
+
+    return closeChannelTxs;
   }
 
   /*

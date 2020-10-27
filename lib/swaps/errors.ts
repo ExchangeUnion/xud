@@ -14,7 +14,6 @@ const errorCodes = {
   PAYMENT_PENDING: codesPrefix.concat('.10'),
   REMOTE_IDENTIFIER_MISSING: codesPrefix.concat('.11'),
   INSUFFICIENT_BALANCE: codesPrefix.concat('.12'),
-  NO_CHANNELS_TO_CLOSE: codesPrefix.concat('.13'),
 };
 
 const errors = {
@@ -71,10 +70,6 @@ const errors = {
     message: 'swap failed due to insufficient channel balance',
     code: errorCodes.INSUFFICIENT_BALANCE,
   },
-  NO_CHANNELS_TO_CLOSE: (remoteIdentifier: string) => ({
-    message: `no channels found for ${remoteIdentifier} to close`,
-    code: errorCodes.NO_CHANNELS_TO_CLOSE,
-  }),
 };
 
 export { errorCodes };
