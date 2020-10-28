@@ -493,6 +493,12 @@ class LndClient extends SwapClient {
           this.setStatus(ClientStatus.Misconfigured);
         }
 
+        if (this.walletUnlocker) {
+          // WalletUnlocker service is disabled when the main Lightning service is available
+          this.walletUnlocker.close();
+          this.walletUnlocker = undefined;
+        }
+
         this.invoices = new InvoicesClient(this.uri, this.credentials);
         try {
           const randomHash = crypto.randomBytes(32).toString('hex');
@@ -501,16 +507,13 @@ class LndClient extends SwapClient {
           await this.addInvoice({ rHash: randomHash, units: 1 });
           await this.removeInvoice(randomHash);
         } catch (err) {
-          const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-
-          this.logger.error(`could not add hold invoice, error: ${errStr}`);
-          this.setStatus(ClientStatus.NoHoldInvoiceSupport);
-        }
-
-        if (this.walletUnlocker) {
-          // WalletUnlocker service is disabled when the main Lightning service is available
-          this.walletUnlocker.close();
-          this.walletUnlocker = undefined;
+          if (err.code !== grpc.status.UNAVAILABLE) {
+            // mark the client as not having hold invoice support if the invoice calls failed due to
+            // reasons other than generic grpc connectivity errors
+            this.logger.error('could not add hold invoice', err);
+            this.setStatus(ClientStatus.NoHoldInvoiceSupport);
+          }
+          throw err; // we don't want to proceed with marking the client as connected, regardless of the error
         }
 
         await this.setConnected(newPubKey, newUris);
