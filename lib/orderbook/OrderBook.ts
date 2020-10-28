@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { EventEmitter } from 'events';
+import { UnitConverter } from '../utils/UnitConverter';
 import uuidv1 from 'uuid/v1';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
@@ -8,7 +9,6 @@ import Logger from '../Logger';
 import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
 import Peer from '../p2p/Peer';
 import Pool from '../p2p/Pool';
-import swapsErrors from '../swaps/errors';
 import Swaps from '../swaps/Swaps';
 import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 import { pubKeyToAlias } from '../utils/aliasUtils';
@@ -121,7 +121,7 @@ class OrderBook extends EventEmitter {
 
     const onOrderRemoved = (order: OwnOrder) => {
       const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+        UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
     };
@@ -130,7 +130,7 @@ class OrderBook extends EventEmitter {
 
     this.on('ownOrder.added', (order) => {
       const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+        UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
     });
@@ -487,27 +487,7 @@ class OrderBook extends EventEmitter {
         (order.isBuy ? tp.quoteAsk() : tp.quoteBid()) :
         order.price;
 
-      const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, price, order.isBuy, order.pairId);
-
-      // check if clients exists
-      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
-      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
-      if (!outboundSwapClient) {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
-      }
-      if (!inboundSwapClient) {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
-      }
-
-      // check if sufficient outbound channel capacity exists
-      const totalOutboundAmount = outboundSwapClient.totalOutboundAmount(outboundCurrency);
-      if (outboundAmount > totalOutboundAmount) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
-      }
-
-      // check if sufficient inbound channel capacity exists
-      inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
+      await this.swaps.swapClientManager.checkSwapCapacities({ ...order, price });
     }
 
     let replacedOrderIdentifier: OrderIdentifier | undefined;

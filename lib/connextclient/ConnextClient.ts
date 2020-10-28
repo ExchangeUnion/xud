@@ -259,10 +259,6 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public totalOutboundAmount = (currency: string): number => {
-    return this.outboundAmounts.get(currency) || 0;
-  }
-
   /**
    * Checks whether we have a pending collateral request for the currency and,
    * if one doesn't exist, starts a new request for the specified amount. Then
@@ -285,6 +281,10 @@ class ConnextClient extends SwapClient {
     this.requestCollateralPromises.set(currency, requestCollateralPromise);
   }
 
+  /**
+   * Checks whether there is sufficient inbound capacity to receive the specified amount
+   * and throws an error if there isn't, otherwise does nothing.
+   */
   public checkInboundCapacity = (inboundAmount: number, currency: string) => {
     const inboundCapacity = this.inboundAmounts.get(currency) || 0;
     if (inboundCapacity < inboundAmount) {
