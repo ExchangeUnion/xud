@@ -116,7 +116,7 @@ class ConnextClient extends SwapClient {
   private host: string;
   private webhookport: number;
   private webhookhost: string;
-  private nodeUrl: string;
+  // private nodeUrl: string;
   private nodeIdentifier: string;
   private unitConverter: UnitConverter;
   private network: string;
@@ -164,7 +164,7 @@ class ConnextClient extends SwapClient {
     this.host = config.host;
     this.webhookhost = config.webhookhost;
     this.webhookport = config.webhookport;
-    this.nodeUrl = config.nodeUrl;
+    // this.nodeUrl = config.nodeUrl;
     this.nodeIdentifier = config.nodeIdentifier;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
@@ -755,12 +755,11 @@ class ConnextClient extends SwapClient {
     const res = await this.sendRequest(`/${this.publicIdentifier}/channels`, 'GET');
     const channel = await parseResponseBody<ConnextChannelResponse>(res);
     if (channel.length === 0) {
-      await this.sendRequest('/request-setup', 'POST', {
-        aliceUrl: this.nodeUrl,
-        aliceIdentifier: this.nodeIdentifier,
+      await this.sendRequest('/setup', 'POST', {
+        counterpartyIdentifier: this.nodeIdentifier,
+        publicIdentifier: this.publicIdentifier,
         chainId: CHAIN_IDENTIFIERS[this.network],
         timeout: this.CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT,
-        bobIdentifier: this.publicIdentifier
       });
       return (await this.getChannel());
     }
