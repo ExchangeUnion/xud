@@ -284,7 +284,8 @@ class Pool extends EventEmitter {
 
   private bindNodeList = () => {
     this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEvent[]) => {
-      this.logger.info(`node ${nodePubKey} was banned due to ${ReputationEvent[events[0]]}`);
+      const banReasonText = (events[0] !== ReputationEvent.ManualBan && ReputationEvent[events[0]]) ? `due to ${ReputationEvent[events[0]]}` : 'manually';
+      this.logger.info(`node ${nodePubKey} was banned ${banReasonText}`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
@@ -428,6 +429,11 @@ class Pool extends EventEmitter {
   public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean, revokeConnectionRetries: boolean): Promise<Peer> => {
     if (nodePubKey === this.nodePubKey || this.addressIsSelf(address)) {
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
+    }
+
+    if (this.disconnecting || !this.connected) {
+      // if we are disconnected or disconnecting, don't make new connections to peers
+      throw errors.POOL_CLOSED;
     }
 
     // check if we allow connections to tor addresses
@@ -971,14 +977,19 @@ class Pool extends EventEmitter {
     peer.active = false;
     this.emit('peer.close', peer.nodePubKey);
 
-    const shouldReconnect =
+    const doesDisconnectionReasonCallForReconnection =
       (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
       (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling ||
        peer.recvDisconnectionReason === DisconnectionReason.AlreadyConnected ||
        peer.recvDisconnectionReason === DisconnectionReason.Shutdown);
     const addresses = peer.addresses || [];
 
-    if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
+    if (doesDisconnectionReasonCallForReconnection
+      && !peer.inbound // we don't make reconnection attempts to peers that connected to use
+      && peer.nodePubKey // we only reconnect if we know the peer's node pubkey
+      && (addresses.length || peer.address) // we only reconnect if there's an address to connect to
+      && !this.disconnecting && this.connected // we don't reconnect if we're in the process of disconnecting or have disconnected the p2p pool
+    ) {
       this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.label}`);
       const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
       await this.tryConnectNode(node, true);

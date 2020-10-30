@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`OrderBook placeOrder insufficient outbound balance throws when balancechecks enabled 1`] = `
-Object {
-  "code": "3.12",
-  "message": "LTC outbound balance of 1 is not sufficient for order amount of 10000",
-}
-`;

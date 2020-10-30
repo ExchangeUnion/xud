@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { EventEmitter } from 'events';
 import Config from '../Config';
 import ConnextClient from '../connextclient/ConnextClient';
@@ -6,13 +7,12 @@ import { Models } from '../db/DB';
 import lndErrors from '../lndclient/errors';
 import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
-import { Loggers } from '../Logger';
-import { Currency } from '../orderbook/types';
+import { Level, Loggers } from '../Logger';
+import { Currency, OwnLimitOrder } from '../orderbook/types';
 import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
-import assert from 'assert';
 import { TradingLimits } from './types';
 
 export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
@@ -184,6 +184,51 @@ class SwapClientManager extends EventEmitter {
     }
   }
 
+  /**
+   * Checks whether a given order with would exceed our inbound or outbound swap
+   * capacities when taking into consideration reserved amounts for standing
+   * orders, throws an exception if so and returns otherwise.
+   */
+  public checkSwapCapacities = async ({ quantity, price, isBuy, pairId }: OwnLimitOrder) => {
+    const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+      UnitConverter.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
+
+    // check if clients exists
+    const outboundSwapClient = this.get(outboundCurrency);
+    const inboundSwapClient = this.get(inboundCurrency);
+    if (!outboundSwapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
+    }
+    if (!inboundSwapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
+    }
+
+    const outboundCapacities = await outboundSwapClient.swapCapacities(outboundCurrency);
+
+    // check if sufficient outbound channel capacity exists
+    const reservedOutbound = this.outboundReservedAmounts.get(outboundCurrency) ?? 0;
+    const availableOutboundCapacity = outboundCapacities.totalOutboundCapacity - reservedOutbound;
+    if (outboundAmount > availableOutboundCapacity) {
+      throw errors.INSUFFICIENT_OUTBOUND_CAPACITY(outboundCurrency, outboundAmount, availableOutboundCapacity);
+    }
+
+    // check if sufficient inbound channel capacity exists
+    if (isConnextClient(inboundSwapClient)) {
+      // connext has the unique ability to dynamically request additional inbound capacity aka collateral
+      // we handle it differently and allow "lazy collateralization" if the total inbound capacity would
+      // be exceeded when including the reserved inbound amounts, we only reject if this order alone would
+      // exceed our inbound capacity
+      inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
+    } else {
+      const inboundCapacities = await inboundSwapClient.swapCapacities(inboundCurrency);
+      const reservedInbound = this.inboundReservedAmounts.get(inboundCurrency) ?? 0;
+      const availableInboundCapacity = inboundCapacities.totalInboundCapacity - reservedInbound;
+      if (inboundAmount > availableInboundCapacity) {
+        throw errors.INSUFFICIENT_INBOUND_CAPACITY(outboundCurrency, outboundAmount, availableOutboundCapacity);
+      }
+    }
+  }
+
   public getOutboundReservedAmount = (currency: string) => {
     return this.outboundReservedAmounts.get(currency);
   }
@@ -216,6 +261,12 @@ class SwapClientManager extends EventEmitter {
     const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
     assert(inboundReservedAmount && inboundReservedAmount >= amount);
     this.inboundReservedAmounts.set(currency, inboundReservedAmount - amount);
+  }
+
+  public setLogLevel = (level: Level) => {
+    for (const client of this.swapClients.values()) {
+      client.logger.setLogLevel(level);
+    }
   }
 
   /**

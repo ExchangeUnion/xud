@@ -843,6 +843,20 @@ class GrpcService {
     }
   }
 
+  public setLogLevel: grpc.handleUnaryCall<xudrpc.SetLogLevelRequest, xudrpc.SetLogLevelResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      await this.service.setLogLevel(call.request.toObject());
+
+      const response = new xudrpc.SetLogLevelResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
   public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (_, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;

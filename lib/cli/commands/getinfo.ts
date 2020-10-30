@@ -18,15 +18,15 @@ const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
+  const pendingChannelText = info.channels && info.channels['pending'] > 0 ? ` | Pending: ${info.channels['pending']}` : '';
+  const closedChannelText = info.channels && info.channels['closed'] > 0 ? ` | Closed: ${info.channels['closed']}` : '';
+  const inactiveChannelText = info.channels && info.channels['inactive'] > 0 ? ` | Inactive: ${info.channels['inactive']}` : '';
+
   basicInfotable.push(
     { [colors.blue('Version')]: info.version || '' },
     { [colors.blue('Address')]: address },
     { [colors.blue('Alias')] : info.alias || '' },
-    { [colors.blue('Channels')] :
- `Active: ${info.channels ? info.channels['active'] : 0}\
- | Pending: ${info.channels ? info.channels['pending'] : 0}\
- | Closed: ${info.channels ? info.channels['closed'] : 0}`,
-    },
+    { [colors.blue('Channels')] : `Active: ${info.channels ? info.channels['active'] : 0}${inactiveChannelText}${pendingChannelText}${closedChannelText}` },
     { [colors.blue('Network')] : info.chainsList && info.chainsList.length > 0 ? `${info.chainsList[0].chain} ${info.chainsList[0].network}` : '' },
   );
 
