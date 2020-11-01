@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
@@ -18,7 +19,6 @@ import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
-import { EventEmitter } from 'events';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
