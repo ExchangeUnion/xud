@@ -1015,7 +1015,11 @@ class OrderBook extends EventEmitter {
   }
 
   private removePeerPair = (peerPubKey: string, pairId: string) => {
-    const tp = this.getTradingPair(pairId);
+    const tp = this.tradingPairs.get(pairId);
+    if (!tp) {
+      return;
+    }
+
     const orders = tp.removePeerOrders(peerPubKey);
     orders.forEach((order) => {
       this.emit('peerOrder.invalidation', order);
