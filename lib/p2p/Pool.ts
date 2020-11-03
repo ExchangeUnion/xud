@@ -431,6 +431,11 @@ class Pool extends EventEmitter {
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
+    if (this.disconnecting || !this.connected) {
+      // if we are disconnected or disconnecting, don't make new connections to peers
+      throw errors.POOL_CLOSED;
+    }
+
     // check if we allow connections to tor addresses
     if (!this.config.tor && address.host.indexOf('.onion') !== -1) {
       throw errors.NODE_TOR_ADDRESS(nodePubKey, address);
@@ -780,7 +785,7 @@ class Pool extends EventEmitter {
             this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey!);
           }
 
-          const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey!, alias: peer.alias! };
+          const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
           this.emit('packet.order', incomingOrder);
         } else {
           this.logger.debug(`received order ${id} for deactivated trading pair`);
@@ -809,7 +814,7 @@ class Pool extends EventEmitter {
           this.logger.debug(`received ${receivedOrders.length} orders from ${peer.label}`);
           receivedOrders.forEach((order) => {
             if (peer.isPairActive(order.pairId)) {
-              this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey!, alias: peer.alias! });
+              this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
             } else {
               this.logger.debug(`received order ${order.id} for deactivated trading pair`);
             }
@@ -972,14 +977,19 @@ class Pool extends EventEmitter {
     peer.active = false;
     this.emit('peer.close', peer.nodePubKey);
 
-    const shouldReconnect =
+    const doesDisconnectionReasonCallForReconnection =
       (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
       (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling ||
        peer.recvDisconnectionReason === DisconnectionReason.AlreadyConnected ||
        peer.recvDisconnectionReason === DisconnectionReason.Shutdown);
     const addresses = peer.addresses || [];
 
-    if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
+    if (doesDisconnectionReasonCallForReconnection
+      && !peer.inbound // we don't make reconnection attempts to peers that connected to use
+      && peer.nodePubKey // we only reconnect if we know the peer's node pubkey
+      && (addresses.length || peer.address) // we only reconnect if there's an address to connect to
+      && !this.disconnecting && this.connected // we don't reconnect if we're in the process of disconnecting or have disconnected the p2p pool
+    ) {
       this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.label}`);
       const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
       await this.tryConnectNode(node, true);

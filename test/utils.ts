@@ -79,7 +79,6 @@ export const createPeerOrder = (
   isBuy: boolean,
   createdAt = ms(),
   peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
-  alias = 'test_alias',
   pairId = 'LTC/BTC',
 ): PeerOrder => ({
   quantity,
@@ -88,7 +87,6 @@ export const createPeerOrder = (
   pairId,
   createdAt,
   peerPubKey,
-  alias,
   initialQuantity: quantity,
   id: uuidv1(),
 });

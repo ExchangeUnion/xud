@@ -50,7 +50,8 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
     case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
     case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
-    case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
+    case swapErrorCodes.INSUFFICIENT_OUTBOUND_CAPACITY:
+    case swapErrorCodes.INSUFFICIENT_INBOUND_CAPACITY:
     case orderErrorCodes.QUANTITY_ON_HOLD:
     case swapErrorCodes.SWAP_CLIENT_NOT_FOUND:
     case swapErrorCodes.SWAP_CLIENT_MISCONFIGURED:

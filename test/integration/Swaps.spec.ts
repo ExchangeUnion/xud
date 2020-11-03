@@ -21,7 +21,6 @@ const validMakerOrder = () => {
     pairId: 'LTC/BTC',
     isBuy: false,
     peerPubKey: '029706a877a39d9f22e1ecd1042b058bd5798b9fd79fcf8c8ced8c1f13a4aff055',
-    alias: 'test_alias',
     id: 'b76158b1-e34c-11e8-92c2-9fa16c9aa9d1',
     createdAt: 1541677927103,
   };

@@ -37,6 +37,10 @@ export const builder = (argv: Argv) => argv
   .example('$0 openchannel ETH 0.5', 'deposit 0.5 into an ETH Connext channel without specifying a remote node');
 
 export const handler = async (argv: Arguments<any>) => {
+  if (isNaN(argv.amount)) {
+    throw 'amount must be a number';
+  }
+
   const request = new OpenChannelRequest();
   if (argv.node_identifier) {
     request.setNodeIdentifier(argv.node_identifier);

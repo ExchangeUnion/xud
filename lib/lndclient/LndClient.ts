@@ -62,7 +62,7 @@ class LndClient extends SwapClient {
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private initRetryTimeout?: NodeJS.Timeout;
-  private _totalOutboundAmount = 0;
+  private totalOutboundAmount = 0;
   private totalInboundAmount = 0;
   private maxChannelOutboundAmount = 0;
   private maxChannelInboundAmount = 0;
@@ -190,14 +190,6 @@ class LndClient extends SwapClient {
 
   public get chain() {
     return this.chainIdentifier;
-  }
-
-  public totalOutboundAmount = () => {
-    return this._totalOutboundAmount;
-  }
-
-  public checkInboundCapacity = (_inboundAmount: number) => {
-    return; // we do not currently check inbound capacities for lnd
   }
 
   public setReservedInboundAmount = (_reservedInboundAmount: number) => {
@@ -742,8 +734,8 @@ class LndClient extends SwapClient {
       this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
     }
 
-    if (this._totalOutboundAmount !== totalOutboundAmount) {
-      this._totalOutboundAmount = totalOutboundAmount;
+    if (this.totalOutboundAmount !== totalOutboundAmount) {
+      this.totalOutboundAmount = totalOutboundAmount;
       this.logger.debug(`new channel total outbound capacity: ${totalOutboundAmount}`);
     }
 
