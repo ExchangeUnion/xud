@@ -586,6 +586,8 @@ class ConnextClient extends SwapClient {
         }
       },
     );
+
+    return undefined;
   };
 
   private getTransferByRoutingId = async (routingId: string): Promise<ConnextTransfer> => {
