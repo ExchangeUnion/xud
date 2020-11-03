@@ -143,7 +143,7 @@ class Swaps extends EventEmitter {
   }
 
   public init = async () => {
-    // update pool with lnd pubkeys
+    // update pool with current lnd & connext pubkeys
     this.swapClientManager.getLndClientsMap().forEach(({ pubKey, chain, currency, uris }) => {
       if (pubKey && chain) {
         this.pool.updateLndState({
@@ -154,6 +154,9 @@ class Swaps extends EventEmitter {
         });
       }
     });
+    if (this.swapClientManager.connextClient) {
+      this.pool.updateConnextState(this.swapClientManager.connextClient.tokenAddresses, this.swapClientManager.connextClient.userIdentifier);
+    }
 
     this.swapRecovery.beginTimer();
     const swapDealInstances = await this.repository.getSwapDeals();

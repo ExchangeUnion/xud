@@ -96,6 +96,7 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
+  public userIdentifier?: string;
   /**
    * A map of expected invoices by hash.
    * This is equivalent to invoices of lnd with the difference
@@ -371,9 +372,9 @@ class ConnextClient extends SwapClient {
         this.subscribeIncomingTransfer(),
         this.subscribeDeposit(),
       ]);
-      const { userIdentifier } = config;
+      this.userIdentifier = config.userIdentifier;
       this.emit('connectionVerified', {
-        newIdentifier: userIdentifier,
+        newIdentifier: this.userIdentifier,
       });
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
