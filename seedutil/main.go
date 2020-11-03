@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha512"
+	"encoding/binary"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -115,11 +116,42 @@ func main() {
 		encipherCommand.Parse(os.Args[2:])
 		args = encipherCommand.Args()
 
-		mnemonic := parseMnemonic(args)
-		cipherSeed := mnemonicToCipherSeed(mnemonic, aezeedPassphrase)
+		if len(args) == 0 {
+			fmt.Fprintln(os.Stderr, "missing hex string")
+			os.Exit(1)
+		}
+		decipheredSeedHex := args[0]
+		decipheredSeed, err := hex.DecodeString(decipheredSeedHex)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 
-		encipheredSeed, _ := cipherSeed.Encipher([]byte(*aezeedPassphrase))
-		fmt.Println(hex.EncodeToString(encipheredSeed[:]))
+		if len(decipheredSeed) != 19 {
+			fmt.Fprintf(os.Stderr, "\nerror: invalid hex length of %v bytes\n", len(decipheredSeed))
+			os.Exit(1)
+		}
+
+		internalVersion := decipheredSeed[0]
+		birthday := binary.BigEndian.Uint16(decipheredSeed[1:3])
+		var entropy [16]byte
+		copy(entropy[:], decipheredSeed[3:19])
+
+		genesisTime := time.Date(2009, time.January, 3, 18, 15, 5, 0, time.UTC)
+
+		cipherSeed, err := aezeed.New(internalVersion, &entropy, genesisTime.AddDate(0, 0, int(birthday)))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		mnemonic, err := cipherSeed.ToMnemonic([]byte(*aezeedPassphrase))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Println(strings.Join([]string(mnemonic[:]), " "))
 	case "decipher":
 		aezeedPassphrase := decipherCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
 		decipherCommand.Parse(os.Args[2:])
