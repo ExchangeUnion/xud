@@ -917,6 +917,7 @@
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a buy or sell. |
 | replace_order_id | [string](#string) |  | The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed, otherwise an error is returned. |
 | immediate_or_cancel | [bool](#bool) |  | Whether the order must be filled immediately and not allowed to enter the order book. |
+| max | [bool](#bool) |  | Whether to trade all available funds. If true, the quantity field is ignored. |
 
 
 

@@ -1,10 +1,12 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import sinon, { SinonStub } from 'sinon';
 import { OrderSide, Owner, SwapClientType } from '../../lib/constants/enums';
 import p2pErrors from '../../lib/p2p/errors';
 import Service from '../../lib/service/Service';
 import Xud from '../../lib/Xud';
 import { getTempDir } from '../utils';
+import { TradingLimits } from '../../lib/swaps/types';
 
 chai.use(chaiAsPromised);
 
@@ -185,5 +187,273 @@ describe('API Service', () => {
       xud.on('shutdown', () => resolve());
     });
     await expect(shutdownPromise).to.be.fulfilled;
+  });
+
+  describe('Max Quantity Limit Buy Calculation', () => {
+    let stub: SinonStub;
+    const sinonSandbox = sinon.createSandbox();
+
+    beforeEach(async () => {
+      stub = sinonSandbox.stub(service, 'tradingLimits');
+    });
+
+    afterEach(async () => {
+      sinonSandbox.restore();
+    });
+
+    it('should return min(max amount of base using max sell bound for quote, buy max base) lnd/lnd buy', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 1.025,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('LTC', {
+        maxSell: 0,
+        maxBuy : 5,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('LTC', 'BTC', OrderSide.Buy, 0.5, SwapClientType.Lnd, SwapClientType.Lnd);
+      await expect(number).to.equal(2.05);
+    });
+
+    it('should return min(max amount of base using max sell bound for quote, buy max base) lnd/lnd buy-2', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 1.025,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('LTC', {
+        maxSell: 0,
+        maxBuy : 1,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('LTC', 'BTC', OrderSide.Buy, 0.5, SwapClientType.Lnd, SwapClientType.Lnd);
+      await expect(number).to.equal(1);
+    });
+
+    it('should return (uses max sell bound for quote to calculate base amount) connext/connext buy', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('USDT', {
+        maxSell: 0,
+        maxBuy : 1.025,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('DAI', {
+        maxSell: 5,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('USDT', 'DAI',
+          OrderSide.Buy, 0.5, SwapClientType.Connext, SwapClientType.Connext);
+      await expect(number).to.equal(10);
+    });
+
+    it('should return min(max amount of base using max sell bound for quote, buy max base) lnd/connext buy', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 0,
+        maxBuy : 1.025,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('USDT', {
+        maxSell: 5,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('BTC', 'USDT', OrderSide.Buy, 0.5, SwapClientType.Lnd, SwapClientType.Connext);
+      await expect(number).to.equal(1.025);
+    });
+
+    it('should return min(max amount of base using max sell bound for quote, buy max base) lnd/connext buy - 2', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 0,
+        maxBuy : 5,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('USDT', {
+        maxSell: 1,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('BTC', 'USDT', OrderSide.Buy, 0.5, SwapClientType.Lnd, SwapClientType.Connext);
+      await expect(number).to.equal(2);
+    });
+
+    it('should return (uses max sell bound for quote to calculate base amount) connext/lnd buy', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('ETH', {
+        maxSell: 0,
+        maxBuy : 1.025,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('BTC', {
+        maxSell: 5,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('ETH', 'BTC', OrderSide.Buy, 0.5, SwapClientType.Connext, SwapClientType.Lnd);
+      await expect(number).to.equal(10);
+    });
+  });
+
+  describe('Max Quantity Limit Sell Calculation', () => {
+    let stub: SinonStub;
+    const sinonSandbox = sinon.createSandbox();
+
+    beforeEach(async () => {
+      stub = sinonSandbox.stub(service, 'tradingLimits');
+    });
+
+    afterEach(async () => {
+      sinonSandbox.restore();
+    });
+
+    it('should return min(max amount of base using max buy bound for quote, sell max base) lnd/lnd sell', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 0,
+        maxBuy : 1.025,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('LTC', {
+        maxSell: 5,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('LTC', 'BTC', OrderSide.Sell, 0.5, SwapClientType.Lnd, SwapClientType.Lnd);
+      await expect(number).to.equal(2.05);
+    });
+
+    it('should return min(max amount of base using max buy bound for quote, sell max base) lnd/lnd sell-2', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 0,
+        maxBuy : 1.025,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('LTC', {
+        maxSell: 1,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('LTC', 'BTC', OrderSide.Sell, 0.5, SwapClientType.Lnd, SwapClientType.Lnd);
+      await expect(number).to.equal(1);
+    });
+
+    it('should return (use max sell bound for base) connext/connext sell', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('USDT', {
+        maxSell: 1.025,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('DAI', {
+        maxSell: 5,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('USDT', 'DAI',
+          OrderSide.Sell, 0.5, SwapClientType.Connext, SwapClientType.Connext);
+      await expect(number).to.equal(1.025);
+    });
+
+    it('should return (use max sell bound for base) lnd/cnxt sell', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('BTC', {
+        maxSell: 1.025,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('USDT', {
+        maxSell: 0,
+        maxBuy : 5,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('BTC', 'USDT', OrderSide.Sell, 0.5, SwapClientType.Lnd, SwapClientType.Connext);
+      await expect(number).to.equal(1.025);
+    });
+
+    it('should return min(max amount of base using max buy bound for quote, max sell bound for base) connext/lnd sell', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('ETH', {
+        maxSell: 1.025,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('BTC', {
+        maxSell: 0,
+        maxBuy : 5,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('ETH', 'BTC', OrderSide.Sell, 0.5, SwapClientType.Connext, SwapClientType.Lnd);
+      await expect(number).to.equal(1.025);
+    });
+
+    it('should return min(max amount of base using max buy bound for quote, max sell bound for base) connext/lnd sell-2', async () => {
+      const tradingLimitsMap = new Map<string, TradingLimits>();
+      tradingLimitsMap.set('ETH', {
+        maxSell: 5,
+        maxBuy : 0,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      tradingLimitsMap.set('BTC', {
+        maxSell: 0,
+        maxBuy : 1,
+        reservedOutbound: 0,
+        reservedInbound: 0,
+      });
+      stub.returns(Promise.resolve(tradingLimitsMap));
+
+      const number = await service['calculateLimitOrderMaxQuantity']('ETH', 'BTC', OrderSide.Sell, 0.5, SwapClientType.Connext, SwapClientType.Lnd);
+      await expect(number).to.equal(2);
+    });
   });
 });

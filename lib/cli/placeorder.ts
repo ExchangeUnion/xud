@@ -7,8 +7,8 @@ import { checkDecimalPlaces } from '../utils/utils';
 export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   const command = side === OrderSide.BUY ? 'buy' : 'sell';
   argv.positional('quantity', {
-    type: 'number',
-    describe: 'the quantity to trade',
+    type: 'string',
+    describe: 'the quantity to trade, `max` trades everything',
   })
   .positional('pair_id', {
     type: 'string',
@@ -39,6 +39,7 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
     describe: 'immediate-or-cancel',
   })
   .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
+  .example(`$0 ${command} max LTC/BTC .01`, `place a limit order to ${command} max LTC @ 0.01 BTC`)
   .example(`$0 ${command} 3 BTC/USDT mkt`, `place a market order to ${command} 3 BTC for USDT`)
   .example(`$0 ${command} 1 BTC/USDT market`, `place a market order to ${command} 1 BTC for USDT`);
 };
@@ -48,9 +49,17 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
 
   const numericPrice = Number(argv.price);
   const priceStr = argv.price.toLowerCase();
+  const isMax = argv.quantity === 'max';
 
-  const quantity = coinsToSats(argv.quantity);
-  request.setQuantity(quantity);
+  if (isMax) {
+    request.setMax(true);
+  } else {
+    if (isNaN(argv.quantity)) {
+      console.error('quantity is not a valid number');
+      process.exit(1);
+    }
+    request.setQuantity(coinsToSats(parseFloat(argv.quantity)));
+  }
   request.setSide(side);
   request.setPairId(argv.pair_id.toUpperCase());
   request.setImmediateOrCancel(argv.ioc);
@@ -81,7 +90,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
   } else {
     const subscription = client.placeOrder(request);
     let noMatches = true;
-    let remainingQuantity = quantity;
+    let remainingQuantity = isMax ? 0 : coinsToSats(parseFloat(argv.quantity));
     subscription.on('data', (response: PlaceOrderEvent) => {
       if (argv.json) {
         console.log(JSON.stringify(response.toObject(), undefined, 2));
@@ -113,6 +122,8 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
     subscription.on('end', () => {
       if (noMatches) {
         console.log('no matches found');
+      } else if (isMax) {
+        console.log('no more matches found');
       } else if (remainingQuantity > 0) {
         console.log(`no more matches found, ${satsToCoinsStr(remainingQuantity)} qty will be discarded`);
       }

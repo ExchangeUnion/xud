@@ -624,19 +624,37 @@ class Service extends EventEmitter {
    * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (
-    args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
-      replaceOrderId: string, immediateOrCancel: boolean },
+    args: { pairId: string, price: number, quantity?: number, orderId: string, side: number,
+      replaceOrderId: string, immediateOrCancel: boolean, max?: boolean },
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
-    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel, max } = args;
+
+    let calculatedQuantity: number;
+
+    if (max) {
+      if (!price) {
+        throw errors.INVALID_ARGUMENT("max flag can't be used for market orders");
+      }
+
+      const baseCurrency = pairId.split('/')[0];
+      const baseSwapClient = this.swapClientManager.get(baseCurrency)?.type;
+
+      const quoteCurrency = pairId.split('/')[1];
+      const quoteSwapClient = this.swapClientManager.get(quoteCurrency)?.type;
+
+      calculatedQuantity = await this.calculateLimitOrderMaxQuantity(baseCurrency, quoteCurrency, side, price, baseSwapClient, quoteSwapClient);
+    } else {
+      calculatedQuantity = quantity || 0;
+    }
 
     const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
       price,
-      quantity,
+      quantity: calculatedQuantity,
       isBuy: side === OrderSide.Buy,
       localId: orderId || replaceOrderId,
     };
@@ -660,6 +678,52 @@ class Service extends EventEmitter {
     };
     return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
       await this.orderBook.placeMarketOrder(placeOrderRequest);
+  }
+
+  private async calculateLimitOrderMaxQuantity(baseCurrency: string, quoteCurrency: string, side: number,
+                                               price: number, baseSwapClient?: SwapClientType, quoteSwapClient?: SwapClientType) {
+    let calculatedQuantity;
+
+    const baseTradingLimits = (await this.tradingLimits({ currency: baseCurrency })).get(baseCurrency);
+    const quoteTradingLimits = (await this.tradingLimits({ currency: quoteCurrency })).get(quoteCurrency);
+
+    if (baseSwapClient === SwapClientType.Lnd && quoteSwapClient === SwapClientType.Lnd) {
+      const maxGettableFromQuote = ((side === OrderSide.Sell ? quoteTradingLimits?.maxBuy : quoteTradingLimits?.maxSell) || 0) / price;
+      const maxGettableFromBase = (side === OrderSide.Sell ? baseTradingLimits?.maxSell : baseTradingLimits?.maxBuy) || 0;
+
+      calculatedQuantity = Math.min(maxGettableFromBase, maxGettableFromQuote);
+    } else if (baseSwapClient === SwapClientType.Lnd && quoteSwapClient === SwapClientType.Connext) {
+      if (side === OrderSide.Sell) {
+        calculatedQuantity = baseTradingLimits?.maxSell || 0;
+      } else {
+        const maxSellableFromQuote = (quoteTradingLimits?.maxSell || 0) / price;
+        const maxBuyableFromBase = baseTradingLimits?.maxBuy || 0;
+
+        calculatedQuantity = Math.min(maxSellableFromQuote, maxBuyableFromBase);
+      }
+
+    } else if (baseSwapClient === SwapClientType.Connext && quoteSwapClient === SwapClientType.Lnd) {
+      if (side === OrderSide.Sell) {
+        const maxBuyableFromQuote = (quoteTradingLimits?.maxBuy || 0) / price;
+        const maxSellableFromBase = baseTradingLimits?.maxSell || 0;
+
+        calculatedQuantity = Math.min(maxBuyableFromQuote, maxSellableFromBase);
+      } else {
+        calculatedQuantity = (quoteTradingLimits?.maxSell || 0) / price;
+      }
+
+    } else if (baseSwapClient === SwapClientType.Connext && quoteSwapClient === SwapClientType.Connext) {
+      if (side === OrderSide.Sell) {
+        calculatedQuantity = baseTradingLimits?.maxSell || 0;
+      } else {
+        calculatedQuantity = (quoteTradingLimits?.maxSell || 0) / price;
+      }
+
+    } else {
+      throw errors.INVALID_ARGUMENT(`unknown swap client pair ${baseSwapClient}/${quoteSwapClient}`);
+    }
+
+    return calculatedQuantity;
   }
 
   /** Removes a currency. */
