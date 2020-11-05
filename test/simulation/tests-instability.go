@@ -61,7 +61,7 @@ func testMakerCrashedAfterSendBeforePreimageResolved(net *xudtest.NetworkHarness
 }
 
 func testMakerCrashedAfterSendBeforePreimageResolvedConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
-	ht.act.initConnext(net, net.Bob, true)
+	ht.act.FundETH(net, net.Bob)
 	testMakerCrashedDuringSwapConnextIn(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED"})
 }
 
@@ -130,7 +130,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, makerEnvArgs)
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
-	ht.act.initConnext(net, net.Alice, false)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -173,9 +173,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 
 	err = net.Alice.Start(nil)
 	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Brief delay to allow for swap to be recovered consistently.
 	time.Sleep(3 * time.Second)
@@ -260,9 +258,8 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
-
-	ht.act.initConnext(net, net.Alice, false)
-	ht.assert.NoError(waitConnextReady(net.Bob))
+	ht.act.waitConnextReady(net.Alice)
+	ht.act.waitConnextReady(net.Bob)
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -312,9 +309,7 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 	// Restart Alice's connext-client.
 	err = net.Alice.ConnextClient.Start(nil)
 	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Brief delay to allow for swap to be recovered consistently.
 	// The pending swap recheck interval is usually 5m, but was adjusted in
@@ -406,10 +401,10 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 	ht.assert.NoError(err)
 
 	ht.act.init(net.Alice)
-	ht.act.initConnext(net, net.Alice, true)
+	ht.act.FundETH(net, net.Alice)
 
 	ht.act.init(net.Bob)
-	ht.act.initConnext(net, net.Bob, false)
+	ht.act.waitConnextReady(net.Bob)
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -451,9 +446,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 	err = net.Alice.Start(nil)
 	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Verify that alice hasn't claimed her BTC yet. The incoming BTC payment
 	// cannot be settled until the outgoing ETH payment is settled by bob,
@@ -494,10 +487,10 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 	ht.assert.NoError(err)
 
 	ht.act.init(net.Alice)
-	ht.act.initConnext(net, net.Alice, false)
+	ht.act.waitConnextReady(net.Alice)
 
 	ht.act.init(net.Bob)
-	ht.act.initConnext(net, net.Bob, true)
+	ht.act.FundETH(net, net.Bob)
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -542,9 +535,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 
 	err = net.Alice.Start(nil)
 	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Verify that alice hasn't claimed her ETH yet. The incoming ETH payment
 	// cannot be settled until the outgoing BTC payment is settled by bob,

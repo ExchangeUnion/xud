@@ -17,6 +17,8 @@ var (
 	// the `localhost` of the host machine.
 	EthProviderURL = "http://172.17.0.1:8545"
 	NodeURL        = "http://172.17.0.1:8888"
+
+	ETHTokenAddress = "0x0000000000000000000000000000000000000000"
 )
 
 type NetworkHarness struct {
