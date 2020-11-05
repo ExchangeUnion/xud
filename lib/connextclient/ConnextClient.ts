@@ -775,7 +775,7 @@ class ConnextClient extends SwapClient {
     }
     const amount = units || freeBalanceOffChain;
 
-    if (amount === 0) {
+    if (Number(amount) === 0) {
       return []; // there is nothing to withdraw and no tx to return
     }
 

@@ -49,7 +49,7 @@ const errors = {
     code: errorCodes.INVALID_REQUEST,
   },
   NO_CHANNELS_TO_CLOSE: (remoteIdentifier: string) => ({
-    message: `no channels found to close ${remoteIdentifier ? `for ${remoteIdentifier}` : ''}` ,
+    message: `no channels found to close for ${remoteIdentifier}`,
     code: errorCodes.NO_CHANNELS_TO_CLOSE,
   }),
 };
