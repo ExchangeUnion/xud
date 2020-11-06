@@ -1932,22 +1932,22 @@
         "max_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "Maximum outbound limit for an order denominated in satoshis."
+          "description": "Maximum outbound limit for a sell order denominated in satoshis."
         },
         "max_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "Maximum inbound limit for an order denominated in satoshis."
+          "description": "Maximum inbound limit for a buy order denominated in satoshis."
         },
-        "reserved_outbound": {
+        "reserved_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "The outbound amount reserved for open orders."
+          "description": "The outbound amount reserved for open sell orders."
         },
-        "reserved_inbound": {
+        "reserved_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "The inbound amount reserved for open orders."
+          "description": "The inbound amount reserved for open buy orders."
         }
       }
     },

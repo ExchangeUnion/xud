@@ -185,8 +185,8 @@ class SwapClientManager extends EventEmitter {
       const availableInboundCapacity = Math.max(0, swapCapacities.totalInboundCapacity - reservedInbound);
 
       return {
-        reservedOutbound,
-        reservedInbound,
+        reservedSell: reservedOutbound,
+        reservedBuy: reservedInbound,
         maxSell: Math.min(swapCapacities.maxOutboundChannelCapacity, availableOutboundCapacity),
         maxBuy: Math.min(swapCapacities.maxInboundChannelCapacity, availableInboundCapacity),
       };
