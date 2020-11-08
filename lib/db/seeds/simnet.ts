@@ -2,7 +2,6 @@ import * as db from '../../db/types';
 import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
-  /*
   {
     nodePubKey: '03ece33a30db1dbce4b62fa96a5e9541138a24997ef5672eebed2d332270e39542',
     addresses: [
@@ -17,7 +16,6 @@ const nodes = [
       { host: 'ri3khz45h25dzxh32z2r7f3s2fgque6f77zygtanldio3z3ps3b3s3id.onion', port: 28885 },
     ],
   },
-  */
 ] as db.NodeAttributes[];
 
 const currencies = [
