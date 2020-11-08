@@ -1,12 +1,11 @@
 import grpc from 'grpc';
 import http from 'http';
-import { defer, empty, from, Observable, of, throwError } from 'rxjs';
+import { defer, from, Observable, of, throwError } from 'rxjs';
 import {
   catchError,
   concat,
   concatAll,
   delay,
-  mapTo,
   mergeMap,
   retryWhen,
   share,
@@ -19,8 +18,6 @@ import {
   GetBalanceResponse,
   GetInfoRequest,
   GetInfoResponse,
-  OpenChannelRequest,
-  OpenChannelResponse,
 } from '../proto/xudrpc_pb';
 
 type Balances = {
@@ -61,20 +58,6 @@ const getBalance = async (
     client.getBalance(request, processResponse(resolve, reject));
   });
   return balances as GetBalanceResponse;
-};
-
-const openConnextChannel = async (
-  client: XudClient,
-  currency: string,
-  amount: number,
-): Promise<OpenChannelResponse> => {
-  const request = new OpenChannelRequest();
-  request.setCurrency(currency.toUpperCase());
-  request.setAmount(amount);
-  const openChannelResponse = await new Promise((resolve, reject) => {
-    client.openChannel(request, processResponse(resolve, reject));
-  });
-  return openChannelResponse as OpenChannelResponse;
 };
 
 const checkBalanceObservable = (
@@ -185,7 +168,6 @@ const faucetRequest = (connextAddress: string) => {
 const createSimnetChannel = ({
   client,
   currency,
-  minChannelAmount,
   channelAmount,
   retryInterval,
   getBalance$,
@@ -204,17 +186,6 @@ const createSimnetChannel = ({
     getBalance$,
   );
   const simnetChannel$ = balances$.pipe(
-    mergeMap((balances) => {
-      if (balances.channelBalance >= minChannelAmount) {
-        // in case we already have enough channelBalance we won't attempt
-        // to open a channel
-        return empty();
-      } else {
-        return from(openConnextChannel(client, currency, channelAmount)).pipe(
-          mapTo(currency),
-        );
-      }
-    }),
     // when error happens
     retryWhen(errors =>
       errors.pipe(

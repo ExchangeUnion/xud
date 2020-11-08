@@ -5,7 +5,7 @@ import path from 'path';
 import { Subscription } from 'rxjs';
 import bootstrap from './bootstrap';
 import Config from './Config';
-import { SwapClientType } from './constants/enums';
+import { SwapClientType, XuNetwork } from './constants/enums';
 import DB from './db/DB';
 import GrpcServer from './grpc/GrpcServer';
 import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
@@ -19,6 +19,7 @@ import Service from './service/Service';
 import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
+import {createSimnetChannels} from './utils/simnet-connext-channels';
 
 const version: string = require('../package.json').version;
 
@@ -225,6 +226,37 @@ class Xud extends EventEmitter {
           this.config.http.port,
           this.config.http.host,
         );
+      }
+
+      // if we're running in simnet mode and Connext is enabled we'll
+      // attempt to request funds from the faucet and open a channel
+      // to the node once we have received the on-chain funds
+      if (
+        this.config.network === XuNetwork.SimNet &&
+        this.swapClientManager.connextClient?.isOperational()
+      ) {
+        this.simnetChannels$ = createSimnetChannels({
+          channels: [
+            {
+              currency: 'ETH',
+              // amount of currency to put in the channel
+              channelAmount: 1000000000,
+              // minimum channelBalance threshold
+              minChannelAmount: 100000000,
+            },
+          ],
+          retryInterval: 10000,
+        }).subscribe({
+          next: (currency) => {
+            this.logger.info(`Connext wallet funded and channel opened for ${currency}`);
+          },
+          error: (e) => {
+            this.logger.error(`Failed to fund Connext wallet and open a channel: ${e}`);
+          },
+          complete: () => {
+            this.logger.info('Stopped monitoring Connext balances for automatic funding and channel creation');
+          },
+        });
       }
 
       // initialize rpc server last
