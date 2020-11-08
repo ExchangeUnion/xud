@@ -74,7 +74,7 @@ const checkBalanceObservable = (
         walletBalance: currencyBalance.getWalletBalance(),
         channelBalance: currencyBalance.getChannelBalance(),
       };
-      if (balances.walletBalance < minimumBalance) {
+      if (balances.channelBalance < minimumBalance) {
         // the balance is under our specified threshold
         // we'll hit the faucet with our connext address
         // and then recheck the balance
