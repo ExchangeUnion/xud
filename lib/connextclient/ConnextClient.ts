@@ -1,6 +1,6 @@
 import assert from 'assert';
 import http from 'http';
-import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
+import { ChannelSide, SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import { XudError } from '../types';
 import Logger from '../Logger';
@@ -14,7 +14,7 @@ import SwapClient, {
   PaymentStatus,
   WithdrawArguments,
 } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities, ChannelBalanceAlert } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -46,6 +46,7 @@ interface ConnextClient {
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
+  on(event: 'lowBalance', listener: (alert: ChannelBalanceAlert) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -53,6 +54,7 @@ interface ConnextClient {
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
   emit(event: 'depositConfirmed', hash: string): void;
+  emit(event: 'lowBalance', alert: ChannelBalanceAlert): boolean;
 }
 
 /**
@@ -332,8 +334,50 @@ class ConnextClient extends SwapClient {
         channelBalancePromises.push(this.channelBalance(currency));
       }
       await Promise.all(channelBalancePromises);
+
+      for (const [currency, address] of this.tokenAddresses) {
+        const remoteBalance = this.inboundAmounts.get(currency) || 0;
+        const localBalance = this.outboundAmounts.get(currency) || 0;
+        const totalBalance = remoteBalance + localBalance;
+        const alertThreshold = totalBalance * 0.1;
+
+        this.checkLowBalance(
+            remoteBalance,
+            localBalance,
+            totalBalance,
+            alertThreshold,
+            currency,
+            address,
+            this.emit,
+        );
+      }
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);
+    }
+  }
+
+  private checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
+                             alertThreshold: number, currency: string, channelPoint: string, emit: Function) => {
+    if (localBalance < alertThreshold) {
+      emit('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    }
+
+    if (remoteBalance < alertThreshold) {
+      emit('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Remote,
+        sideBalance: remoteBalance,
+        bound: 10,
+      });
     }
   }
 

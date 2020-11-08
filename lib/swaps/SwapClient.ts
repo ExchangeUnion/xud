@@ -34,6 +34,8 @@ type ChannelBalance = {
   pendingOpenBalance: number,
   /** The cumulative balance of inactive channels denominated in satoshis. */
   inactiveBalance: number,
+  /** The channel balances by channel point. */
+  channels?: Channel[],
 };
 
 type WalletBalance = {
@@ -67,6 +69,15 @@ export type WithdrawArguments = {
   amount?: number,
   all?: boolean,
   fee?: number,
+};
+
+export type Channel = {
+  /** The local balance of the channel. */
+  localBalance: number,
+  /** The remote balance of the channel. */
+  remoteBalance: number,
+  /** The point of the channel. */
+  channelPoint: string,
 };
 
 interface SwapClient {

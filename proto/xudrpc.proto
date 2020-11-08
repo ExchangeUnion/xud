@@ -279,6 +279,13 @@ service Xud {
     };
   }
 
+  /* Subscribes to alerts such as low balance. */
+  rpc SubscribeAlerts(SubscribeAlertsRequest) returns (stream Alert) {
+    option (google.api.http) = {
+      get: "/v1/subscribealerts"
+    };
+  }
+
   /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
    * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
    * the client to get real-time notifications when swap attempts are failing. It can be used for
@@ -376,6 +383,20 @@ message AddPairRequest {
 }
 message AddPairResponse {}
 
+message Alert {
+   // The type of the alert.
+   enum AlertType {
+     LOW_BALANCE = 0;
+   }
+   AlertType type = 1 [json_name = "type"];
+   // The human readable alert message.
+   string message = 2 [json_name = "message"];
+   // The structured payload.
+   oneof payload {
+     ChannelBalanceAlert balance_alert = 3 [json_name = "balance_alert"];
+   }
+}
+
 message Balance {
   // Total balance denominated in satoshis.
   uint64 total_balance = 1 [json_name = "total_balance"];
@@ -413,6 +434,23 @@ message Channels {
   uint32 pending = 3 [json_name = "pending"];
   // The number of channels that have been closed.
   uint32 closed = 4 [json_name = "closed"];
+}
+
+message ChannelBalanceAlert {
+  // The total balance of the channel.
+  uint64 total_balance = 1 [json_name = "total_balance"];
+  // The side of the low balance.
+  enum Side {
+    REMOTE = 0;
+    LOCAL = 1;
+  }
+  Side side = 2 [json_name = "side"];
+  // The bound of the low balance in percentage.
+  uint32 bound = 3 [json_name = "bound"];
+  // The current side balance.
+  uint64 side_balance = 4 [json_name = "side_balance"];
+  // The point of the channel.
+  string channel_point = 5 [json_name = "channel_point"];
 }
 
 message CloseChannelRequest {
@@ -816,6 +854,9 @@ message ShutdownResponse {}
 message SubscribeOrdersRequest {
   // Whether to transmit all existing active orders upon establishing the stream.
   bool existing = 1 [json_name = "existing"];
+}
+
+message SubscribeAlertsRequest {
 }
 
 message SubscribeSwapsAcceptedRequest { }

@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
-import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
+import { AlertType, OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger, { Level, LevelPriority } from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
@@ -12,7 +12,7 @@ import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
+import { ChannelBalanceAlert, ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -692,6 +692,29 @@ class Service extends EventEmitter {
     argChecks.HAS_NODE_IDENTIFIER(args);
     const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.discoverNodes(nodePubKey);
+  }
+  /*
+   * Subscribe to alerts.
+   */
+  public subscribeAlerts = (
+      callback: (type: AlertType, message: string, payload: ChannelBalanceAlert) => void,
+      cancelled$: Observable<void>,
+  ) => {
+    const lowBalanceObservables: Observable<ChannelBalanceAlert>[] = [];
+    this.swapClientManager.swapClients.forEach((swapClient) => {
+      lowBalanceObservables.push(fromEvent<ChannelBalanceAlert>(swapClient, 'lowBalance'));
+    });
+
+    const lowBalance$ = merge(...lowBalanceObservables).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
+    lowBalance$.subscribe({
+      next: (alert) => {
+        callback(
+            AlertType.LowBalance,
+            `${alert.side} channel balance is lower than ${alert.totalBalance} for ${alert.currency} by ${alert.bound}%`,
+            alert);
+      },
+      error: this.logger.error,
+    });
   }
 
   /*

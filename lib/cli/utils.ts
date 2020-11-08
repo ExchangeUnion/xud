@@ -2,6 +2,10 @@ import colors from 'colors/safe';
 import { accessSync, watch } from 'fs';
 import os from 'os';
 import path from 'path';
+import { XudClient } from '../proto/xudrpc_grpc_pb';
+import { Arguments } from 'yargs';
+import { ServiceError, status } from 'grpc';
+import { setTimeoutPromise } from '../utils/utils';
 
 const SATOSHIS_PER_COIN = 10 ** 8;
 
@@ -79,4 +83,31 @@ export const waitForCert = (certPath: string) => {
       }
     }
   });
+};
+
+export const waitForClient = (client: XudClient, argv: Arguments, ensureConnection: Function, successCallback: Function, printError?: boolean) => {
+  client.waitForReady(Date.now() + 3000, (error: Error | null) => {
+    if (error) {
+      if (error.message === 'Failed to connect before the deadline') {
+        console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
+        process.exit(1);
+      }
+
+      if (printError) console.error(`${error.name}: ${error.message}`);
+      setTimeout(ensureConnection.bind(undefined, argv, printError), 3000);
+    } else {
+      console.log('Successfully connected, subscribing for alerts');
+      successCallback(argv);
+    }
+  });
+};
+
+export const onStreamError = async (ensureConnection: Function, err: ServiceError) => {
+  if (err.code === status.UNIMPLEMENTED) {
+    console.error("xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again");
+    process.exit(1);
+  }
+  console.warn(`Unexpected error occured: ${err.message}, reconnecting in 1 second`);
+  await setTimeoutPromise(1000);
+  await ensureConnection();
 };

@@ -2,13 +2,13 @@
 import grpc, { ServerWritableStream, status } from 'grpc';
 import { fromEvent } from 'rxjs';
 import { take } from 'rxjs/operators';
-import { SwapFailureReason } from '../constants/enums';
+import { AlertType, SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
 import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
-import { SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ChannelBalanceAlert, SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
 /**
@@ -868,6 +868,31 @@ class GrpcService {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
+  }
+
+  /*
+   * See [[Service.subscribeAlerts]]
+   */
+  public subscribeAlerts: grpc.handleServerStreamingCall<xudrpc.SubscribeAlertsRequest, xudrpc.Alert> = (call) => {
+    if (!this.isReady(this.service, call)) {
+      return;
+    }
+
+    const cancelled$ = getCancelled$(call);
+    this.service.subscribeAlerts((type: AlertType, message: string, payload: ChannelBalanceAlert) => {
+      const alert = new xudrpc.Alert();
+      alert.setType(type as number);
+      alert.setMessage(message);
+      const channelBalanceAlert = new xudrpc.ChannelBalanceAlert();
+      channelBalanceAlert.setBound(payload.bound);
+      channelBalanceAlert.setChannelPoint(payload.channelPoint);
+      channelBalanceAlert.setSide(payload.side as number);
+      channelBalanceAlert.setSideBalance(payload.sideBalance);
+      channelBalanceAlert.setTotalBalance(payload.totalBalance);
+      alert.setBalanceAlert(channelBalanceAlert);
+      call.write(alert);
+    },
+    cancelled$);
   }
 
   /*

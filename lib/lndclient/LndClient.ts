@@ -3,15 +3,15 @@ import crypto from 'crypto';
 import { promises as fs, watch } from 'fs';
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import path from 'path';
-import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
+import { ChannelSide, SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import Logger from '../Logger';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, WithdrawArguments } from '../swaps/SwapClient';
-import { CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
+import SwapClient, { Channel, ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, WithdrawArguments } from '../swaps/SwapClient';
+import { ChannelBalanceAlert, CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
 import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
@@ -23,6 +23,7 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
+  on(event: 'lowBalance', listener: (alert: ChannelBalanceAlert) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
 
@@ -32,6 +33,7 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
+  emit(event: 'lowBalance', alert: ChannelBalanceAlert): boolean;
 }
 
 const MAXFEE = 0.03;
@@ -230,7 +232,33 @@ class LndClient extends SwapClient {
   }
 
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(async (err) => {
+    await this.channelBalance().then(({ channels }) => {
+      channels?.forEach((channel) => {
+        const totalBalance = channel.localBalance + channel.remoteBalance;
+        const alertThreshold = totalBalance * 0.1;
+        if (channel.localBalance < alertThreshold) {
+          this.emit('lowBalance', {
+            totalBalance,
+            channelPoint: channel.channelPoint,
+            side: ChannelSide.Local,
+            sideBalance: channel.localBalance,
+            bound: 10,
+            currency: this.currency,
+          });
+        }
+
+        if (channel.remoteBalance < alertThreshold) {
+          this.emit('lowBalance', {
+            totalBalance,
+            channelPoint: channel.channelPoint,
+            side: ChannelSide.Remote,
+            sideBalance: channel.remoteBalance,
+            bound: 10,
+            currency: this.currency,
+          });
+        }
+      });
+    }).catch(async (err) => {
       this.logger.error('failed to update total outbound capacity', err);
     });
   }
@@ -705,22 +733,31 @@ class LndClient extends SwapClient {
     let inactiveBalance = 0;
     let totalOutboundAmount = 0;
     let totalInboundAmount = 0;
-    channels.toObject().channelsList.forEach((channel) => {
-      if (channel.active) {
-        balance += channel.localBalance;
-        const outbound = channel.localBalance - channel.localChanReserveSat;
+    const channelBalances: Channel[] = [];
+    channels.toObject().channelsList.forEach(({ localBalance, localChanReserveSat, remoteBalance,
+                                                remoteChanReserveSat, active, channelPoint }) => {
+      if (active) {
+        channelBalances.push({
+          localBalance,
+          remoteBalance,
+          channelPoint,
+        });
+
+        balance += localBalance;
+        const outbound = localBalance - localChanReserveSat;
         totalOutboundAmount += outbound;
         if (maxOutbound < outbound) {
           maxOutbound = outbound;
         }
 
-        const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
+        const inbound = remoteBalance - remoteChanReserveSat;
         totalInboundAmount += inbound;
         if (maxInbound < inbound) {
           maxInbound = inbound;
         }
+
       } else {
-        inactiveBalance += channel.localBalance;
+        inactiveBalance += localBalance;
       }
     });
 
@@ -755,12 +792,13 @@ class LndClient extends SwapClient {
       balance,
       inactiveBalance,
       pendingOpenBalance,
+      channels: channelBalances,
     };
   }
 
   public channelBalance = async (): Promise<ChannelBalance> => {
-    const { balance, inactiveBalance, pendingOpenBalance } = await this.updateChannelBalances();
-    return { balance, inactiveBalance, pendingOpenBalance };
+    const { balance, inactiveBalance, pendingOpenBalance, channels } = await this.updateChannelBalances();
+    return { balance, inactiveBalance, pendingOpenBalance, channels };
   }
 
   public swapCapacities = async (): Promise<SwapCapacities> => {
