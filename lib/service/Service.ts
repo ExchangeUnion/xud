@@ -699,17 +699,17 @@ class Service extends EventEmitter {
    */
   public subscribeOrders = (
     args: { existing: boolean },
-    callback: (order?: Order, orderRemoval?: OrderPortion) => void,
+    callback: (order?: ServiceOrder, orderRemoval?: OrderPortion) => void,
     cancelled$: Observable<void>,
   ) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buyArray.forEach(order => callback(order));
-        peerOrders.buyArray.forEach(order => callback(order));
-        ownOrders.sellArray.forEach(order => callback(order));
-        peerOrders.sellArray.forEach(order => callback(order));
+        ownOrders.buyArray.forEach(order => callback(this.toServiceOrder(order, false)));
+        peerOrders.buyArray.forEach(order => callback(this.toServiceOrder(order, true)));
+        ownOrders.sellArray.forEach(order => callback(this.toServiceOrder(order, false)));
+        peerOrders.sellArray.forEach(order => callback(this.toServiceOrder(order, true)));
       });
     }
 
@@ -719,7 +719,7 @@ class Service extends EventEmitter {
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
     orderAdded$.subscribe({
-      next: callback,
+      next: order => callback(this.toServiceOrder(order, true)),
       error: this.logger.error,
     });
 

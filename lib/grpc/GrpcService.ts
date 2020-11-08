@@ -880,10 +880,10 @@ class GrpcService {
 
     const cancelled$ = getCancelled$(call);
 
-    this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
+    this.service.subscribeOrders(call.request.toObject(), (order?: ServiceOrder, orderRemoval?: OrderPortion) => {
       const orderUpdate = new xudrpc.OrderUpdate();
       if (order) {
-        orderUpdate.setOrder(createOrder(order));
+        orderUpdate.setOrder(createServiceOrder(order));
       } else if (orderRemoval) {
         const grpcOrderRemoval = new xudrpc.OrderRemoval();
         grpcOrderRemoval.setPairId(orderRemoval.pairId);
