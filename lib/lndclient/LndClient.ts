@@ -36,6 +36,10 @@ interface LndClient {
 
 const MAXFEE = 0.03;
 const BASE_MAX_CLIENT_WAIT_TIME = 6000;
+const GRPC_CLIENT_OPTIONS = {
+  'grpc.ssl_target_name_override': 'localhost',
+  'grpc.default_authority': 'localhost',
+};
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
@@ -62,7 +66,7 @@ class LndClient extends SwapClient {
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private initRetryTimeout?: NodeJS.Timeout;
-  private _totalOutboundAmount = 0;
+  private totalOutboundAmount = 0;
   private totalInboundAmount = 0;
   private maxChannelOutboundAmount = 0;
   private maxChannelInboundAmount = 0;
@@ -192,14 +196,6 @@ class LndClient extends SwapClient {
     return this.chainIdentifier;
   }
 
-  public totalOutboundAmount = () => {
-    return this._totalOutboundAmount;
-  }
-
-  public checkInboundCapacity = (_inboundAmount: number) => {
-    return; // we do not currently check inbound capacities for lnd
-  }
-
   public setReservedInboundAmount = (_reservedInboundAmount: number) => {
     return; // not currently used for lnd
   }
@@ -207,7 +203,7 @@ class LndClient extends SwapClient {
   /** Lnd specific procedure to mark the client as locked. */
   private lock = () => {
     if (!this.walletUnlocker) {
-      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
     }
     if (this.lightning) {
       this.lightning.close();
@@ -466,7 +462,7 @@ class LndClient extends SwapClient {
     }
 
     this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-    this.lightning = new LightningClient(this.uri, this.credentials);
+    this.lightning = new LightningClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
 
     try {
       await this.waitForClientReady(this.lightning);
@@ -742,8 +738,8 @@ class LndClient extends SwapClient {
       this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
     }
 
-    if (this._totalOutboundAmount !== totalOutboundAmount) {
-      this._totalOutboundAmount = totalOutboundAmount;
+    if (this.totalOutboundAmount !== totalOutboundAmount) {
+      this.totalOutboundAmount = totalOutboundAmount;
       this.logger.debug(`new channel total outbound capacity: ${totalOutboundAmount}`);
     }
 

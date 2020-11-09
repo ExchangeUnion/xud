@@ -353,8 +353,8 @@ class GrpcService {
         const tradingLimits = new xudrpc.TradingLimits();
         tradingLimits.setMaxSell(tradingLimitsObj.maxSell);
         tradingLimits.setMaxBuy(tradingLimitsObj.maxBuy);
-        tradingLimits.setReservedInbound(tradingLimitsObj.reservedInbound);
-        tradingLimits.setReservedOutbound(tradingLimitsObj.reservedOutbound);
+        tradingLimits.setReservedSell(tradingLimitsObj.reservedSell);
+        tradingLimits.setReservedBuy(tradingLimitsObj.reservedBuy);
         limitsMap.set(currency, tradingLimits);
       });
       callback(null, response);
@@ -883,10 +883,10 @@ class GrpcService {
 
     const cancelled$ = getCancelled$(call);
 
-    this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
+    this.service.subscribeOrders(call.request.toObject(), (order?: ServiceOrder, orderRemoval?: OrderPortion) => {
       const orderUpdate = new xudrpc.OrderUpdate();
       if (order) {
-        orderUpdate.setOrder(createOrder(order));
+        orderUpdate.setOrder(createServiceOrder(order));
       } else if (orderRemoval) {
         const grpcOrderRemoval = new xudrpc.OrderRemoval();
         grpcOrderRemoval.setPairId(orderRemoval.pairId);

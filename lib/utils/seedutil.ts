@@ -28,18 +28,19 @@ async function keystore(mnemonic: string[], password: string, pathVal: string) {
 }
 
 /**
- * Executes the seedutil tool to encipher a seed mnemonic into bytes.
- * @param mnemonic the 24 seed recovery mnemonic
+ * Executes the seedutil tool to encipher a deciphered seed hex string into a mnemonic
+ * @param decipheredSeedHex the deciphered seed in hex format
  */
-async function encipher(mnemonic: string[]) {
-  const { stdout, stderr } = await exec(`${seedutilPath} encipher ${mnemonic.join(' ')}`);
+async function encipher(decipheredSeedHex: string) {
+  const { stdout, stderr } = await exec(`${seedutilPath} encipher ${decipheredSeedHex}`);
 
   if (stderr) {
     throw new Error(stderr);
   }
 
-  const encipheredSeed = stdout.trim();
-  return Buffer.from(encipheredSeed, 'hex');
+  const mnemonic = stdout.trim().split(' ');
+  assert.equal(mnemonic.length, 24, 'seedutil did not encipher mnemonic of exactly 24 words');
+  return mnemonic;
 }
 
 async function decipher(mnemonic: string[]) {
