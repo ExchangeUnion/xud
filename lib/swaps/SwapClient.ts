@@ -206,7 +206,7 @@ abstract class SwapClient extends EventEmitter {
       case ClientStatus.WaitingUnlock:
       case ClientStatus.OutOfSync:
       case ClientStatus.NoHoldInvoiceSupport:
-        // these statuses can only be set on an operational, initalized client
+        // these statuses can only be set on an operational, initialized client
         validStatusTransition = this.isOperational();
         break;
       case ClientStatus.NotInitialized:
@@ -349,7 +349,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized() && !this.hasNoInvoiceSupport();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
