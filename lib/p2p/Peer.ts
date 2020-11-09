@@ -331,6 +331,7 @@ class Peer extends EventEmitter {
     }
 
     this.status = PeerStatus.Closed;
+    this.revokeConnectionRetries();
 
     if (this.socket) {
       if (!this.socket.destroyed) {
@@ -614,7 +615,9 @@ class Peer extends EventEmitter {
   }
 
   private initStall = (): void => {
-    assert(this.status !== PeerStatus.Closed);
+    if (this.status !== PeerStatus.Closed) {
+      return;
+    }
     assert(!this.stallTimer);
 
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
