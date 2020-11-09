@@ -116,8 +116,9 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('it initializes lnd-ltc and lnd-btc', async () => {
-    swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-    await swapClientManager.init(db.models);
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+    await swapClientManager.init();
+
     expect(swapClientManager['swapClients'].size).toEqual(2);
     expect(onListenerMock).toHaveBeenCalledTimes(6);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
@@ -132,8 +133,9 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('it initializes lnd-ltc and lnd-btc', async () => {
-    swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-    await swapClientManager.init(db.models);
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+    await swapClientManager.init();
+
     expect(swapClientManager['swapClients'].size).toEqual(2);
     expect(onListenerMock).toHaveBeenCalledTimes(6);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
@@ -144,8 +146,9 @@ describe('Swaps.SwapClientManager', () => {
 
   test('it initializes lnd-btc', async () => {
     config.lnd.LTC!.disable = true;
-    swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-    await swapClientManager.init(db.models);
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+    await swapClientManager.init();
+
     expect(swapClientManager['swapClients'].size).toEqual(1);
     expect(onListenerMock).toHaveBeenCalledTimes(3);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
@@ -156,8 +159,9 @@ describe('Swaps.SwapClientManager', () => {
   test('it initializes nothing', async () => {
     config.lnd.BTC!.disable = true;
     config.lnd.LTC!.disable = true;
-    swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-    await swapClientManager.init(db.models);
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+    await swapClientManager.init();
+
     expect(swapClientManager['swapClients'].size).toEqual(0);
     expect(onListenerMock).toHaveBeenCalledTimes(0);
     expect(swapClientManager.get('BTC')).toBeUndefined();
@@ -167,8 +171,9 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('closes lnd-btc and lnd-ltc', async () => {
-    swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-    await swapClientManager.init(db.models);
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+    await swapClientManager.init();
+
     expect(swapClientManager['swapClients'].size).toEqual(2);
     swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(2);
@@ -180,8 +185,8 @@ describe('Swaps.SwapClientManager', () => {
     const setReservedInboundBtcAmount = jest.fn();
 
     beforeEach(async () => {
-      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-      await swapClientManager.init(db.models);
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+      await swapClientManager.init();
       swapClientManager.swapClients.get(currency)!.setReservedInboundAmount = setReservedInboundBtcAmount;
     });
 
@@ -228,17 +233,17 @@ describe('Swaps.SwapClientManager', () => {
   describe('openChannel', () => {
     let remoteIdentifier: string;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       remoteIdentifier = '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
+      await swapClientManager.init();
     });
 
     test('it fails without swap client', async () => {
       expect.assertions(1);
       const currency = 'BTC';
       const amount = 16000000;
-      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
       swapClientManager.get = jest.fn().mockReturnValue(undefined);
-      await swapClientManager.init(db.models);
       try {
         await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
       } catch (e) {
@@ -249,8 +254,6 @@ describe('Swaps.SwapClientManager', () => {
     test('it fails without peerSwapClientPubKey', async () => {
       const currency = 'BTC';
       const amount = 16000000;
-      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-      await swapClientManager.init(db.models);
       try {
         await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
       } catch (e) {
@@ -261,13 +264,11 @@ describe('Swaps.SwapClientManager', () => {
     test('it opens a channel using lnd', async () => {
       const currency = 'BTC';
       const amount = 16000000;
-      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
       const getClientSpy = jest.spyOn(swapClientManager, 'get');
       const lndListeningUris = [
         '123.456.789.321:9735',
         '192.168.63.155:9777',
       ];
-      await swapClientManager.init(db.models);
       await swapClientManager.openChannel({ remoteIdentifier, currency, amount, uris: lndListeningUris });
       expect(getClientSpy).toHaveBeenCalledWith(currency);
       expect(mockLndOpenChannel).toHaveBeenCalledTimes(1);

@@ -11,33 +11,32 @@ function validateNodeKey(nodeKey: NodeKey) {
 }
 
 describe('NodeKey', () => {
+  const path = NodeKey.getPath(getTempDir(true));
+
   test('it should generate a valid node key', async () => {
     const nodeKey = await NodeKey['generate']();
     validateNodeKey(nodeKey);
   });
 
   test('it should write a nodekey to disk and read it back without encryption', async () => {
-    const nodeKey = await NodeKey['generate']();
-    const path = NodeKey.getPath(getTempDir(true));
-    await nodeKey.toFile(path);
+    const nodeKey = await NodeKey['generate'](path);
+    await nodeKey.toFile();
     const nodeKeyFromDisk = await NodeKey.fromFile(path);
     expect(nodeKey.privKey.compare(nodeKeyFromDisk.privKey)).toEqual(0);
   });
 
   test('it should write a nodekey to disk and read it back with encryption', async () => {
     const password = 'wasspord';
-    const nodeKey = await NodeKey['generate']();
-    const path = NodeKey.getPath(getTempDir(true));
-    await nodeKey.toFile(path, password);
+    const nodeKey = await NodeKey['generate'](path);
+    await nodeKey.toFile(password);
     const nodeKeyFromDisk = await NodeKey.fromFile(path, password);
     expect(nodeKey.privKey.compare(nodeKeyFromDisk.privKey)).toEqual(0);
   });
 
   test('it should write a nodekey to disk with encryption and fail reading it with the wrong password', async () => {
     const password = 'wasspord';
-    const nodeKey = await NodeKey['generate']();
-    const path = NodeKey.getPath(getTempDir(true));
-    await nodeKey.toFile(path, password);
+    const nodeKey = await NodeKey['generate'](path);
+    await nodeKey.toFile(password);
     await expect(NodeKey.fromFile(path, 'wrongpassword')).rejects.toThrow();
   });
 

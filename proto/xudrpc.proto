@@ -73,6 +73,14 @@ service Xud {
     };
   }
 
+  /* Changes the xud master password, including the wallet passwords for any underlying clients.
+   * shell: xucli changepass*/
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/changepass"
+    };
+  }
+
   /* Closes any existing payment channels with a peer for the specified currency.
    * shell: xucli closechannel <currency> [node_identifier ] [--force]*/
   rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse) {
@@ -422,6 +430,12 @@ message Channels {
   // The number of channels that have been closed.
   uint32 closed = 4 [json_name = "closed"];
 }
+
+message ChangePasswordRequest {
+  string new_password = 1 [json_name = "new_password"];
+  string old_password = 2 [json_name = "old_password"];
+}
+message ChangePasswordResponse {}
 
 message CloseChannelRequest {
   // The node pub key or alias of the peer with which to close any channels with.

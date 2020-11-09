@@ -847,5 +847,21 @@ class Service extends EventEmitter {
     this.swapClientManager.connextClient?.emit('depositConfirmed', hash);
   }
 
+  public changePassword = async ({ newPassword, oldPassword }: { newPassword: string, oldPassword: string }) => {
+    if (!this.nodekey.password) {
+      throw errors.NO_ENCRYPT_MODE_ENABLED;
+    }
+    if (newPassword.length < 8) {
+      // lnd requires 8+ character passwords, so we must as well
+      throw errors.INVALID_ARGUMENT('password must be at least 8 characters');
+    }
+    if (oldPassword !== this.nodekey.password) {
+      throw errors.INVALID_ARGUMENT('old password is incorrect');
+    }
+
+    // we change the password for our node key right away, then we queue up lnd password changes
+    await this.nodekey.toFile(newPassword);
+    await this.swapClientManager.changeLndPasswords(oldPassword, newPassword);
+  }
 }
 export default Service;

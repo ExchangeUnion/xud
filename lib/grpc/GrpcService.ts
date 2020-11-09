@@ -877,6 +877,20 @@ class GrpcService {
     }
   }
 
+  public changePassword: grpc.handleUnaryCall<xudrpc.ChangePasswordRequest, xudrpc.ChangePasswordResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      await this.service.changePassword(call.request.toObject());
+
+      const response = new xudrpc.ChangePasswordResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
   public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (_, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;

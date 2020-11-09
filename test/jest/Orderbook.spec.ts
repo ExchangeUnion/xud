@@ -162,7 +162,7 @@ describe('OrderBook', () => {
     pool.broadcastOrder = jest.fn();
     unitConverter = new UnitConverter();
     unitConverter.init();
-    swapClientManager = new SwapClientManager(config, loggers, unitConverter);
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     swaps = new Swaps({
       pool,
       swapClientManager,

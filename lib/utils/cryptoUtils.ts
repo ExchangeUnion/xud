@@ -10,14 +10,28 @@ function getCipherKey(password: string) {
   return createHash('sha256').update(password).digest();
 }
 
-export async function encrypt(buf: Buffer, password: string) {
+/**
+ * Encrypts a Buffer or base64 string using a password
+ * @param payload a Buffer or base64 string
+ * @returns an encrypted Buffer
+ */
+export async function encrypt(payload: Buffer | string, password: string) {
+  const buf = typeof payload === 'string' ? Buffer.from(payload, 'utf8') : payload;
+
   const iv = await randomBytes(ENCRYPTION_IV_LENGTH);
   const key = getCipherKey(password);
   const cipher = createCipheriv('aes-256-cbc', key, iv);
   return Buffer.concat([iv, cipher.update(buf), cipher.final()]);
 }
 
-export function decrypt(buf: Buffer, password: string) {
+/**
+ * Decrypts a Buffer or base64 string using a password
+ * @param payload a Buffer or base64 string
+ * @returns a decrypted Buffer
+ */
+export function decrypt(payload: Buffer | string, password: string) {
+  const buf = typeof payload === 'string' ? Buffer.from(payload, 'base64') : payload;
+
   // the first 16 bytes contain the initialization vector
   const iv = buf.slice(0, ENCRYPTION_IV_LENGTH);
   const key = getCipherKey(password);

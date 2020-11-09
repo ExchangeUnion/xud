@@ -119,16 +119,16 @@ class Xud extends EventEmitter {
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
       const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
-      await this.swapClientManager.init(this.db.models);
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter, this.db.models);
+      await this.swapClientManager.init();
 
       let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
         if (nodeKeyExists) {
           nodeKey = await NodeKey.fromFile(nodeKeyPath);
         } else {
-          nodeKey = await NodeKey.generate();
-          await nodeKey.toFile(nodeKeyPath);
+          nodeKey = await NodeKey.generate(nodeKeyPath);
+          await nodeKey.toFile();
         }
 
         // we need to initialize connext every time xud starts, even in noencrypt mode

@@ -122,6 +122,23 @@
         ]
       }
     },
+    "/v1/changepass": {
+      "post": {
+        "summary": "Changes the xud master password, including the wallet passwords for any underlying clients.\nshell: xucli changepass",
+        "operationId": "ChangePassword",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcChangePasswordResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/closechannel": {
       "post": {
         "summary": "Closes any existing payment channels with a peer for the specified currency.\nshell: xucli closechannel \u003ccurrency\u003e [node_identifier ] [--force]",
@@ -985,6 +1002,9 @@
           "title": "The network the swap client is on (eg regtest, testnet, mainnet)"
         }
       }
+    },
+    "xudrpcChangePasswordResponse": {
+      "type": "object"
     },
     "xudrpcChannels": {
       "type": "object",

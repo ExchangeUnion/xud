@@ -11,29 +11,31 @@ import { encipher } from '../utils/seedutil';
  * and can sign messages to prove their veracity.
  */
 class NodeKey {
+  public password?: string;
+
   /**
    * @param privKey The 32 byte private key
    * @param pubKey The public key in hex string format.
    */
-  constructor(public readonly privKey: Buffer, public readonly pubKey: string) { }
+  constructor(public readonly privKey: Buffer, public readonly pubKey: string, private readonly path: string) { }
 
   /**
    * Generates a random NodeKey.
    */
-  public static generate = async (): Promise<NodeKey> => {
+  public static generate = async (path?: string): Promise<NodeKey> => {
     let privKey: Buffer;
     do {
       privKey = await randomBytes(32);
     } while (!secp256k1.privateKeyVerify(privKey));
 
-    return NodeKey.fromBytes(privKey);
+    return NodeKey.fromBytes(privKey, path);
   }
 
   /**
    * Converts a buffer of bytes to a NodeKey. Uses the first 32 bytes from the buffer to generate
    * the private key. If the buffer has fewer than 32 bytes, the buffer is right-padded with zeros.
    */
-  public static fromBytes = (bytes: Buffer): NodeKey => {
+  public static fromBytes = (bytes: Buffer, path?: string): NodeKey => {
     let privKey: Buffer;
     if (bytes.byteLength === 32) {
       privKey = bytes;
@@ -46,7 +48,7 @@ class NodeKey {
     const pubKeyBytes = secp256k1.publicKeyCreate(privKey);
     const pubKey = pubKeyBytes.toString('hex');
 
-    return new NodeKey(privKey, pubKey);
+    return new NodeKey(privKey, pubKey, path ?? '');
   }
 
   /**
@@ -66,7 +68,9 @@ class NodeKey {
       privKey = fileBuffer;
     }
     if (secp256k1.privateKeyVerify(privKey)) {
-      return NodeKey.fromBytes(privKey);
+      const nodeKey = NodeKey.fromBytes(privKey, path);
+      nodeKey.password = password;
+      return nodeKey;
     } else {
       throw new Error(`${path} does not contain a valid ECDSA private key`);
     }
@@ -92,14 +96,15 @@ class NodeKey {
    * @param path the path at which to save the file
    * @param password an optional password parameter for encrypting the private key
    */
-  public toFile = async (path: string, password?: string): Promise<void> => {
+  public toFile = async (password?: string): Promise<void> => {
     let buf: Buffer;
     if (password) {
+      this.password = password;
       buf = await encrypt(this.privKey, password);
     } else {
       buf = this.privKey;
     }
-    await fs.writeFile(path, buf);
+    await fs.writeFile(this.path, buf);
   }
 
   /**
