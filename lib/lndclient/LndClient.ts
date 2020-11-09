@@ -36,6 +36,10 @@ interface LndClient {
 
 const MAXFEE = 0.03;
 const BASE_MAX_CLIENT_WAIT_TIME = 6000;
+const GRPC_CLIENT_OPTIONS = {
+  'grpc.ssl_target_name_override': 'localhost',
+  'grpc.default_authority': 'localhost',
+};
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
@@ -199,7 +203,7 @@ class LndClient extends SwapClient {
   /** Lnd specific procedure to mark the client as locked. */
   private lock = () => {
     if (!this.walletUnlocker) {
-      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
     }
     if (this.lightning) {
       this.lightning.close();
@@ -458,7 +462,7 @@ class LndClient extends SwapClient {
     }
 
     this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-    this.lightning = new LightningClient(this.uri, this.credentials);
+    this.lightning = new LightningClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
 
     try {
       await this.waitForClientReady(this.lightning);
