@@ -279,12 +279,9 @@ class GrpcService {
       return;
     }
     try {
-      const { removedQuantity, remainingQuantity, onHoldQuantity, pairId } = this.service.removeOrder(call.request.toObject());
+      const quantityOnHold = this.service.removeOrder(call.request.toObject());
       const response = new xudrpc.RemoveOrderResponse();
-      response.setQuantityOnHold(onHoldQuantity);
-      response.setRemainingQuantity(remainingQuantity);
-      response.setRemovedQuantity(removedQuantity);
-      response.setPairId(pairId);
+      response.setQuantityOnHold(quantityOnHold);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
