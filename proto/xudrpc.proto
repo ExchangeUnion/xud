@@ -767,12 +767,6 @@ message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
   // and could not be removed until after the swaps finish.
   uint64 quantity_on_hold = 1 [json_name = "hold"];
-  // Remaining portion of the order if it was a partial removal.
-  uint64 remaining_quantity = 2 [json_name = "remaining_quantity"];
-  // Successfully removed portion of the order.
-  uint64 removed_quantity = 3 [json_name = "removed_quantity"];
-  // Removed order's pairId. (e.g. ETH/BTC)
-  string pair_id = 4 [json_name = "pair_id"];
 }
 
 message RemoveAllOrdersRequest {}

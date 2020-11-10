@@ -1659,20 +1659,6 @@
           "type": "string",
           "format": "uint64",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
-        },
-        "remaining_quantity": {
-          "type": "string",
-          "format": "uint64",
-          "description": "Remaining portion of the order if it was a partial removal."
-        },
-        "removed_quantity": {
-          "type": "string",
-          "format": "uint64",
-          "description": "Successfully removed portion of the order."
-        },
-        "pair_id": {
-          "type": "string",
-          "title": "Removed order's pairId. (e.g. ETH/BTC)"
         }
       }
     },

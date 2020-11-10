@@ -838,8 +838,8 @@ class OrderBook extends EventEmitter {
     const onHoldOrderLocalIds = [];
 
     for (const localId of this.localIdMap.keys()) {
-      const { onHoldQuantity } = this.removeOwnOrderByLocalId(localId, true);
-      if (onHoldQuantity === 0) {
+      const onHoldIndicator = this.removeOwnOrderByLocalId(localId, true);
+      if (onHoldIndicator === 0) {
         removedOrderLocalIds.push(localId);
       } else {
         onHoldOrderLocalIds.push(localId);
@@ -863,9 +863,6 @@ class OrderBook extends EventEmitter {
     const order = this.getOwnOrderByLocalId(localId);
 
     let remainingQuantityToRemove = quantityToRemove || order.quantity;
-    const orderQuantity = order.quantity;
-    let onHoldQuantity = order.hold;
-    let removedQuantity = 0;
 
     if (remainingQuantityToRemove > order.quantity) {
       // quantity to be removed can't be higher than order's quantity.
@@ -879,7 +876,6 @@ class OrderBook extends EventEmitter {
         pairId: order.pairId,
         quantityToRemove: remainingQuantityToRemove,
       });
-      removedQuantity += remainingQuantityToRemove;
       remainingQuantityToRemove = 0;
     } else {
       // we can't immediately remove the entire quantity because of a hold on the order.
@@ -894,7 +890,6 @@ class OrderBook extends EventEmitter {
           pairId: order.pairId,
           quantityToRemove: removableQuantity,
         });
-        removedQuantity += removableQuantity;
         remainingQuantityToRemove -= removableQuantity;
       }
 
@@ -920,8 +915,6 @@ class OrderBook extends EventEmitter {
 
       const cleanup = (quantity: number) => {
         remainingQuantityToRemove -= quantity;
-        removedQuantity += quantity;
-        onHoldQuantity -= quantity;
         this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingQuantityToRemove} remaining`);
         if (remainingQuantityToRemove === 0) {
           // we can stop listening for swaps once all holds are cleared
@@ -934,13 +927,7 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', paidHandler);
     }
 
-    const remainingFromOrder = orderQuantity - removedQuantity;
-    return {
-      removedQuantity,
-      onHoldQuantity,
-      pairId: order.pairId,
-      remainingQuantity: remainingFromOrder > onHoldQuantity ? remainingFromOrder : 0,
-    };
+    return remainingQuantityToRemove;
   }
 
   private addOrderHold = (orderId: string, pairId: string, holdAmount?: number) => {
