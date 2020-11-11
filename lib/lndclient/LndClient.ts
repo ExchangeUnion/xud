@@ -740,13 +740,13 @@ class LndClient extends SwapClient {
     channels.toObject().channelsList.forEach((channel) => {
       if (channel.active) {
         balance += channel.localBalance;
-        const outbound = channel.localBalance - channel.localChanReserveSat;
+        const outbound = Math.max(0, channel.localBalance - channel.localChanReserveSat);
         totalOutboundAmount += outbound;
         if (maxOutbound < outbound) {
           maxOutbound = outbound;
         }
 
-        const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
+        const inbound = Math.max(0, channel.remoteBalance - channel.remoteChanReserveSat);
         totalInboundAmount += inbound;
         if (maxInbound < inbound) {
           maxInbound = inbound;
