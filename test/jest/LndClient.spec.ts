@@ -10,19 +10,7 @@ const openChannelSyncResponse = {
   getFundingTxidStr: () => 'some_tx_id',
 };
 
-const getSendPaymentSyncResponse = () => {
-  return {
-    getPaymentError: () => {},
-    getPaymentPreimage_asB64: () =>
-      'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=',
-  };
-};
-
-const getSendPaymentSyncErrorResponse = () => {
-  return {
-    getPaymentError: () => 'error!',
-  };
-};
+const preimage = 'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=';
 
 jest.mock('../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
@@ -198,12 +186,12 @@ describe('LndClient', () => {
   describe('sendPayment', () => {
 
     test('it resolves upon maker success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockReturnValue(Promise.resolve(preimage));
       const deal = getValidDeal();
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       await expect(lnd.sendPayment(deal))
-        .resolves.toMatchSnapshot();
+        .resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         amount: deal.takerAmount,
         destination: deal.takerPubKey,
@@ -214,15 +202,15 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon taker success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockReturnValue(Promise.resolve(preimage));
       const deal = {
         ...getValidDeal(),
         role: SwapRole.Taker,
       };
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       await expect(lnd.sendPayment(deal))
-        .resolves.toMatchSnapshot();
+        .resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         amount: deal.makerAmount,
         destination: deal.destination,
@@ -232,20 +220,20 @@ describe('LndClient', () => {
     });
 
     test('it rejects upon sendPaymentSync error', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncErrorResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockRejectedValue('error');
       await expect(lnd.sendPayment(getValidDeal()))
-        .rejects.toMatchSnapshot();
+        .rejects.toEqual('error');
     });
 
     test('it resolves upon sendSmallestAmount success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockReturnValue(Promise.resolve(preimage));
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       const rHash = '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80';
       const destination = '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac';
       await expect(lnd.sendSmallestAmount(rHash, destination))
-        .resolves.toMatchSnapshot();
+        .resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         destination,
         rHash,

@@ -12,6 +12,7 @@ import Peer from '../p2p/Peer';
 import Pool from '../p2p/Pool';
 import { UnitConverter } from '../utils/UnitConverter';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
+import { MAX_PAYMENT_TIME } from './consts';
 import errors, { errorCodes } from './errors';
 import SwapClient, { PaymentState } from './SwapClient';
 import SwapClientManager from './SwapClientManager';
@@ -52,7 +53,7 @@ class Swaps extends EventEmitter {
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
-  private static readonly SWAP_COMPLETE_TIMEOUT = 90000;
+  private static readonly SWAP_COMPLETE_TIMEOUT = MAX_PAYMENT_TIME;
   /**
    * Additional time that the maker will wait for a swap to be completed before considering it timed
    * out. This exists because the maker starts timing sooner and ends timing later than the taker.

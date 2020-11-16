@@ -42,8 +42,8 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
-    regnet: {
-      describe: 'Whether to run XUD on regnet',
+    regtest: {
+      describe: 'Whether to run XUD on regtest',
       type: 'boolean',
       default: undefined,
     },

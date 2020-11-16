@@ -221,6 +221,10 @@ export const hexToUint8Array = (hex: string) => {
   return Uint8Array.from(Buffer.from(hex, 'hex'));
 };
 
+export const uint8ArrayToHex = (uint8: Uint8Array) => {
+  return Buffer.from(uint8).toString('hex');
+};
+
 /**
  * Converts input to EIP55 format.
  * Prints the ith digit in uppercase if it's a letter and the 4*ith bit of the hash of the lowercase hexadecimal address is 1

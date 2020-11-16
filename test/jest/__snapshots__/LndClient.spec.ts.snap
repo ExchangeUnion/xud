@@ -1,16 +1,3 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`LndClient openChannel it throws when openchannel fails 1`] = `[Error: openChannelSync error]`;
-
-exports[`LndClient sendPayment it rejects upon sendPaymentSync error 1`] = `
-Object {
-  "code": "7.4",
-  "message": "error!",
-}
-`;
-
-exports[`LndClient sendPayment it resolves upon maker success 1`] = `"20300a5ebc7875aca7d07fe00b1375da33cadbf2dc8703d9a29e33202c38de38"`;
-
-exports[`LndClient sendPayment it resolves upon sendSmallestAmount success 1`] = `"20300a5ebc7875aca7d07fe00b1375da33cadbf2dc8703d9a29e33202c38de38"`;
-
-exports[`LndClient sendPayment it resolves upon taker success 1`] = `"20300a5ebc7875aca7d07fe00b1375da33cadbf2dc8703d9a29e33202c38de38"`;
