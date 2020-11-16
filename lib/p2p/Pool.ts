@@ -279,7 +279,11 @@ class Pool extends EventEmitter {
     if (this.loadingNodesPromise) {
       await this.loadingNodesPromise;
     }
-    await Promise.all([this.unlisten(), this.closePendingConnections(), this.closePeers()]);
+    await Promise.all([
+      this.unlisten(),
+      this.closePendingConnections(DisconnectionReason.Shutdown),
+      this.closePeers(DisconnectionReason.Shutdown)],
+    );
     this.connected = false;
     this.disconnecting = false;
   }
@@ -1006,21 +1010,21 @@ class Pool extends EventEmitter {
     }
   }
 
-  private closePeers = () => {
+  private closePeers = (reason?: DisconnectionReason) => {
     const closePromises = [];
     for (const peer of this.peers.values()) {
-      closePromises.push(peer.close(DisconnectionReason.Shutdown));
+      closePromises.push(peer.close(reason));
     }
     return Promise.all(closePromises);
   }
 
-  private closePendingConnections = () => {
+  private closePendingConnections = (reason?: DisconnectionReason) => {
     const closePromises = [];
     for (const peer of this.pendingOutboundPeers.values()) {
-      closePromises.push(peer.close());
+      closePromises.push(peer.close(reason));
     }
     for (const peer of this.pendingInboundPeers) {
-      closePromises.push(peer.close());
+      closePromises.push(peer.close(reason));
     }
     return Promise.all(closePromises);
   }
