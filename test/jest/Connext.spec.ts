@@ -27,10 +27,20 @@ jest.mock('http', () => {
           statusCode: 404,
         });
       }
+
+      let errorCb: any;
       return {
+        path: options.path,
         write: jest.fn(),
-        on: jest.fn(),
         end: jest.fn(),
+        on: jest.fn().mockImplementation((event, cb) => {
+          if (event === 'error') {
+            errorCb = cb;
+          }
+        }),
+        destroy: jest.fn().mockImplementation(() => {
+          errorCb();
+        }),
       };
     }),
   };
@@ -55,6 +65,7 @@ describe('ConnextClient', () => {
     logger.trace = jest.fn();
     logger.error = jest.fn();
     logger.debug = jest.fn();
+    logger.warn = jest.fn();
     const currencyInstances = [
       {
         id: 'ETH',
@@ -425,6 +436,22 @@ describe('ConnextClient', () => {
       connext.checkInboundCapacity(quantity, 'ETH');
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe('disconnect', () => {
+    it('aborts pending requests, except critical ones', async () => {
+      expect(connext['pendingRequests'].size).toEqual(0);
+
+      connext['sendRequest'](connext['criticalRequestPaths'][0], '', {});
+      connext['sendRequest']('/path1', '', {});
+      connext['sendRequest']('/path1', '', {});
+      connext['sendRequest']('/path2', '', {});
+      connext['sendRequest'](connext['criticalRequestPaths'][1], '', {});
+      expect(connext['pendingRequests'].size).toEqual(5);
+
+      connext['disconnect']();
+      expect(connext['pendingRequests'].size).toEqual(2);
     });
   });
 });
