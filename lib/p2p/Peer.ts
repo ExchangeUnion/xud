@@ -522,6 +522,8 @@ class Peer extends EventEmitter {
       this.connectionRetriesRevoked = false;
 
       const connectViaProxy = () => {
+        this.socket = net.connect(torport, 'localhost');
+
         const proxyOptions: SocksClientOptions = {
           proxy: {
             host: 'localhost',
@@ -533,11 +535,11 @@ class Peer extends EventEmitter {
             host: this.address.host,
             port: this.address.port,
           },
+          existing_socket: this.socket,
         };
         SocksClient.createConnection(proxyOptions)
           .then((info) => {
-            // a raw net.Socket that is established to the destination host through the given proxy server
-            this.socket = info.socket;
+            assert(this.socket === info.socket);
             onConnect();
           })
           .catch(onError);
