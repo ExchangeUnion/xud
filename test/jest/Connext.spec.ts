@@ -66,6 +66,7 @@ describe('ConnextClient', () => {
     logger.error = jest.fn();
     logger.debug = jest.fn();
     logger.warn = jest.fn();
+    logger.info = jest.fn();
     const currencyInstances = [
       {
         id: 'ETH',
