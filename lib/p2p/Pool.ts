@@ -303,6 +303,8 @@ class Pool extends EventEmitter {
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
         const peer = new Peer(Logger.DISABLED_LOGGER, address, this.network);
+
+        this.pendingOutboundPeers.set(this.nodePubKey, peer);
         await peer.beginOpen({
           ownNodeState: this.nodeState,
           ownNodeKey: this.nodeKey,
@@ -310,6 +312,8 @@ class Pool extends EventEmitter {
           expectedNodePubKey: this.nodePubKey,
           torport: this.config.torport,
         });
+        this.pendingOutboundPeers.delete(this.nodePubKey);
+
         await peer.close();
         assert.fail();
       } catch (err) {
