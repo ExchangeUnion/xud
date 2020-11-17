@@ -118,7 +118,7 @@ class ConnextClient extends SwapClient {
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
 
-  private pendingRequests = new Map<number, http.ClientRequest>();
+  private pendingRequests = new Set<http.ClientRequest>();
   private criticalRequestPaths = ['/hashlock-resolve', '/hashlock-transfer'];
 
   /** The minimum incremental quantity that we may use for collateral requests. */
@@ -870,7 +870,7 @@ class ConnextClient extends SwapClient {
   protected disconnect = async () => {
     this.setStatus(ClientStatus.Disconnected);
 
-    for (const req of this.pendingRequests.values()) {
+    for (const req of this.pendingRequests) {
       if (this.criticalRequestPaths.includes(req.path)) {
         this.logger.warn(`critical request is pending: ${req.path}`);
         continue;
@@ -907,9 +907,9 @@ class ConnextClient extends SwapClient {
 
       this.logger.trace(`sending request to ${endpoint}${payloadStr ? `: ${payloadStr}` : ''}`);
 
-      const reqId = Date.now() + Math.random();
-      const req = http.request(options, async (res) => {
-        this.pendingRequests.delete(reqId);
+      let req: http.ClientRequest;
+      req = http.request(options, async (res) => {
+        this.pendingRequests.delete(req);
 
         let err: XudError | undefined;
         let body;
@@ -952,7 +952,7 @@ class ConnextClient extends SwapClient {
       });
 
       req.on('error', async (err: any) => {
-        this.pendingRequests.delete(reqId);
+        this.pendingRequests.delete(req);
         if (err.code === 'ECONNREFUSED') {
           await this.disconnect();
         }
@@ -965,7 +965,7 @@ class ConnextClient extends SwapClient {
       }
 
       req.end();
-      this.pendingRequests.set(reqId, req);
+      this.pendingRequests.add(req);
     });
   }
 }
