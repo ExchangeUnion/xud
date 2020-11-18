@@ -279,9 +279,12 @@ class GrpcService {
       return;
     }
     try {
-      const quantityOnHold = this.service.removeOrder(call.request.toObject());
+      const { removedQuantity, remainingQuantity, onHoldQuantity, pairId } = this.service.removeOrder(call.request.toObject());
       const response = new xudrpc.RemoveOrderResponse();
-      response.setQuantityOnHold(quantityOnHold);
+      response.setQuantityOnHold(onHoldQuantity);
+      response.setRemainingQuantity(remainingQuantity);
+      response.setRemovedQuantity(removedQuantity);
+      response.setPairId(pairId);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -889,10 +892,12 @@ class GrpcService {
       channelBalanceAlert.setSide(payload.side as number);
       channelBalanceAlert.setSideBalance(payload.sideBalance);
       channelBalanceAlert.setTotalBalance(payload.totalBalance);
+      channelBalanceAlert.setCurrency(payload.currency);
       alert.setBalanceAlert(channelBalanceAlert);
       call.write(alert);
     },
     cancelled$);
+    this.addStream(call);
   }
 
   /*

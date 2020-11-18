@@ -251,7 +251,7 @@ class LndClient extends SwapClient {
             alertThreshold,
             this.currency,
             channelPoint,
-            this.emit,
+            this.emit.bind(this, 'lowBalance'),
         );
       });
     }).catch(async (err) => {

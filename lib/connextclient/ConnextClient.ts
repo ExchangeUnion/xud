@@ -348,7 +348,7 @@ class ConnextClient extends SwapClient {
             alertThreshold,
             currency,
             address,
-            this.emit,
+            this.emit.bind(this, 'lowBalance'),
         );
       }
     } catch (e) {

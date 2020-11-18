@@ -243,6 +243,7 @@
 | bound | [uint32](#uint32) |  | The bound of the low balance in percentage. |
 | side_balance | [uint64](#uint64) |  | The current side balance. |
 | channel_point | [string](#string) |  | The point of the channel. |
+| currency | [string](#string) |  | The currency of the channel. |
 
 
 
@@ -1058,6 +1059,9 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | quantity_on_hold | [uint64](#uint64) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
+| remaining_quantity | [uint64](#uint64) |  | Remaining portion of the order if it was a partial removal. |
+| removed_quantity | [uint64](#uint64) |  | Successfully removed portion of the order. |
+| pair_id | [string](#string) |  | Removed order&#39;s pairId. (e.g. ETH/BTC) |
 
 
 

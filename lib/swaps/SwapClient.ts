@@ -237,7 +237,7 @@ abstract class SwapClient extends EventEmitter {
   protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
                                alertThreshold: number, currency: string, channelPoint: string, emit: Function) => {
     if (localBalance < alertThreshold) {
-      emit('lowBalance', {
+      emit({
         totalBalance,
         currency,
         channelPoint,
@@ -248,7 +248,7 @@ abstract class SwapClient extends EventEmitter {
     }
 
     if (remoteBalance < alertThreshold) {
-      emit('lowBalance', {
+      emit({
         totalBalance,
         currency,
         channelPoint,

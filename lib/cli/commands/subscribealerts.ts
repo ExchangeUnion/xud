@@ -2,7 +2,7 @@ import { Arguments, Argv } from 'yargs';
 import { XudClient } from '../../proto/xudrpc_grpc_pb';
 import * as xudrpc from '../../proto/xudrpc_pb';
 import { loadXudClient } from '../command';
-import { AlertType } from '../../constants/enums';
+import { AlertType, ChannelSide } from '../../constants/enums';
 import { onStreamError, waitForClient } from '../utils';
 
 export const command = 'subscribealerts';
@@ -30,13 +30,41 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
   waitForClient(client, argv, ensureConnection, subscribeAlerts, printError);
 };
 
+const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
+  const result: {type: string, message: string, payload: {
+    totalBalance?: number,
+    side?: string,
+    bound?: number,
+    sideBalance?: number,
+    channelPoint?: string,
+    currency?: string,
+  } | undefined } = {
+    type: AlertType[alertObject.type],
+    message: alertObject.message,
+    payload: undefined,
+  };
+
+  if (alertObject.type === xudrpc.Alert.AlertType.LOW_BALANCE) {
+    result.payload = {
+      totalBalance: alertObject.balanceAlert?.totalBalance,
+      side: ChannelSide[alertObject.balanceAlert?.side || 0],
+      sideBalance: alertObject.balanceAlert?.sideBalance,
+      bound: alertObject.balanceAlert?.bound,
+      channelPoint: alertObject.balanceAlert?.channelPoint,
+      currency: alertObject.balanceAlert?.currency,
+    };
+  }
+
+  return result;
+};
+
 const subscribeAlerts = (argv: Arguments<any>) => {
   const request = new xudrpc.SubscribeAlertsRequest();
   const alertsSubscription = client.subscribeAlerts(request);
 
   alertsSubscription.on('data', (alert: xudrpc.Alert) => {
     if (argv.json) {
-      console.log(JSON.stringify(alert, undefined, 2));
+      console.log(JSON.stringify(structAlertJson(alert.toObject()), undefined, 2));
     } else {
       console.log(`${AlertType[alert.getType()]}: ${alert.getMessage()}`);
     }
