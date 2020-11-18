@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { SwapClientType } from '../constants/enums';
+import { ChannelSide, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
 import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
@@ -217,7 +217,7 @@ abstract class SwapClient extends EventEmitter {
       case ClientStatus.WaitingUnlock:
       case ClientStatus.OutOfSync:
       case ClientStatus.NoHoldInvoiceSupport:
-        // these statuses can only be set on an operational, initalized client
+        // these statuses can only be set on an operational, initialized client
         validStatusTransition = this.isOperational();
         break;
       case ClientStatus.NotInitialized:
@@ -231,6 +231,31 @@ abstract class SwapClient extends EventEmitter {
       this.status = newStatus;
     } else {
       this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
+    }
+  }
+
+  protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
+                               alertThreshold: number, currency: string, channelPoint: string, emit: Function) => {
+    if (localBalance < alertThreshold) {
+      emit('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    }
+
+    if (remoteBalance < alertThreshold) {
+      emit('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Remote,
+        sideBalance: remoteBalance,
+        bound: 10,
+      });
     }
   }
 
@@ -360,7 +385,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized() && !this.hasNoInvoiceSupport();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;

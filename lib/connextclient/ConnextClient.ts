@@ -1,6 +1,6 @@
 import assert from 'assert';
 import http from 'http';
-import { ChannelSide, SwapClientType, SwapRole, SwapState } from '../constants/enums';
+import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import { XudError } from '../types';
 import Logger from '../Logger';
@@ -353,31 +353,6 @@ class ConnextClient extends SwapClient {
       }
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);
-    }
-  }
-
-  private checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
-                             alertThreshold: number, currency: string, channelPoint: string, emit: Function) => {
-    if (localBalance < alertThreshold) {
-      emit('lowBalance', {
-        totalBalance,
-        currency,
-        channelPoint,
-        side: ChannelSide.Local,
-        sideBalance: localBalance,
-        bound: 10,
-      });
-    }
-
-    if (remoteBalance < alertThreshold) {
-      emit('lowBalance', {
-        totalBalance,
-        currency,
-        channelPoint,
-        side: ChannelSide.Remote,
-        sideBalance: remoteBalance,
-        bound: 10,
-      });
     }
   }
 

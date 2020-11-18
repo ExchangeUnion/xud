@@ -38,6 +38,18 @@ const loadXudConfig = async (argv: Arguments<any>) => {
   }
 };
 
+const getTlsCert = (certPath: string) => {
+  try {
+    return fs.readFileSync(certPath);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw `tls cert could not be found at ${certPath}, it may take several seconds to be created on xud's first run`;
+    }
+
+    throw err;
+  }
+};
+
 /**
  * A generic function to instantiate an XU client.
  * @param argv the command line arguments
@@ -46,7 +58,7 @@ export const loadXudClient = async (argv: Arguments<any>) => {
   await loadXudConfig(argv);
 
   const certPath = argv.tlscertpath || path.join(argv.xudir, 'tls.cert');
-  const cert = fs.readFileSync(certPath);
+  const cert = getTlsCert(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
   return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
@@ -56,7 +68,7 @@ export const loadXudInitClient = async (argv: Arguments<any>) => {
   await loadXudConfig(argv);
 
   const certPath = argv.tlscertpath || path.join(argv.xudir, 'tls.cert');
-  const cert = fs.readFileSync(certPath);
+  const cert = getTlsCert(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
   return new XudInitClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
