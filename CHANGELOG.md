@@ -50,7 +50,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **connext:** unlock expired transfer apps ([#1857](https://github.com/ExchangeUnion/xud/issues/1857)) ([023434d](https://github.com/ExchangeUnion/xud/commit/023434de1eabe4811986b9156beef7a5a670c047))
 * **logging:** order holds on trace level ([#1865](https://github.com/ExchangeUnion/xud/issues/1865)) ([5e3ad04](https://github.com/ExchangeUnion/xud/commit/5e3ad04ed8f2e35cb06479d2172d25bffa002768))
 * **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
-* **orderbook:** log error message on remove order ([#1901](https://github.com/ExchangeUnion/xud/issues/1901)) ([788490f](https://github.com/ExchangeUnion/xud/commit/788490f430691e2e93a28e4aab39aa260213e5b3))
 * **p2p:** don't log empty order packets ([#1871](https://github.com/ExchangeUnion/xud/issues/1871)) ([1b6d6d6](https://github.com/ExchangeUnion/xud/commit/1b6d6d6cf522517dbe138b8c7dda908b36f2d1a4))
 * **p2p:** increase reconnection delay backoff ([#1870](https://github.com/ExchangeUnion/xud/issues/1870)) ([44af197](https://github.com/ExchangeUnion/xud/commit/44af19722ced03fa2fd89702fea88d07ef51ae08))
 * **rpc:** add txid to open/close channel response ([0669a3f](https://github.com/ExchangeUnion/xud/commit/0669a3f41f6a8de9cc6afcf4d8d58c91d18d5b58)), closes [#1860](https://github.com/ExchangeUnion/xud/issues/1860)
