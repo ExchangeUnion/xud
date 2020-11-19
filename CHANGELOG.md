@@ -6,7 +6,6 @@ This maintenance release includes a number of features, most significantly it sw
 
 * added swap success log entry ([#1649](https://github.com/ExchangeUnion/xud/issues/1649)) ([e914ec0](https://github.com/ExchangeUnion/xud/commit/e914ec028f6420bbf2d973b92626f6284a9a8ba5))
 * graceful shutdown ([#1994](https://github.com/ExchangeUnion/xud/issues/1994)) ([cde3203](https://github.com/ExchangeUnion/xud/commit/cde320312dcd08f70123b5949d038205748d6148))
-* **cli:** switch getbalance table columns ([#1931](https://github.com/ExchangeUnion/xud/issues/1931)) ([49c8c18](https://github.com/ExchangeUnion/xud/commit/49c8c18cf9d00ede7f84ce617921ffc3aa9b18de)), closes [#1930](https://github.com/ExchangeUnion/xud/issues/1930)
 * **cli:** typo in unlock.ts ([#1944](https://github.com/ExchangeUnion/xud/issues/1944)) ([7f61b32](https://github.com/ExchangeUnion/xud/commit/7f61b321c7e5c77585650ef7ff8415bdc29f6c15))
 * **lnd:** don't calculate negative capacities ([b1020c1](https://github.com/ExchangeUnion/xud/commit/b1020c1a5cf2b386b9948efad9b5868232323945))
 * addpair should prevent adding same base and quote assets ([#1559](https://github.com/ExchangeUnion/xud/issues/1559)) ([69f502f](https://github.com/ExchangeUnion/xud/commit/69f502f12b9fab12a558cc304eb5b58e19836561))
