@@ -20,7 +20,6 @@ This maintenance release includes a number of features, most significantly it sw
 * getinfo output for lnd channels ([#1940](https://github.com/ExchangeUnion/xud/issues/1940)) ([#1948](https://github.com/ExchangeUnion/xud/issues/1948)) ([962daa4](https://github.com/ExchangeUnion/xud/commit/962daa46081bc3122a04afa82bbe88eb53ec0026))
 * manual ban causes an undefined log entry ([#1779](https://github.com/ExchangeUnion/xud/issues/1779)) ([e7f8178](https://github.com/ExchangeUnion/xud/commit/e7f817841fccee30415f754816644f161fe6cc2c))
 * order invalidation only be sent to peers with active pair ([#1530](https://github.com/ExchangeUnion/xud/issues/1530)) ([#1890](https://github.com/ExchangeUnion/xud/issues/1890)) ([0dc85bd](https://github.com/ExchangeUnion/xud/commit/0dc85bd83ad0514241e85ae3a958bb01d31594b0))
-* propagating currencies and pairs on database if initDB true even DB is filled ([17c7cb5](https://github.com/ExchangeUnion/xud/commit/17c7cb54c3a55189ca459a9a842a7e2aa4886a6b))
 * propagating nodes on database if initDB true even DB is filled ([#1907](https://github.com/ExchangeUnion/xud/issues/1907)) ([246136e](https://github.com/ExchangeUnion/xud/commit/246136e3d2992711ce5e09d132cf79348bf99e6e))
 * rename tradinglimits reserved_inbound json_name ([7e56011](https://github.com/ExchangeUnion/xud/commit/7e560111dbb10079a6e9c488d46fb0ecc8bb1cb6))
 * xudrpc GetBalanceResponse json_name ([#1909](https://github.com/ExchangeUnion/xud/issues/1909)) ([26f89e6](https://github.com/ExchangeUnion/xud/commit/26f89e6d01cce2ec9d66dc39c0538d142a5af18c))
