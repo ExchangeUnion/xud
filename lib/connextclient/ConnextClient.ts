@@ -14,7 +14,7 @@ import SwapClient, {
   PaymentStatus,
   WithdrawArguments,
 } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities, ChannelBalanceAlert } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -47,6 +47,7 @@ interface ConnextClient {
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
+  on(event: 'lowBalance', listener: (alert: ChannelBalanceAlert) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -54,6 +55,7 @@ interface ConnextClient {
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
   emit(event: 'depositConfirmed', hash: string): void;
+  emit(event: 'lowBalance', alert: ChannelBalanceAlert): boolean;
 }
 
 /**
@@ -104,6 +106,7 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
+  public userIdentifier?: string;
   /**
    * A map of expected invoices by hash.
    * This is equivalent to invoices of lnd with the difference
@@ -274,10 +277,6 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public totalOutboundAmount = (currency: string): number => {
-    return this.outboundAmounts.get(currency) || 0;
-  }
-
   /**
    * Checks whether we have a pending collateral request for the currency and,
    * if one doesn't exist, starts a new request for the specified amount. Then
@@ -302,6 +301,10 @@ class ConnextClient extends SwapClient {
     this.requestCollateralPromises.set(currency, requestCollateralPromise);
   }
 
+  /**
+   * Checks whether there is sufficient inbound capacity to receive the specified amount
+   * and throws an error if there isn't, otherwise does nothing.
+   */
   public checkInboundCapacity = (inboundAmount: number, currency: string) => {
     const inboundCapacity = this.inboundAmounts.get(currency) || 0;
     if (inboundCapacity < inboundAmount) {
@@ -348,6 +351,23 @@ class ConnextClient extends SwapClient {
         channelBalancePromises.push(this.channelBalance(currency));
       }
       await Promise.all(channelBalancePromises);
+
+      for (const [currency, address] of this.tokenAddresses) {
+        const remoteBalance = this.inboundAmounts.get(currency) || 0;
+        const localBalance = this.outboundAmounts.get(currency) || 0;
+        const totalBalance = remoteBalance + localBalance;
+        const alertThreshold = totalBalance * 0.1;
+
+        this.checkLowBalance(
+            remoteBalance,
+            localBalance,
+            totalBalance,
+            alertThreshold,
+            currency,
+            address,
+            this.emit,
+        );
+      }
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);
     }
@@ -915,7 +935,16 @@ class ConnextClient extends SwapClient {
     if (!currency) {
       throw errors.CURRENCY_MISSING;
     }
-    const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
+    const { freeBalanceOffChain } = await this.getBalance(currency);
+    const availableUnits = Number(freeBalanceOffChain);
+    if (units && availableUnits < units) {
+      throw errors.INSUFFICIENT_BALANCE;
+    }
+    const amount = units || freeBalanceOffChain;
+
+    if (Number(amount) === 0) {
+      return []; // there is nothing to withdraw and no tx to return
+    }
 
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,

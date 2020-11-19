@@ -5,6 +5,8 @@ import Logger from '../../lib/Logger';
 import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
+import { OwnLimitOrder } from '../../lib/orderbook/types';
+import { errorCodes } from '../../lib/swaps/errors';
 
 jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
@@ -279,16 +281,16 @@ describe('Swaps.SwapClientManager', () => {
     });
   });
 
-  describe('tradingLimits', () => {
-    const setup = () => {
+  describe('tradingLimits & checkSwapCapacities', () => {
+    beforeAll(() => {
       const btcClient = new mockedSwapClient();
       btcClient.isConnected = jest.fn().mockImplementation(() => true);
       btcClient.swapCapacities = jest.fn().mockImplementation(() => {
         return Promise.resolve({
-          maxOutboundChannelCapacity: 2000,
-          maxInboundChannelCapacity: 1500,
-          totalOutboundCapacity: 2000,
-          totalInboundCapacity: 1500,
+          maxOutboundChannelCapacity: 200000,
+          maxInboundChannelCapacity: 150000,
+          totalOutboundCapacity: 200000,
+          totalInboundCapacity: 150000,
         });
       });
       swapClientManager.swapClients.set('BTC', btcClient);
@@ -297,31 +299,103 @@ describe('Swaps.SwapClientManager', () => {
       ltcClient.isConnected = jest.fn().mockImplementation(() => true);
       ltcClient.swapCapacities = jest.fn().mockImplementation(() => {
         return Promise.resolve({
-          maxOutboundChannelCapacity: 7000,
-          maxInboundChannelCapacity: 5500,
-          totalOutboundCapacity: 7000,
-          totalInboundCapacity: 5500,
+          maxOutboundChannelCapacity: 700000,
+          maxInboundChannelCapacity: 550000,
+          totalOutboundCapacity: 700000,
+          totalInboundCapacity: 550000,
         });
       });
       swapClientManager.swapClients.set('LTC', ltcClient);
 
-      const bchClient = new mockedSwapClient();
-      bchClient.isConnected = jest.fn().mockImplementation(() => false);
-      swapClientManager.swapClients.set('BCH', bchClient);
-    };
+    });
 
-    test('returns trading limits', async () => {
-      setup();
+    test('returns trading limits for a currency', async () => {
       const btcTradingLimits = await swapClientManager.tradingLimits('BTC');
 
       expect(btcTradingLimits).toBeTruthy();
-      expect(btcTradingLimits.maxSell).toEqual(2000);
-      expect(btcTradingLimits.maxBuy).toEqual(1500);
+      expect(btcTradingLimits.maxSell).toEqual(200000);
+      expect(btcTradingLimits.maxBuy).toEqual(150000);
+    });
+
+    test('throws if outbound swap capacity is insufficient for an order', async () => {
+      const order: OwnLimitOrder = {
+        price: 0.01,
+        pairId: 'LTC/BTC',
+        quantity: 800000,
+        isBuy: false,
+        localId: 'test',
+      };
+
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY);
+    });
+
+    test('throws if inbound swap capacity is insufficient for an order', async () => {
+      const order: OwnLimitOrder = {
+        price: 1,
+        pairId: 'LTC/BTC',
+        quantity: 300000,
+        isBuy: false,
+        localId: 'test',
+      };
+
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_INBOUND_CAPACITY);
+    });
+
+    test('throws if outbound swap capacity is insufficient for an order plus reserved amounts', async () => {
+      const order: OwnLimitOrder = {
+        price: 0.01,
+        pairId: 'LTC/BTC',
+        quantity: 600000,
+        isBuy: false,
+        localId: 'test',
+      };
+
+      swapClientManager['outboundReservedAmounts'].set('LTC', 200000);
+
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY);
+    });
+
+    test('throws if inbound swap capacity is insufficient for an order plus reserved amounts', async () => {
+      const order: OwnLimitOrder = {
+        price: 1,
+        pairId: 'LTC/BTC',
+        quantity: 100000,
+        isBuy: false,
+        localId: 'test',
+      };
+
+      swapClientManager['inboundReservedAmounts'].set('BTC', 200000);
+
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_INBOUND_CAPACITY);
+    });
+
+    test('returns if swap capacity is sufficient', async () => {
+      const order: OwnLimitOrder = {
+        price: 0.01,
+        pairId: 'LTC/BTC',
+        quantity: 600000,
+        isBuy: false,
+        localId: 'test',
+      };
+
+      swapClientManager['outboundReservedAmounts'].set('LTC', 50000);
+      swapClientManager['inboundReservedAmounts'].set('BTC', 50000);
+
+      await swapClientManager.checkSwapCapacities(order);
     });
 
     test('throws when swap client is not found', async () => {
-      setup();
-      await expect(swapClientManager.tradingLimits('BBB')).rejects.toMatchSnapshot();
+      await expect(swapClientManager.tradingLimits('BBB')).rejects.toHaveProperty('code', errorCodes.SWAP_CLIENT_NOT_FOUND);
+
+      const order: OwnLimitOrder = {
+        price: 0.01,
+        pairId: 'AAA/BBB',
+        quantity: 600000,
+        isBuy: false,
+        localId: 'test',
+      };
+
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.SWAP_CLIENT_NOT_FOUND);
     });
   });
 });

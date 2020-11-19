@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { SwapClientType } from '../constants/enums';
+import { ChannelSide, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
 import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
@@ -34,6 +34,8 @@ type ChannelBalance = {
   pendingOpenBalance: number,
   /** The cumulative balance of inactive channels denominated in satoshis. */
   inactiveBalance: number,
+  /** The channel balances by channel point. */
+  channels?: Channel[],
 };
 
 type WalletBalance = {
@@ -67,6 +69,15 @@ export type WithdrawArguments = {
   amount?: number,
   all?: boolean,
   fee?: number,
+};
+
+export type Channel = {
+  /** The local balance of the channel. */
+  localBalance: number,
+  /** The remote balance of the channel. */
+  remoteBalance: number,
+  /** The point of the channel. */
+  channelPoint: string,
 };
 
 interface SwapClient {
@@ -126,12 +137,6 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
-  public abstract totalOutboundAmount(currency?: string): number;
-  /**
-   * Checks whether there is sufficient inbound capacity to receive the specified amount
-   * and throws an error if there isn't, otherwise does nothing.
-   */
-  public abstract checkInboundCapacity(inboundAmount: number, currency?: string): void;
   public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
 
@@ -212,7 +217,7 @@ abstract class SwapClient extends EventEmitter {
       case ClientStatus.WaitingUnlock:
       case ClientStatus.OutOfSync:
       case ClientStatus.NoHoldInvoiceSupport:
-        // these statuses can only be set on an operational, initalized client
+        // these statuses can only be set on an operational, initialized client
         validStatusTransition = this.isOperational();
         break;
       case ClientStatus.NotInitialized:
@@ -226,6 +231,31 @@ abstract class SwapClient extends EventEmitter {
       this.status = newStatus;
     } else {
       this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
+    }
+  }
+
+  protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
+                               alertThreshold: number, currency: string, channelPoint: string, emit: Function) => {
+    if (localBalance < alertThreshold) {
+      emit('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    }
+
+    if (remoteBalance < alertThreshold) {
+      emit('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Remote,
+        sideBalance: remoteBalance,
+        bound: 10,
+      });
     }
   }
 
@@ -355,7 +385,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized() && !this.hasNoInvoiceSupport();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;

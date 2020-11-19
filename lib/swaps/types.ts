@@ -2,7 +2,7 @@ import {
   SwapRole,
   SwapPhase,
   SwapState,
-  SwapFailureReason,
+  SwapFailureReason, ChannelSide,
 } from '../constants/enums';
 
 export type SwapDeal = {
@@ -120,14 +120,14 @@ export type SwapCapacities = {
 };
 
 export type TradingLimits = {
-  /** Maximum outbound limit for an order denominated in satoshis. */
+  /** Maximum outbound limit for a sell order denominated in satoshis. */
   maxSell: number,
-  /** Maximum inbound limit for an order denominated in satoshis. */
+  /** Maximum inbound limit for a buy order denominated in satoshis. */
   maxBuy: number,
-  /**  The outbound amount reserved for open orders. */
-  reservedOutbound: number,
-  /**  The inbound amount reserved for open orders. */
-  reservedInbound: number,
+  /**  The outbound amount reserved for open sell orders. */
+  reservedSell: number,
+  /**  The inbound amount reserved for open buy orders. */
+  reservedBuy: number,
 };
 
 export type ResolveRequest = {
@@ -171,4 +171,19 @@ export type OpenChannelParams = {
   pushUnits?: number,
   /** The fee in sat per byte. */
   fee?: number,
+};
+
+export type ChannelBalanceAlert = {
+  /** The total balance of the channel when the alert is triggered. */
+  totalBalance: number,
+  /** The side of the balance either local or remote. */
+  side: ChannelSide,
+  /** The balance that triggered the alert. */
+  sideBalance: number,
+  /** The alert threshold in percentage, e.g. 10 means %10. */
+  bound: number,
+  /** The point of the channel. */
+  channelPoint: string,
+  /** The currency of the channel. */
+  currency: string,
 };

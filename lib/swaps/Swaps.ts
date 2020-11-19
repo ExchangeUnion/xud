@@ -10,7 +10,9 @@ import { PacketType } from '../p2p/packets';
 import * as packets from '../p2p/packets/types';
 import Peer from '../p2p/Peer';
 import Pool from '../p2p/Pool';
+import { UnitConverter } from '../utils/UnitConverter';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
+import { MAX_PAYMENT_TIME } from './consts';
 import errors, { errorCodes } from './errors';
 import SwapClient, { PaymentState } from './SwapClient';
 import SwapClientManager from './SwapClientManager';
@@ -48,21 +50,12 @@ class Swaps extends EventEmitter {
   private timeouts = new Map<string, number>();
   private usedHashes = new Set<string>();
   private repository: SwapRepository;
-  /** Number of smallest units per currency. */
-  // TODO: Use UnitConverter class instead
-  private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
-    BTC: 1,
-    LTC: 1,
-    ETH: 10 ** 10,
-    USDT: 10 ** -2,
-    WETH: 10 ** 10,
-    DAI: 10 ** 10,
-    XUC: 10 ** 10,
-  };
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
+
   private static readonly SWAP_COMPLETE_TIMEOUT = 45000;
+
   /**
    * Additional time that the maker will wait for a swap to be completed before considering it timed
    * out. This exists because the maker starts timing sooner and ends timing later than the taker.
@@ -141,7 +134,7 @@ class Swaps extends EventEmitter {
    */
   private static calculateMakerTakerAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const { inboundCurrency, inboundAmount, inboundUnits, outboundCurrency, outboundAmount, outboundUnits } =
-      Swaps.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
+      UnitConverter.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
     return {
       makerCurrency: inboundCurrency,
       makerAmount: inboundAmount,
@@ -152,34 +145,8 @@ class Swaps extends EventEmitter {
     };
   }
 
-  /**
-   * Calculates the incoming and outgoing currencies and amounts of subunits/satoshis for an order if it is swapped.
-   * @param quantity The quantity of the order
-   * @param price The price of the order
-   * @param isBuy Whether the order is a buy
-   * @returns An object with the calculated incoming and outgoing values. The quote currency
-   * amount is returned as zero if the price is 0 or infinity, indicating a market order.
-   */
-  public static calculateInboundOutboundAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
-    const [baseCurrency, quoteCurrency] = pairId.split('/');
-    const baseCurrencyAmount = quantity;
-    const quoteCurrencyAmount = price > 0 && price < Number.POSITIVE_INFINITY ?
-      Math.round(quantity * price) :
-      0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
-    const baseCurrencyUnits = Math.floor(baseCurrencyAmount * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
-    const quoteCurrencyUnits = Math.floor(quoteCurrencyAmount * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
-
-    const inboundCurrency = isBuy ? baseCurrency : quoteCurrency;
-    const inboundAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
-    const inboundUnits = isBuy ? baseCurrencyUnits : quoteCurrencyUnits;
-    const outboundCurrency = isBuy ? quoteCurrency : baseCurrency;
-    const outboundAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
-    const outboundUnits = isBuy ? quoteCurrencyUnits : baseCurrencyUnits;
-    return { inboundCurrency, inboundAmount, inboundUnits, outboundCurrency, outboundAmount, outboundUnits };
-  }
-
   public init = async () => {
-    // update pool with lnd pubkeys
+    // update pool with current lnd & connext pubkeys
     this.swapClientManager.getLndClientsMap().forEach(({ pubKey, chain, currency, uris }) => {
       if (pubKey && chain) {
         this.pool.updateLndState({
@@ -190,6 +157,9 @@ class Swaps extends EventEmitter {
         });
       }
     });
+    if (this.swapClientManager.connextClient) {
+      this.pool.updateConnextState(this.swapClientManager.connextClient.tokenAddresses, this.swapClientManager.connextClient.userIdentifier);
+    }
 
     this.swapRecovery.beginTimer();
     const swapDealInstances = await this.repository.getSwapDeals();

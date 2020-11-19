@@ -1,7 +1,8 @@
+import { EventEmitter } from 'events';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
-import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
+import { AlertType, OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger, { Level, LevelPriority } from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
@@ -11,14 +12,13 @@ import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
+import { ChannelBalanceAlert, ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
-import { EventEmitter } from 'events';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -249,10 +249,10 @@ class Service extends EventEmitter {
     const { nodeIdentifier, currency, force, destination, amount, fee } = args;
     argChecks.VALID_CURRENCY({ currency });
 
+    const swapClientType = this.swapClientManager.getType(currency);
     let remoteIdentifier: string | undefined;
     if (nodeIdentifier) {
       const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
-      const swapClientType = this.swapClientManager.getType(currency);
       if (swapClientType === undefined) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
@@ -260,7 +260,7 @@ class Service extends EventEmitter {
       remoteIdentifier = peer.getIdentifier(swapClientType, currency);
     }
 
-    return await this.swapClientManager.closeChannel({
+    const closeChannelTxs = await this.swapClientManager.closeChannel({
       currency,
       force,
       destination,
@@ -268,6 +268,15 @@ class Service extends EventEmitter {
       remoteIdentifier,
       fee,
     });
+    if (closeChannelTxs.length === 0) {
+      if (swapClientType === SwapClientType.Connext) {
+        throw errors.NO_CHANNELS_TO_CLOSE('connext');
+      } else {
+        throw errors.NO_CHANNELS_TO_CLOSE(nodeIdentifier);
+      }
+    }
+
+    return closeChannelTxs;
   }
 
   /*
@@ -684,23 +693,46 @@ class Service extends EventEmitter {
     const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.discoverNodes(nodePubKey);
   }
+  /*
+   * Subscribe to alerts.
+   */
+  public subscribeAlerts = (
+      callback: (type: AlertType, message: string, payload: ChannelBalanceAlert) => void,
+      cancelled$: Observable<void>,
+  ) => {
+    const lowBalanceObservables: Observable<ChannelBalanceAlert>[] = [];
+    this.swapClientManager.swapClients.forEach((swapClient) => {
+      lowBalanceObservables.push(fromEvent<ChannelBalanceAlert>(swapClient, 'lowBalance'));
+    });
+
+    const lowBalance$ = merge(...lowBalanceObservables).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
+    lowBalance$.subscribe({
+      next: (alert) => {
+        callback(
+            AlertType.LowBalance,
+            `${alert.side} channel balance is lower than ${alert.totalBalance} for ${alert.currency} by ${alert.bound}%`,
+            alert);
+      },
+      error: this.logger.error,
+    });
+  }
 
   /*
    * Subscribe to orders being added to the order book.
    */
   public subscribeOrders = (
     args: { existing: boolean },
-    callback: (order?: Order, orderRemoval?: OrderPortion) => void,
+    callback: (order?: ServiceOrder, orderRemoval?: OrderPortion) => void,
     cancelled$: Observable<void>,
   ) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buyArray.forEach(order => callback(order));
-        peerOrders.buyArray.forEach(order => callback(order));
-        ownOrders.sellArray.forEach(order => callback(order));
-        peerOrders.sellArray.forEach(order => callback(order));
+        ownOrders.buyArray.forEach(order => callback(this.toServiceOrder(order, false)));
+        peerOrders.buyArray.forEach(order => callback(this.toServiceOrder(order, true)));
+        ownOrders.sellArray.forEach(order => callback(this.toServiceOrder(order, false)));
+        peerOrders.sellArray.forEach(order => callback(this.toServiceOrder(order, true)));
       });
     }
 
@@ -710,7 +742,7 @@ class Service extends EventEmitter {
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
     orderAdded$.subscribe({
-      next: callback,
+      next: order => callback(this.toServiceOrder(order, true)),
       error: this.logger.error,
     });
 

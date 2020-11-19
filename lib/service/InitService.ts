@@ -44,6 +44,7 @@ class InitService extends EventEmitter {
       // use this seed to init any lnd wallets that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
         seedMnemonic,
+        nodeKey,
         walletPassword: password,
       });
 
@@ -73,6 +74,7 @@ class InitService extends EventEmitter {
       this.emit('nodekey', nodeKey);
 
       return this.swapClientManager.unlockWallets({
+        nodeKey,
         walletPassword: password,
         connextSeed: nodeKey.childSeed(SwapClientType.Connext),
       });
@@ -115,6 +117,7 @@ class InitService extends EventEmitter {
       // use the seed and database backups to restore any swap clients' wallets
       // that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
+        nodeKey,
         lndBackups: lndBackupsMap,
         walletPassword: password,
         seedMnemonic: seedMnemonicList,

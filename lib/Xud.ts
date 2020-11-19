@@ -130,6 +130,12 @@ class Xud extends EventEmitter {
           nodeKey = await NodeKey.generate();
           await nodeKey.toFile(nodeKeyPath);
         }
+
+        // we need to initialize connext every time xud starts, even in noencrypt mode
+        // the call below is in lieu of the UnlockNode/CreateNode call flow
+        await this.swapClientManager.initConnext(
+          nodeKey.childSeed(SwapClientType.Connext),
+        );
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
@@ -193,12 +199,6 @@ class Xud extends EventEmitter {
 
       // wait for components to initialize in parallel
       await Promise.all(initPromises);
-
-      // We initialize Connext separately because it
-      // requires a NodeKey.
-      await this.swapClientManager.initConnext(
-        nodeKey.childSeed(SwapClientType.Connext),
-      );
 
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init();

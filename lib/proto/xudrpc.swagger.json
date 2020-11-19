@@ -602,6 +602,23 @@
         ]
       }
     },
+    "/v1/subscribealerts": {
+      "get": {
+        "summary": "Subscribes to alerts such as low balance.",
+        "operationId": "SubscribeAlerts",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/xudrpcAlert"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/subscribeorders": {
       "get": {
         "summary": "Subscribes to orders being added to and removed from the order book. This call allows the client\nto maintain an up-to-date view of the order book. For example, an exchange that wants to show\nits users a real time view of the orders available to them would subscribe to this streaming\ncall to be alerted as new orders are added and expired orders are removed.",
@@ -836,6 +853,23 @@
     }
   },
   "definitions": {
+    "AlertAlertType": {
+      "type": "string",
+      "enum": [
+        "LOW_BALANCE"
+      ],
+      "default": "LOW_BALANCE",
+      "description": "The type of the alert."
+    },
+    "ChannelBalanceAlertSide": {
+      "type": "string",
+      "enum": [
+        "REMOTE",
+        "LOCAL"
+      ],
+      "default": "REMOTE",
+      "description": "The side of the low balance."
+    },
     "CurrencySwapClient": {
       "type": "string",
       "enum": [
@@ -909,6 +943,21 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
+    "xudrpcAlert": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/AlertAlertType"
+        },
+        "message": {
+          "type": "string",
+          "description": "The human readable alert message."
+        },
+        "balance_alert": {
+          "$ref": "#/definitions/xudrpcChannelBalanceAlert"
+        }
+      }
+    },
     "xudrpcBalance": {
       "type": "object",
       "properties": {
@@ -966,6 +1015,33 @@
         "network": {
           "type": "string",
           "title": "The network the swap client is on (eg regtest, testnet, mainnet)"
+        }
+      }
+    },
+    "xudrpcChannelBalanceAlert": {
+      "type": "object",
+      "properties": {
+        "total_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The total balance of the channel."
+        },
+        "side": {
+          "$ref": "#/definitions/ChannelBalanceAlertSide"
+        },
+        "bound": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The bound of the low balance in percentage."
+        },
+        "side_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The current side balance."
+        },
+        "channel_point": {
+          "type": "string",
+          "description": "The point of the channel."
         }
       }
     },
@@ -1659,6 +1735,20 @@
           "type": "string",
           "format": "uint64",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
+        },
+        "remaining_quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Remaining portion of the order if it was a partial removal."
+        },
+        "removed_quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Successfully removed portion of the order."
+        },
+        "pair_id": {
+          "type": "string",
+          "title": "Removed order's pairId. (e.g. ETH/BTC)"
         }
       }
     },
@@ -1932,22 +2022,22 @@
         "max_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "Maximum outbound limit for an order denominated in satoshis."
+          "description": "Maximum outbound limit for a sell order denominated in satoshis."
         },
         "max_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "Maximum inbound limit for an order denominated in satoshis."
+          "description": "Maximum inbound limit for a buy order denominated in satoshis."
         },
-        "reserved_outbound": {
+        "reserved_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "The outbound amount reserved for open orders."
+          "description": "The outbound amount reserved for open sell orders."
         },
-        "reserved_inbound": {
+        "reserved_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "The inbound amount reserved for open orders."
+          "description": "The inbound amount reserved for open buy orders."
         }
       }
     },
@@ -2038,6 +2128,18 @@
     }
   },
   "x-stream-definitions": {
+    "xudrpcAlert": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcAlert"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcAlert"
+    },
     "xudrpcOrderUpdate": {
       "type": "object",
       "properties": {

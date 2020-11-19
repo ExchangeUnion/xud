@@ -13,7 +13,6 @@ const errorCodes = {
   LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
   QUANTITY_DOES_NOT_MATCH: codesPrefix.concat('.10'),
   CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: codesPrefix.concat('.11'),
-  INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.12'),
   MIN_QUANTITY_VIOLATED: codesPrefix.concat('.13'),
   QUANTITY_ON_HOLD: codesPrefix.concat('.15'),
   DUPLICATE_PAIR_CURRENCIES: codesPrefix.concat('.16'),
@@ -63,10 +62,6 @@ const errors = {
   QUANTITY_DOES_NOT_MATCH: (requestedQuantity: number, orderQuantity: number) => ({
     message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
-  }),
-  INSUFFICIENT_OUTBOUND_BALANCE: (currency: string, amount: number, availableAmount: number) => ({
-    message: `${currency} outbound balance of ${availableAmount} is not sufficient for order amount of ${amount}`,
-    code: errorCodes.INSUFFICIENT_OUTBOUND_BALANCE,
   }),
   MIN_QUANTITY_VIOLATED: (quantity: number, currency: string) => ({
     message: `order does not meet the minimum ${currency} quantity of ${quantity} satoshis`,

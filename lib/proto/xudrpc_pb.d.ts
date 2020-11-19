@@ -65,6 +65,53 @@ export namespace AddPairResponse {
     }
 }
 
+export class Alert extends jspb.Message { 
+    getType(): Alert.AlertType;
+    setType(value: Alert.AlertType): void;
+
+    getMessage(): string;
+    setMessage(value: string): void;
+
+
+    hasBalanceAlert(): boolean;
+    clearBalanceAlert(): void;
+    getBalanceAlert(): ChannelBalanceAlert | undefined;
+    setBalanceAlert(value?: ChannelBalanceAlert): void;
+
+
+    getPayloadCase(): Alert.PayloadCase;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Alert.AsObject;
+    static toObject(includeInstance: boolean, msg: Alert): Alert.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: Alert, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Alert;
+    static deserializeBinaryFromReader(message: Alert, reader: jspb.BinaryReader): Alert;
+}
+
+export namespace Alert {
+    export type AsObject = {
+        type: Alert.AlertType,
+        message: string,
+        balanceAlert?: ChannelBalanceAlert.AsObject,
+    }
+
+    export enum AlertType {
+    LOW_BALANCE = 0,
+    }
+
+
+    export enum PayloadCase {
+        PAYLOAD_NOT_SET = 0,
+    
+    BALANCE_ALERT = 3,
+
+    }
+
+}
+
 export class Balance extends jspb.Message { 
     getTotalBalance(): number;
     setTotalBalance(value: number): void;
@@ -200,6 +247,49 @@ export namespace Channels {
         pending: number,
         closed: number,
     }
+}
+
+export class ChannelBalanceAlert extends jspb.Message { 
+    getTotalBalance(): number;
+    setTotalBalance(value: number): void;
+
+    getSide(): ChannelBalanceAlert.Side;
+    setSide(value: ChannelBalanceAlert.Side): void;
+
+    getBound(): number;
+    setBound(value: number): void;
+
+    getSideBalance(): number;
+    setSideBalance(value: number): void;
+
+    getChannelPoint(): string;
+    setChannelPoint(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ChannelBalanceAlert.AsObject;
+    static toObject(includeInstance: boolean, msg: ChannelBalanceAlert): ChannelBalanceAlert.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ChannelBalanceAlert, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ChannelBalanceAlert;
+    static deserializeBinaryFromReader(message: ChannelBalanceAlert, reader: jspb.BinaryReader): ChannelBalanceAlert;
+}
+
+export namespace ChannelBalanceAlert {
+    export type AsObject = {
+        totalBalance: number,
+        side: ChannelBalanceAlert.Side,
+        bound: number,
+        sideBalance: number,
+        channelPoint: string,
+    }
+
+    export enum Side {
+    REMOTE = 0,
+    LOCAL = 1,
+    }
+
 }
 
 export class CloseChannelRequest extends jspb.Message { 
@@ -1507,6 +1597,15 @@ export class RemoveOrderResponse extends jspb.Message {
     getQuantityOnHold(): number;
     setQuantityOnHold(value: number): void;
 
+    getRemainingQuantity(): number;
+    setRemainingQuantity(value: number): void;
+
+    getRemovedQuantity(): number;
+    setRemovedQuantity(value: number): void;
+
+    getPairId(): string;
+    setPairId(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): RemoveOrderResponse.AsObject;
@@ -1521,6 +1620,9 @@ export class RemoveOrderResponse extends jspb.Message {
 export namespace RemoveOrderResponse {
     export type AsObject = {
         quantityOnHold: number,
+        remainingQuantity: number,
+        removedQuantity: number,
+        pairId: string,
     }
 }
 
@@ -1764,6 +1866,23 @@ export class SubscribeOrdersRequest extends jspb.Message {
 export namespace SubscribeOrdersRequest {
     export type AsObject = {
         existing: boolean,
+    }
+}
+
+export class SubscribeAlertsRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribeAlertsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeAlertsRequest): SubscribeAlertsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribeAlertsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeAlertsRequest;
+    static deserializeBinaryFromReader(message: SubscribeAlertsRequest, reader: jspb.BinaryReader): SubscribeAlertsRequest;
+}
+
+export namespace SubscribeAlertsRequest {
+    export type AsObject = {
     }
 }
 
@@ -2089,11 +2208,11 @@ export class TradingLimits extends jspb.Message {
     getMaxBuy(): number;
     setMaxBuy(value: number): void;
 
-    getReservedOutbound(): number;
-    setReservedOutbound(value: number): void;
+    getReservedSell(): number;
+    setReservedSell(value: number): void;
 
-    getReservedInbound(): number;
-    setReservedInbound(value: number): void;
+    getReservedBuy(): number;
+    setReservedBuy(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -2110,8 +2229,8 @@ export namespace TradingLimits {
     export type AsObject = {
         maxSell: number,
         maxBuy: number,
-        reservedOutbound: number,
-        reservedInbound: number,
+        reservedSell: number,
+        reservedBuy: number,
     }
 }
 

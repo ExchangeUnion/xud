@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { EventEmitter } from 'events';
+import { UnitConverter } from '../utils/UnitConverter';
 import uuidv1 from 'uuid/v1';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
@@ -8,7 +9,6 @@ import Logger from '../Logger';
 import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
 import Peer from '../p2p/Peer';
 import Pool from '../p2p/Pool';
-import swapsErrors from '../swaps/errors';
 import Swaps from '../swaps/Swaps';
 import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 import { pubKeyToAlias } from '../utils/aliasUtils';
@@ -121,7 +121,7 @@ class OrderBook extends EventEmitter {
 
     const onOrderRemoved = (order: OwnOrder) => {
       const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+        UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
     };
@@ -130,7 +130,7 @@ class OrderBook extends EventEmitter {
 
     this.on('ownOrder.added', (order) => {
       const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+        UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
     });
@@ -307,6 +307,11 @@ class OrderBook extends EventEmitter {
     this.pairInstances.set(pairInstance.id, pairInstance);
     this.addTradingPair(pairInstance.id);
 
+    this.pool.rawPeers().forEach(async (peer) => {
+      this.checkPeerCurrencies(peer);
+      await this.verifyPeerPairs(peer);
+    });
+
     this.pool.updatePairs(this.pairIds);
     return pairInstance;
   }
@@ -335,7 +340,7 @@ class OrderBook extends EventEmitter {
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
-    this.swaps.swapClientManager.add(currencyInstance);
+    await this.swaps.swapClientManager.add(currencyInstance);
   }
 
   public removeCurrency = async (currencyId: string) => {
@@ -347,7 +352,6 @@ class OrderBook extends EventEmitter {
         }
       }
       this.currencyInstances.delete(currencyId);
-      this.swaps.swapClientManager.remove(currencyId);
       await currency.destroy();
     } else {
       throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
@@ -362,6 +366,11 @@ class OrderBook extends EventEmitter {
 
     this.pairInstances.delete(pairId);
     this.tradingPairs.delete(pairId);
+
+    this.pool.rawPeers().forEach(async (peer) => {
+      this.checkPeerCurrencies(peer);
+      await this.verifyPeerPairs(peer);
+    });
 
     this.pool.updatePairs(this.pairIds);
     return pair.destroy();
@@ -487,27 +496,7 @@ class OrderBook extends EventEmitter {
         (order.isBuy ? tp.quoteAsk() : tp.quoteBid()) :
         order.price;
 
-      const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, price, order.isBuy, order.pairId);
-
-      // check if clients exists
-      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
-      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
-      if (!outboundSwapClient) {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
-      }
-      if (!inboundSwapClient) {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
-      }
-
-      // check if sufficient outbound channel capacity exists
-      const totalOutboundAmount = outboundSwapClient.totalOutboundAmount(outboundCurrency);
-      if (outboundAmount > totalOutboundAmount) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
-      }
-
-      // check if sufficient inbound channel capacity exists
-      inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
+      await this.swaps.swapClientManager.checkSwapCapacities({ ...order, price });
     }
 
     let replacedOrderIdentifier: OrderIdentifier | undefined;
@@ -849,8 +838,8 @@ class OrderBook extends EventEmitter {
     const onHoldOrderLocalIds = [];
 
     for (const localId of this.localIdMap.keys()) {
-      const onHoldIndicator = this.removeOwnOrderByLocalId(localId, true);
-      if (onHoldIndicator === 0) {
+      const { onHoldQuantity } = this.removeOwnOrderByLocalId(localId, true);
+      if (onHoldQuantity === 0) {
         removedOrderLocalIds.push(localId);
       } else {
         onHoldOrderLocalIds.push(localId);
@@ -874,6 +863,8 @@ class OrderBook extends EventEmitter {
     const order = this.getOwnOrderByLocalId(localId);
 
     let remainingQuantityToRemove = quantityToRemove || order.quantity;
+    let onHoldQuantity = order.hold;
+    let removedQuantity = 0;
 
     if (remainingQuantityToRemove > order.quantity) {
       // quantity to be removed can't be higher than order's quantity.
@@ -887,6 +878,7 @@ class OrderBook extends EventEmitter {
         pairId: order.pairId,
         quantityToRemove: remainingQuantityToRemove,
       });
+      removedQuantity += remainingQuantityToRemove;
       remainingQuantityToRemove = 0;
     } else {
       // we can't immediately remove the entire quantity because of a hold on the order.
@@ -901,6 +893,7 @@ class OrderBook extends EventEmitter {
           pairId: order.pairId,
           quantityToRemove: removableQuantity,
         });
+        removedQuantity += removableQuantity;
         remainingQuantityToRemove -= removableQuantity;
       }
 
@@ -926,6 +919,8 @@ class OrderBook extends EventEmitter {
 
       const cleanup = (quantity: number) => {
         remainingQuantityToRemove -= quantity;
+        removedQuantity += quantity;
+        onHoldQuantity -= quantity;
         this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingQuantityToRemove} remaining`);
         if (remainingQuantityToRemove === 0) {
           // we can stop listening for swaps once all holds are cleared
@@ -938,7 +933,12 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', paidHandler);
     }
 
-    return remainingQuantityToRemove;
+    return {
+      removedQuantity,
+      onHoldQuantity,
+      pairId: order.pairId,
+      remainingQuantity: order.quantity - remainingQuantityToRemove,
+    };
   }
 
   private addOrderHold = (orderId: string, pairId: string, holdAmount?: number) => {
@@ -1009,7 +1009,11 @@ class OrderBook extends EventEmitter {
   }
 
   private removePeerPair = (peerPubKey: string, pairId: string) => {
-    const tp = this.getTradingPair(pairId);
+    const tp = this.tradingPairs.get(pairId);
+    if (!tp) {
+      return;
+    }
+
     const orders = tp.removePeerOrders(peerPubKey);
     orders.forEach((order) => {
       this.emit('peerOrder.invalidation', order);

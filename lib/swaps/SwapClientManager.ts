@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { EventEmitter } from 'events';
 import Config from '../Config';
 import ConnextClient from '../connextclient/ConnextClient';
@@ -6,13 +7,14 @@ import { Models } from '../db/DB';
 import lndErrors from '../lndclient/errors';
 import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
-import { Loggers, Level } from '../Logger';
-import { Currency } from '../orderbook/types';
+import { Level, Loggers } from '../Logger';
+import NodeKey from '../nodekey/NodeKey';
+import { Currency, OwnLimitOrder } from '../orderbook/types';
 import Peer from '../p2p/Peer';
+import { encipher } from '../utils/seedutil';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
-import assert from 'assert';
 import { TradingLimits } from './types';
 
 export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
@@ -120,12 +122,21 @@ class SwapClientManager extends EventEmitter {
     }
   }
 
-  // Initializes Connext client with a seed
+  /**
+   * Initializes Connext client with a seed
+   * @returns true if Connext
+   */
   public initConnext = async (seed: string) => {
-    if (!this.config.connext.disable && this.connextClient) {
-      this.connextClient.setSeed(seed);
-      await this.connextClient.init();
+    try {
+      if (!this.config.connext.disable && this.connextClient) {
+        this.connextClient.setSeed(seed);
+        await this.connextClient.init();
+        return true;
+      }
+    } catch (err) {
+      this.loggers.connext.error('could not initialize connext', err);
     }
+    return false;
   }
 
   /**
@@ -175,13 +186,58 @@ class SwapClientManager extends EventEmitter {
       const availableInboundCapacity = Math.max(0, swapCapacities.totalInboundCapacity - reservedInbound);
 
       return {
-        reservedOutbound,
-        reservedInbound,
+        reservedSell: reservedOutbound,
+        reservedBuy: reservedInbound,
         maxSell: Math.min(swapCapacities.maxOutboundChannelCapacity, availableOutboundCapacity),
         maxBuy: Math.min(swapCapacities.maxInboundChannelCapacity, availableInboundCapacity),
       };
     } else {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+  }
+
+  /**
+   * Checks whether a given order with would exceed our inbound or outbound swap
+   * capacities when taking into consideration reserved amounts for standing
+   * orders, throws an exception if so and returns otherwise.
+   */
+  public checkSwapCapacities = async ({ quantity, price, isBuy, pairId }: OwnLimitOrder) => {
+    const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+      UnitConverter.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
+
+    // check if clients exists
+    const outboundSwapClient = this.get(outboundCurrency);
+    const inboundSwapClient = this.get(inboundCurrency);
+    if (!outboundSwapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
+    }
+    if (!inboundSwapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
+    }
+
+    const outboundCapacities = await outboundSwapClient.swapCapacities(outboundCurrency);
+
+    // check if sufficient outbound channel capacity exists
+    const reservedOutbound = this.outboundReservedAmounts.get(outboundCurrency) ?? 0;
+    const availableOutboundCapacity = outboundCapacities.totalOutboundCapacity - reservedOutbound;
+    if (outboundAmount > availableOutboundCapacity) {
+      throw errors.INSUFFICIENT_OUTBOUND_CAPACITY(outboundCurrency, outboundAmount, availableOutboundCapacity);
+    }
+
+    // check if sufficient inbound channel capacity exists
+    if (isConnextClient(inboundSwapClient)) {
+      // connext has the unique ability to dynamically request additional inbound capacity aka collateral
+      // we handle it differently and allow "lazy collateralization" if the total inbound capacity would
+      // be exceeded when including the reserved inbound amounts, we only reject if this order alone would
+      // exceed our inbound capacity
+      inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
+    } else {
+      const inboundCapacities = await inboundSwapClient.swapCapacities(inboundCurrency);
+      const reservedInbound = this.inboundReservedAmounts.get(inboundCurrency) ?? 0;
+      const availableInboundCapacity = inboundCapacities.totalInboundCapacity - reservedInbound;
+      if (inboundAmount > availableInboundCapacity) {
+        throw errors.INSUFFICIENT_INBOUND_CAPACITY(outboundCurrency, outboundAmount, availableOutboundCapacity);
+      }
     }
   }
 
@@ -228,11 +284,12 @@ class SwapClientManager extends EventEmitter {
   /**
    * Initializes wallets with seed and password.
    */
-  public initWallets = async ({ walletPassword, seedMnemonic, restore, lndBackups }: {
+  public initWallets = async ({ walletPassword, seedMnemonic, restore, lndBackups, nodeKey }: {
     walletPassword: string,
     seedMnemonic: string[],
     restore?: boolean,
     lndBackups?: Map<string, Uint8Array>,
+    nodeKey: NodeKey,
   }) => {
     this.walletPassword = walletPassword;
 
@@ -241,24 +298,26 @@ class SwapClientManager extends EventEmitter {
     const initializedLndWallets: string[] = [];
     let initializedConnext = false;
 
-    for (const client of this.swapClients.values()) {
-      if (isLndClient(client)) {
-        if (client.isWaitingUnlock()) {
-          const initWalletPromise = client.initWallet(
+    for (const swapClient of this.swapClients.values()) {
+      if (isLndClient(swapClient)) {
+        if (swapClient.isWaitingUnlock()) {
+          const initWalletPromise = swapClient.initWallet(
             walletPassword,
             seedMnemonic,
             restore,
-            lndBackups ? lndBackups.get(client.currency) : undefined,
+            lndBackups ? lndBackups.get(swapClient.currency) : undefined,
           ).then(() => {
-            initializedLndWallets.push(client.currency);
+            initializedLndWallets.push(swapClient.currency);
           }).catch((err) => {
-            client.logger.error(`could not initialize lnd wallet: ${err.message}`);
-            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${client.currency}: ${err.message}`);
+            swapClient.logger.error('could not initialize lnd wallet', err.message);
+            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${swapClient.currency}: ${err.message}`);
           });
           initWalletPromises.push(initWalletPromise);
         }
-      } else if (isConnextClient(client)) {
-        initializedConnext = true;
+      } else if (isConnextClient(swapClient)) {
+        initializedConnext = await this.initConnext(
+          nodeKey.childSeed(SwapClientType.Connext),
+        );
       }
     }
 
@@ -274,8 +333,9 @@ class SwapClientManager extends EventEmitter {
    * Unlocks wallets with a password.
    * @returns an array of currencies for each lnd client that was unlocked
    */
-  public unlockWallets = async ({ walletPassword }: {
+  public unlockWallets = async ({ walletPassword, nodeKey }: {
     walletPassword: string,
+    nodeKey: NodeKey,
     connextSeed: string,
   }) => {
     this.walletPassword = walletPassword;
@@ -290,21 +350,41 @@ class SwapClientManager extends EventEmitter {
         if (swapClient.isWaitingUnlock()) {
           const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
             unlockedLndClients.push(swapClient.currency);
-          }).catch((err) => {
-            lockedLndClients.push(swapClient.currency);
-            swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
+          }).catch(async (err) => {
+            let walletCreated = false;
+            if (err.details === 'wallet not found') {
+              // this wallet hasn't been initialized, so we will try to initialize it now
+              const decipheredSeed = nodeKey.privKey.slice(0, 19);
+              const decipheredSeedHex = decipheredSeed.toString('hex');
+              const seedMnemonic = await encipher(decipheredSeedHex);
+
+              try {
+                await swapClient.initWallet(this.walletPassword ?? '', seedMnemonic);
+                walletCreated = true;
+              } catch (err) {
+                swapClient.logger.error('could not initialize lnd wallet', err);
+              }
+            }
+
+            if (!walletCreated) {
+              lockedLndClients.push(swapClient.currency);
+              swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
+            }
           });
           unlockWalletPromises.push(unlockWalletPromise);
         } else if (swapClient.isDisconnected() || swapClient.isMisconfigured() || swapClient.isNotInitialized()) {
           // if the swap client is not connected, we treat it as locked since lnd will likely be locked when it comes online
           lockedLndClients.push(swapClient.currency);
         }
+      } else if (isConnextClient(swapClient)) {
+        // TODO(connext): unlock Connext using connextSeed
+        await this.initConnext(
+          nodeKey.childSeed(SwapClientType.Connext),
+        );
       }
     }
 
     await Promise.all(unlockWalletPromises);
-
-    // TODO(connext): unlock Connext using connextSeed
 
     return { unlockedLndClients, lockedLndClients };
   }
@@ -345,19 +425,21 @@ class SwapClientManager extends EventEmitter {
    * @param currency a currency that should be linked with a swap client.
    * @returns Nothing upon success, throws otherwise.
    */
-  public add = (currency: Currency): void => {
-    if (currency.swapClient === SwapClientType.Lnd) {
+  public add = async (currency: Currency) => {
+    if (currency.tokenAddress) {
+      if (currency.swapClient === SwapClientType.Connext) {
+        if (!this.connextClient) {
+          throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
+        }
+        this.swapClients.set(currency.id, this.connextClient);
+        this.connextClient.tokenAddresses.set(currency.id, currency.tokenAddress);
+        this.emit('connextUpdate', this.connextClient.tokenAddresses);
+      }
+    } else if (currency.swapClient === SwapClientType.Lnd) {
       // in case of lnd we check if the configuration includes swap client
       // for the specified currency
-      let isCurrencyConfigured = false;
-      for (const lndCurrency in this.config.lnd) {
-        if (lndCurrency === currency.id) {
-          isCurrencyConfigured = true;
-          break;
-        }
-      }
-      // adding a new lnd client at runtime is currently not supported
-      if (!isCurrencyConfigured) {
+      const config = this.config.lnd[currency.id];
+      if (!config) {
         throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
       }
     }

@@ -7,10 +7,12 @@
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
+    - [Alert](#xudrpc.Alert)
     - [Balance](#xudrpc.Balance)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
+    - [ChannelBalanceAlert](#xudrpc.ChannelBalanceAlert)
     - [Channels](#xudrpc.Channels)
     - [CloseChannelRequest](#xudrpc.CloseChannelRequest)
     - [CloseChannelResponse](#xudrpc.CloseChannelResponse)
@@ -71,6 +73,7 @@
     - [SetLogLevelResponse](#xudrpc.SetLogLevelResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
+    - [SubscribeAlertsRequest](#xudrpc.SubscribeAlertsRequest)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
     - [SubscribeSwapsAcceptedRequest](#xudrpc.SubscribeSwapsAcceptedRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
@@ -91,6 +94,8 @@
     - [WithdrawRequest](#xudrpc.WithdrawRequest)
     - [WithdrawResponse](#xudrpc.WithdrawResponse)
   
+    - [Alert.AlertType](#xudrpc.Alert.AlertType)
+    - [ChannelBalanceAlert.Side](#xudrpc.ChannelBalanceAlert.Side)
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
     - [LogLevel](#xudrpc.LogLevel)
@@ -141,6 +146,23 @@
 
 ### AddPairResponse
 
+
+
+
+
+
+
+<a name="xudrpc.Alert"></a>
+
+### Alert
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [Alert.AlertType](#xudrpc.Alert.AlertType) |  |  |
+| message | [string](#string) |  | The human readable alert message. |
+| balance_alert | [ChannelBalanceAlert](#xudrpc.ChannelBalanceAlert) |  |  |
 
 
 
@@ -202,6 +224,25 @@
 | ----- | ---- | ----- | ----------- |
 | chain | [string](#string) |  | The blockchain the swap client is on (eg bitcoin, litecoin) |
 | network | [string](#string) |  | The network the swap client is on (eg regtest, testnet, mainnet) |
+
+
+
+
+
+
+<a name="xudrpc.ChannelBalanceAlert"></a>
+
+### ChannelBalanceAlert
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| total_balance | [uint64](#uint64) |  | The total balance of the channel. |
+| side | [ChannelBalanceAlert.Side](#xudrpc.ChannelBalanceAlert.Side) |  |  |
+| bound | [uint32](#uint32) |  | The bound of the low balance in percentage. |
+| side_balance | [uint64](#uint64) |  | The current side balance. |
+| channel_point | [string](#string) |  | The point of the channel. |
 
 
 
@@ -1017,6 +1058,9 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | quantity_on_hold | [uint64](#uint64) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
+| remaining_quantity | [uint64](#uint64) |  | Remaining portion of the order if it was a partial removal. |
+| removed_quantity | [uint64](#uint64) |  | Successfully removed portion of the order. |
+| pair_id | [string](#string) |  | Removed order&#39;s pairId. (e.g. ETH/BTC) |
 
 
 
@@ -1136,6 +1180,16 @@
 <a name="xudrpc.ShutdownResponse"></a>
 
 ### ShutdownResponse
+
+
+
+
+
+
+
+<a name="xudrpc.SubscribeAlertsRequest"></a>
+
+### SubscribeAlertsRequest
 
 
 
@@ -1316,10 +1370,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| max_sell | [uint64](#uint64) |  | Maximum outbound limit for an order denominated in satoshis. |
-| max_buy | [uint64](#uint64) |  | Maximum inbound limit for an order denominated in satoshis. |
-| reserved_outbound | [uint64](#uint64) |  | The outbound amount reserved for open orders. |
-| reserved_inbound | [uint64](#uint64) |  | The inbound amount reserved for open orders. |
+| max_sell | [uint64](#uint64) |  | Maximum outbound limit for a sell order denominated in satoshis. |
+| max_buy | [uint64](#uint64) |  | Maximum inbound limit for a buy order denominated in satoshis. |
+| reserved_sell | [uint64](#uint64) |  | The outbound amount reserved for open sell orders. |
+| reserved_buy | [uint64](#uint64) |  | The inbound amount reserved for open buy orders. |
 
 
 
@@ -1465,6 +1519,29 @@
  
 
 
+<a name="xudrpc.Alert.AlertType"></a>
+
+### Alert.AlertType
+The type of the alert.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LOW_BALANCE | 0 |  |
+
+
+
+<a name="xudrpc.ChannelBalanceAlert.Side"></a>
+
+### ChannelBalanceAlert.Side
+The side of the low balance.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REMOTE | 0 |  |
+| LOCAL | 1 |  |
+
+
+
 <a name="xudrpc.Currency.SwapClient"></a>
 
 ### Currency.SwapClient
@@ -1569,6 +1646,7 @@ The primary service for interacting with a running xud node.
 | SetLogLevel | [SetLogLevelRequest](#xudrpc.SetLogLevelRequest) | [SetLogLevelResponse](#xudrpc.SetLogLevelResponse) | Set the logging level. shell: xucli loglevel &lt;level&gt; |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. shell: xucli shutdown |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
+| SubscribeAlerts | [SubscribeAlertsRequest](#xudrpc.SubscribeAlertsRequest) | [Alert](#xudrpc.Alert) stream | Subscribes to alerts such as low balance. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapsAccepted | [SubscribeSwapsAcceptedRequest](#xudrpc.SubscribeSwapsAcceptedRequest) | [SwapAccepted](#xudrpc.SwapAccepted) stream | Subscribes to accepted swaps. This stream emits a message when the local xud node accepts a swap request from a peer, but before the swap has actually succeeded. |

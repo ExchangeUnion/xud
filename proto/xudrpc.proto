@@ -279,6 +279,13 @@ service Xud {
     };
   }
 
+  /* Subscribes to alerts such as low balance. */
+  rpc SubscribeAlerts(SubscribeAlertsRequest) returns (stream Alert) {
+    option (google.api.http) = {
+      get: "/v1/subscribealerts"
+    };
+  }
+
   /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
    * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
    * the client to get real-time notifications when swap attempts are failing. It can be used for
@@ -376,6 +383,20 @@ message AddPairRequest {
 }
 message AddPairResponse {}
 
+message Alert {
+   // The type of the alert.
+   enum AlertType {
+     LOW_BALANCE = 0;
+   }
+   AlertType type = 1 [json_name = "type"];
+   // The human readable alert message.
+   string message = 2 [json_name = "message"];
+   // The structured payload.
+   oneof payload {
+     ChannelBalanceAlert balance_alert = 3 [json_name = "balance_alert"];
+   }
+}
+
 message Balance {
   // Total balance denominated in satoshis.
   uint64 total_balance = 1 [json_name = "total_balance"];
@@ -413,6 +434,23 @@ message Channels {
   uint32 pending = 3 [json_name = "pending"];
   // The number of channels that have been closed.
   uint32 closed = 4 [json_name = "closed"];
+}
+
+message ChannelBalanceAlert {
+  // The total balance of the channel.
+  uint64 total_balance = 1 [json_name = "total_balance"];
+  // The side of the low balance.
+  enum Side {
+    REMOTE = 0;
+    LOCAL = 1;
+  }
+  Side side = 2 [json_name = "side"];
+  // The bound of the low balance in percentage.
+  uint32 bound = 3 [json_name = "bound"];
+  // The current side balance.
+  uint64 side_balance = 4 [json_name = "side_balance"];
+  // The point of the channel.
+  string channel_point = 5 [json_name = "channel_point"];
 }
 
 message CloseChannelRequest {
@@ -767,6 +805,12 @@ message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
   // and could not be removed until after the swaps finish.
   uint64 quantity_on_hold = 1 [json_name = "hold"];
+  // Remaining portion of the order if it was a partial removal.
+  uint64 remaining_quantity = 2 [json_name = "remaining_quantity"];
+  // Successfully removed portion of the order.
+  uint64 removed_quantity = 3 [json_name = "removed_quantity"];
+  // Removed order's pairId. (e.g. ETH/BTC)
+  string pair_id = 4 [json_name = "pair_id"];
 }
 
 message RemoveAllOrdersRequest {}
@@ -816,6 +860,9 @@ message ShutdownResponse {}
 message SubscribeOrdersRequest {
   // Whether to transmit all existing active orders upon establishing the stream.
   bool existing = 1 [json_name = "existing"];
+}
+
+message SubscribeAlertsRequest {
 }
 
 message SubscribeSwapsAcceptedRequest { }
@@ -928,14 +975,14 @@ message TradeHistoryResponse {
 }
 
 message TradingLimits {
-  // Maximum outbound limit for an order denominated in satoshis.
+  // Maximum outbound limit for a sell order denominated in satoshis.
   uint64 max_sell = 1 [json_name = "max_sell"];
-  // Maximum inbound limit for an order denominated in satoshis.
+  // Maximum inbound limit for a buy order denominated in satoshis.
   uint64 max_buy = 2 [json_name = "max_buy"];
-  // The outbound amount reserved for open orders.
-  uint64 reserved_outbound = 3 [json_name = "reserved_outbound"];
-  // The inbound amount reserved for open orders.
-  uint64 reserved_inbound = 4 [json_name = "reserved_inbound"];
+  // The outbound amount reserved for open sell orders.
+  uint64 reserved_sell = 3 [json_name = "reserved_sell"];
+  // The inbound amount reserved for open buy orders.
+  uint64 reserved_buy = 4 [json_name = "reserved_buy"];
 }
 
 message TradingLimitsRequest {

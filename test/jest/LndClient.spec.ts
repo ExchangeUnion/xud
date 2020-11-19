@@ -2,7 +2,7 @@ import LndClient from '../../lib/lndclient/LndClient';
 import { LndClientConfig } from '../../lib/lndclient/types';
 import Logger from '../../lib/Logger';
 import { getValidDeal } from '../utils';
-import { SwapRole } from '../../lib/constants/enums';
+import { ChannelSide, SwapRole } from '../../lib/constants/enums';
 import { ClientStatus } from '../../lib/swaps/SwapClient';
 
 const openChannelSyncResponse = {
@@ -10,19 +10,7 @@ const openChannelSyncResponse = {
   getFundingTxidStr: () => 'some_tx_id',
 };
 
-const getSendPaymentSyncResponse = () => {
-  return {
-    getPaymentError: () => {},
-    getPaymentPreimage_asB64: () =>
-      'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=',
-  };
-};
-
-const getSendPaymentSyncErrorResponse = () => {
-  return {
-    getPaymentError: () => 'error!',
-  };
-};
+const preimage = 'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=';
 
 jest.mock('../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
@@ -198,12 +186,12 @@ describe('LndClient', () => {
   describe('sendPayment', () => {
 
     test('it resolves upon maker success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockReturnValue(Promise.resolve(preimage));
       const deal = getValidDeal();
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       await expect(lnd.sendPayment(deal))
-        .resolves.toMatchSnapshot();
+        .resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         amount: deal.takerAmount,
         destination: deal.takerPubKey,
@@ -214,15 +202,15 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon taker success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockReturnValue(Promise.resolve(preimage));
       const deal = {
         ...getValidDeal(),
         role: SwapRole.Taker,
       };
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       await expect(lnd.sendPayment(deal))
-        .resolves.toMatchSnapshot();
+        .resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         amount: deal.makerAmount,
         destination: deal.destination,
@@ -232,20 +220,20 @@ describe('LndClient', () => {
     });
 
     test('it rejects upon sendPaymentSync error', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncErrorResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockRejectedValue('error');
       await expect(lnd.sendPayment(getValidDeal()))
-        .rejects.toMatchSnapshot();
+        .rejects.toEqual('error');
     });
 
     test('it resolves upon sendSmallestAmount success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn()
+        .mockReturnValue(Promise.resolve(preimage));
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       const rHash = '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80';
       const destination = '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac';
       await expect(lnd.sendSmallestAmount(rHash, destination))
-        .resolves.toMatchSnapshot();
+        .resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         destination,
         rHash,
@@ -292,6 +280,151 @@ describe('LndClient', () => {
       expect(lnd['listChannels']).toHaveBeenCalledTimes(1);
       expect(lnd['maxChannelOutboundAmount']).toEqual(98);
       expect(lnd['maxChannelInboundAmount']).toEqual(295);
+    });
+  });
+
+  describe('checkLowBalance', () => {
+    test('emits on local channel balance is less than alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 10;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 110;
+      const channelPoint = 'my_dummy_channel_point';
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          channelPoint,
+          emit,
+      );
+
+      expect(emit).toHaveBeenCalledTimes(1);
+      expect(emit).toHaveBeenCalledWith('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    });
+    test('dont emit on local channel balance equals alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 12;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 110;
+      const channelPoint = 'my_dummy_channel_point';
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          channelPoint,
+          emit,
+      );
+
+      expect(emit).toHaveBeenCalledTimes(0);
+    });
+    test('dont emit on local channel balance is higher than alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 12.5;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 110;
+      const channelPoint = 'my_dummy_channel_point';
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          channelPoint,
+          emit,
+      );
+
+      expect(emit).toHaveBeenCalledTimes(0);
+    });
+    test('emits on remote channel balance is less than alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 110;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 10;
+      const channelPoint = 'my_dummy_channel_point';
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          channelPoint,
+          emit,
+      );
+
+      expect(emit).toHaveBeenCalledTimes(1);
+      expect(emit).toHaveBeenCalledWith('lowBalance', {
+        totalBalance,
+        currency,
+        channelPoint,
+        side: ChannelSide.Remote,
+        sideBalance: remoteBalance,
+        bound: 10,
+      });
+    });
+    test('dont emit on remote channel balance equals alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 110;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 12;
+      const channelPoint = 'my_dummy_channel_point';
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          channelPoint,
+          emit,
+      );
+
+      expect(emit).toHaveBeenCalledTimes(0);
+    });
+    test('dont emit on remote channel balance is higher than alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 110;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 12.5;
+      const channelPoint = 'my_dummy_channel_point';
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          channelPoint,
+          emit,
+      );
+
+      expect(emit).toHaveBeenCalledTimes(0);
     });
   });
 });
