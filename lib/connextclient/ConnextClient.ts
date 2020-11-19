@@ -19,25 +19,26 @@ import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
   ConnextErrorResponse,
-  ConnextInitWalletResponse,
+  ConnextConfig,
   ConnextConfigResponse,
+  ConnextChannelResponse,
   ConnextBalanceResponse,
   ConnextTransferResponse,
   ConnextClientConfig,
   ConnextInfo,
-  ConnextVersion,
-  TokenPaymentRequest,
-  ConnextTransferStatus,
+  ConnextTransferRequest,
+  ConnextTransfer,
   ExpectedIncomingTransfer,
   ProvidePreimageEvent,
   TransferReceivedEvent,
   ConnextDepositResponse,
   ConnextWithdrawResponse,
   OnchainTransferResponse,
+  ConnextBlockNumberResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
-import { take, pluck, timeout, filter, catchError, mergeMapTo } from 'rxjs/operators';
+import { Observable, fromEvent, from, defer, Subscription, throwError, interval, timer } from 'rxjs';
+import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
@@ -89,6 +90,13 @@ const waitForPreimageByHash = (
   return expectedPreimageReceived$.toPromise();
 };
 
+const CHAIN_IDENTIFIERS: { [key: string]: number } = {
+  'regtest': 1337,
+  'simnet': 1337,
+  'testnet': 4,
+  'mainnet': 1,
+};
+
 /**
  * A class representing a client to interact with connext.
  */
@@ -111,14 +119,24 @@ class ConnextClient extends SwapClient {
   private host: string;
   private webhookport: number;
   private webhookhost: string;
+  // private nodeUrl: string;
+  private nodeIdentifier: string;
   private unitConverter: UnitConverter;
+  private network: string;
   private seed: string | undefined;
+  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '36000';
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
+  private _reconcileDepositSubscriber: Subscription | undefined;
+
+  /** Public identifier for Connext */
+  private publicIdentifier: string | undefined;
+  /** Channel multisig address for Connext */
+  private channelAddress: string | undefined;
 
   /** The minimum incremental quantity that we may use for collateral requests. */
   private static MIN_COLLATERAL_REQUEST_SIZES: { [key: string]: number | undefined } = {
@@ -135,11 +153,13 @@ class ConnextClient extends SwapClient {
     logger,
     unitConverter,
     currencyInstances,
+    network,
   }: {
     unitConverter: UnitConverter;
     config: ConnextClientConfig;
     currencyInstances: CurrencyInstance[],
     logger: Logger;
+    network: string;
   }) {
     super(logger, config.disable);
 
@@ -147,8 +167,11 @@ class ConnextClient extends SwapClient {
     this.host = config.host;
     this.webhookhost = config.webhookhost;
     this.webhookport = config.webhookport;
+    // this.nodeUrl = config.nodeUrl;
+    this.nodeIdentifier = config.nodeIdentifier;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
+    this.network = network;
   }
 
   public get minutesPerBlock() {
@@ -163,13 +186,13 @@ class ConnextClient extends SwapClient {
     this.on('transferReceived', this.onTransferReceived.bind(this));
   }
 
-  private onTransferReceived = (transferReceivedRequest: TransferReceivedEvent) => {
+  private onTransferReceived = async (transferReceivedRequest: TransferReceivedEvent) => {
     const {
       tokenAddress,
       units,
-      timelock,
+      expiry,
       rHash,
-      paymentId,
+      routingId,
     } = transferReceivedRequest;
 
     if (this.outgoingTransferHashes.has(rHash)) {
@@ -179,7 +202,7 @@ class ConnextClient extends SwapClient {
     }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
-      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, timelock ${timelock}, token address ${tokenAddress}, and paymentId ${paymentId}`);
+      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and routingId ${routingId}`);
       return;
     }
 
@@ -189,13 +212,16 @@ class ConnextClient extends SwapClient {
       tokenAddress: expectedTokenAddress,
     } = expectedIncomingTransfer;
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
+    const blockHeight = await this.getHeight();
+    const timelock = expiry - blockHeight;
+    // The timelock can be up to 10 blocks less than the agreed upon value
+    const TIMELOCK_BUFFER = 10;
     if (
       tokenAddress === expectedTokenAddress &&
       units === expectedUnits &&
-      timelock === expectedTimelock
+      timelock >= expectedTimelock - TIMELOCK_BUFFER
     ) {
-      expectedIncomingTransfer.paymentId = paymentId;
-      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
+      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and routingId ${routingId}`);
       this.expectedIncomingTransfers.delete(rHash);
       this.emit('htlcAccepted', rHash, units, currency);
     } else {
@@ -205,8 +231,8 @@ class ConnextClient extends SwapClient {
       if (units !== expectedUnits) {
         this.logger.warn(`incoming transfer for rHash ${rHash} with value ${units} does not match expected ${expectedUnits}`);
       }
-      if (timelock !== expectedTimelock) {
-        this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} does not match expected ${expectedTimelock}`);
+      if (timelock !>= expectedTimelock) {
+        this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} is not greater than or equal to ${expectedTimelock}`);
       }
     }
   }
@@ -217,39 +243,28 @@ class ConnextClient extends SwapClient {
     this.seed = seed;
   }
 
-  /**
-   * Initiates wallet for the Connext client
-   */
-  public initWallet = async (seedMnemonic: string) => {
-    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic });
-    return await parseResponseBody<ConnextInitWalletResponse>(res);
-  }
-
   public initConnextClient = async (seedMnemonic: string) => {
     const res = await this.sendRequest('/connect', 'POST', { mnemonic: seedMnemonic });
     return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
-  private subscribeDeposit = async () => {
-    await this.sendRequest('/subscribe', 'POST', {
-      event: 'DEPOSIT_CONFIRMED_EVENT',
-      webhook: `http://${this.webhookhost}:${this.webhookport}/deposit-confirmed`,
+  private subscribeIncomingTransfer = async () => {
+    await this.sendRequest("/event/subscribe", "POST", {
+      publicIdentifier: this.publicIdentifier,
+      events: {
+        CONDITIONAL_TRANSFER_CREATED: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
+      }
     });
-  }
+  };
 
   private subscribePreimage = async () => {
-    await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
-      webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
+    await this.sendRequest("/event/subscribe", "POST", {
+      publicIdentifier: this.publicIdentifier,
+      events: {
+        CONDITIONAL_TRANSFER_RESOLVED: `http://${this.webhookhost}:${this.webhookport}/preimage`,
+      }
     });
-  }
-
-  private subscribeIncomingTransfer = async () => {
-    await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_CREATED_EVENT',
-      webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
-    });
-  }
+  };
 
   /**
    * Associate connext with currencies that have a token address
@@ -271,8 +286,10 @@ class ConnextClient extends SwapClient {
     // first check whether we already have a pending collateral request for this currency
     // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
     const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
+      channelAddress: this.channelAddress,
       assetId: this.tokenAddresses.get(currency),
       amount: units.toLocaleString('fullwide', { useGrouping: false }),
+      publicIdentifier: this.publicIdentifier,
     }).then(() => {
       this.requestCollateralPromises.delete(currency);
       this.logger.debug(`completed collateral request of ${units} ${currency} units`);
@@ -383,19 +400,19 @@ class ConnextClient extends SwapClient {
       if (!this.seed) {
         throw errors.MISSING_SEED;
       }
-      await this.sendRequest('/health', 'GET');
-      await this.initWallet(this.seed);
-      const config = await this.initConnextClient(this.seed);
-      await Promise.all([
-        this.subscribePreimage(),
-        this.subscribeIncomingTransfer(),
-        this.subscribeDeposit(),
-      ]);
-      this.userIdentifier = config.userIdentifier;
+      await this.createNode(this.seed);
+      const config = await this.getClientConfig();
+      const { publicIdentifier } = config;
+      this.publicIdentifier = publicIdentifier;
+      const channel = await this.getChannel();
+      this.channelAddress = channel;
+      await this.subscribeIncomingTransfer();
+      await this.subscribePreimage();
       this.emit('connectionVerified', {
-        newIdentifier: this.userIdentifier,
+        newIdentifier: publicIdentifier,
       });
       this.setStatus(ClientStatus.ConnectionVerified);
+      this.reconcileDeposit();
     } catch (err) {
       this.logger.error(
         `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_INTERVAL} ms`,
@@ -405,6 +422,35 @@ class ConnextClient extends SwapClient {
     }
   }
 
+  private reconcileDeposit = () => {
+    if (this._reconcileDepositSubscriber) {
+      this._reconcileDepositSubscriber.unsubscribe();
+    }
+    // TODO: increase interval after testing to 30+ sec
+    this._reconcileDepositSubscriber = interval(5000).pipe(
+      mergeMap(() => {
+        if (this.status === ClientStatus.ConnectionVerified) {
+          return defer(() => {
+            // TODO: reconcile deposit for all supported currencies
+            return from(this.sendRequest('/deposit', 'POST', {
+              channelAddress: this.channelAddress,
+              publicIdentifier: this.publicIdentifier,
+              assetId: "0x0000000000000000000000000000000000000000"
+            }));
+          });
+        }
+        return throwError('stopping deposit calls because client is no longer connected');
+      }),
+    ).subscribe({
+      next: () => {
+        this.logger.trace('deposit successfully reconciled');
+      },
+      error: (e) => {
+        this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
+      }
+    });
+  }
+
   public sendSmallestAmount = async (
     rHash: string,
     destination: string,
@@ -412,34 +458,64 @@ class ConnextClient extends SwapClient {
   ) => {
     const tokenAddress = this.getTokenAddress(currency);
 
-    const secret = await this.executeHashLockTransfer({
+    assert(this.channelAddress, 'cannot send transfer without channel address');
+    assert(this.publicIdentifier, 'cannot send transfer with channel address');
+    const expiry = await this.getExpiry(this.finalLock)
+    await this.executeHashLockTransfer({
+      type: "HashlockTransfer",
       amount: '1',
       assetId: tokenAddress,
-      lockHash: rHash,
-      timelock: this.finalLock.toString(),
+      details: {
+        lockHash: `0x${rHash}`,
+        expiry,
+      },
       recipient: destination,
+      meta: {
+        routingId: this.deriveRoutingId(rHash, tokenAddress),
+      },
+      channelAddress: this.channelAddress,
+      publicIdentifier: this.publicIdentifier,
     });
-    return secret;
+    return 'sendSmallestAmount is broken';
+  }
+
+  private getExpiry = async (locktime: number): Promise<string> => {
+    const blockHeight = await this.getHeight();
+    return (blockHeight + locktime).toString();
+  }
+
+  private deriveRoutingId = (lockHash: string, assetId: string): string => {
+    return sha256(['address', 'bytes32'], [assetId, `0x${lockHash}`]);
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
+    assert(this.channelAddress, 'cannot send transfer without channel address');
+    assert(this.publicIdentifier, 'cannot send transfer with channel address');
     let amount: string;
     let tokenAddress: string;
-    let lockTimeout: number | undefined;
     try {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
         amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
+        const expiry = await this.getExpiry(this.finalLock)
         const executeTransfer = this.executeHashLockTransfer({
+          type: "HashlockTransfer",
           amount,
           assetId: tokenAddress,
-          timelock: deal.takerCltvDelta.toString(),
-          lockHash: `0x${deal.rHash}`,
+          details: {
+            lockHash: `0x${deal.rHash}`,
+            expiry,
+          },
           recipient: deal.destination,
+          meta: {
+            routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
+          },
+          channelAddress: this.channelAddress,
+          publicIdentifier: this.publicIdentifier,
         });
         // @ts-ignore
         const [executeTransferResponse, preimage] = await Promise.all([
@@ -452,14 +528,23 @@ class ConnextClient extends SwapClient {
         // we are the taker paying the maker
         amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
-        lockTimeout = deal.makerCltvDelta!;
         secret = deal.rPreimage!;
+        assert(deal.makerCltvDelta, 'cannot send transfer without deal.makerCltvDelta');
+        const expiry = await this.getExpiry(deal.makerCltvDelta);
         const executeTransfer = this.executeHashLockTransfer({
+          type: "HashlockTransfer",
           amount,
           assetId: tokenAddress,
-          timelock: lockTimeout.toString(),
-          lockHash: `0x${deal.rHash}`,
+          details: {
+            lockHash: `0x${deal.rHash}`,
+            expiry,
+          },
           recipient: deal.destination,
+          meta: {
+            routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
+          },
+          channelAddress: this.channelAddress,
+          publicIdentifier: this.publicIdentifier,
         });
         await executeTransfer;
       }
@@ -493,9 +578,19 @@ class ConnextClient extends SwapClient {
       units: expectedUnits,
       expiry: expectedTimelock,
       tokenAddress: expectedTokenAddress,
+      routingId: this.deriveRoutingId(expectedHash, expectedTokenAddress),
     };
     this.expectedIncomingTransfers.set(expectedHash, expectedIncomingTransfer);
   }
+
+  private getTransferByRoutingId = async (routingId: string): Promise<ConnextTransfer> => {
+    const res = await this.sendRequest(`/${this.publicIdentifier}/transfers/routing-id/${routingId}`, 'GET');
+    const transfers = await parseResponseBody<ConnextTransfer[]>(res);
+    if (transfers.length !== 1) {
+      throw new Error(`could not find transfer by routing id ${routingId}`);
+    }
+    return transfers[0];
+  };
 
   /**
    * Resolves a HashLock Transfer on the Connext network.
@@ -503,25 +598,39 @@ class ConnextClient extends SwapClient {
   public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
     this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
     const assetId = this.getTokenAddress(currency);
-    await this.sendRequest('/hashlock-resolve', 'POST', {
-      assetId,
-      preImage: `0x${rPreimage}`,
+    const routingId = this.deriveRoutingId(rHash, assetId);
+    const lockHash = `0x${rHash}`;
+    const pendingTransfer = await this.getTransferByRoutingId(routingId);
+    const { transferId } = pendingTransfer;
+    await this.sendRequest('/transfers/resolve', 'POST', {
+      transferId,
+      conditionType: "HashlockTransfer",
+      details: {
+        lockHash
+      },
+      transferResolver: {
+        preImage: `0x${rPreimage}`,
+      },
+      publicIdentifier: this.publicIdentifier,
+      channelAddress: this.channelAddress,
+      routingId,
     });
   }
 
   public removeInvoice = async (rHash: string) => {
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (expectedIncomingTransfer) {
-      const { paymentId } = expectedIncomingTransfer;
-      if (paymentId) {
-        // resolve a hashlock with a paymentId but no preimage to cancel it
-        await this.sendRequest('/hashlock-resolve', 'POST', {
-          paymentId,
+      const { routingId } = expectedIncomingTransfer;
+      if (routingId) {
+        // resolve a hashlock with a routingId but no preimage to cancel it
+        // TODO(karl): P1!
+        await this.sendRequest('/transfers', 'POST', {
+          routingId,
           assetId: expectedIncomingTransfer.tokenAddress,
         });
         this.logger.debug(`canceled incoming transfer with rHash ${rHash}`);
       } else {
-        this.logger.warn(`could not find paymentId for incoming transfer with hash ${rHash}`);
+        this.logger.warn(`could not find routingId for incoming transfer with hash ${rHash}`);
       }
       this.expectedIncomingTransfers.delete(rHash);
     } else {
@@ -530,8 +639,8 @@ class ConnextClient extends SwapClient {
   }
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
-    const res = await this.sendRequest(`/hashlock-status/0x${lockHash}/${assetId}`, 'GET');
-    const transferStatusResponse = await parseResponseBody<ConnextTransferStatus>(res);
+    const res = await this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}/transfers/routing-id/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
+    const transferStatusResponse = await parseResponseBody<ConnextTransfer>(res);
     return transferStatusResponse;
   }
 
@@ -539,26 +648,43 @@ class ConnextClient extends SwapClient {
     try {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
+      const currentBlockHeight = await this.getHeight();
+      const expiry = parseInt(transferStatusResponse.transferState.expiry);
 
-      this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatusResponse.status}`);
-      switch (transferStatusResponse.status) {
+      const getStatusFromStatusResponse = (currentHeight: number, transfer: ConnextTransfer): string => {
+        const preimage = transfer.transferResolver?.preImage;
+        const HASH_ZERO = '0x0000000000000000000000000000000000000000000000000000000000000000';
+        if (preimage && preimage === HASH_ZERO) {
+          return 'FAILED';
+        }
+        if (preimage) {
+          return 'COMPLETED';
+        }
+        if (
+          expiry > 0 &&
+          currentHeight >= expiry
+        ) {
+          return 'EXPIRED';
+        }
+        return 'PENDING';
+      };
+      const transferStatus = getStatusFromStatusResponse(currentBlockHeight, transferStatusResponse);
+
+      this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatus}`);
+      switch (transferStatus) {
         case 'PENDING':
           return { state: PaymentState.Pending };
         case 'COMPLETED':
+          assert(transferStatusResponse.transferResolver?.preImage, 'Cannot mark payment as COMPLETED without preimage');
           return {
             state: PaymentState.Succeeded,
-            preimage: transferStatusResponse.preImage?.slice(2),
+            preimage: transferStatusResponse.transferResolver.preImage.slice(2)
           };
         case 'EXPIRED':
           const expiredTransferUnlocked$ = defer(() => from(
             // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
-            // in order to unlock the funds we'll need to call /hashlock-resolve with the paymentId
-            this.sendRequest('/hashlock-resolve', 'POST', {
-              assetId,
-              // providing a placeholder preImage for rest-api-client because it's a required field
-              preImage: '0x',
-              paymentId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
-            }),
+            // in order to unlock the funds we'll need to settle the invoice without a preimage
+            this.settleInvoice(rHash, '', currency)
           )).pipe(
             catchError((e, caught) => {
               const RETRY_INTERVAL = 30000;
@@ -572,25 +698,17 @@ class ConnextClient extends SwapClient {
               this.logger.debug(`successfully unlocked an expired connext transfer with rHash: ${rHash}`);
             },
           });
+          // TODO: user funds can remain locked if the above code fails and xud is restarted. In that case the transfer
+          // is marked as failed and it will not attempt to unlock again.
           return { state: PaymentState.Failed };
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          this.logger.debug(`no hashlock status for connext transfer with hash ${rHash}: ${JSON.stringify(transferStatusResponse)} - attempting to reject app install proposal`);
-          try {
-            await this.sendRequest('/reject-install', 'POST', {
-              appIdentityHash: transferStatusResponse.senderAppIdentityHash,
-            });
-            this.logger.debug(`connext transfer proposal with hash ${rHash} successfully rejected - transfer state is now failed`);
-            return { state: PaymentState.Failed };
-          } catch (e) {
-            // in case of error we're still consider the payment as pending
-            this.logger.error('failed to reject connext app install proposal', e);
-            return { state: PaymentState.Pending };
-          }
+          return { state: PaymentState.Pending };
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
+        this.logger.trace(`hashlock status for connext transfer with hash ${rHash} not found`);
         return { state: PaymentState.Failed };
       }
       this.logger.error(`could not lookup connext transfer for ${rHash}`, err);
@@ -600,8 +718,9 @@ class ConnextClient extends SwapClient {
 
   public getRoute = async () => {
     /** A placeholder route value that assumes a fixed lock time of 100 for Connext. */
+    const currentHeight = await this.getHeight();
     return {
-      getTotalTimeLock: () => 101,
+      getTotalTimeLock: () => currentHeight + 101,
     };
   }
 
@@ -610,7 +729,12 @@ class ConnextClient extends SwapClient {
   }
 
   public getHeight = async () => {
-    return 1; // connext's API does not tell us the height
+    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
+      method: 'eth_blockNumber',
+      params: []
+    });
+    const blockNumberResponse = await parseResponseBody<ConnextBlockNumberResponse>(res);
+    return parseInt(blockNumberResponse.result, 16);
   }
 
   public getInfo = async (): Promise<ConnextInfo> => {
@@ -620,44 +744,46 @@ class ConnextClient extends SwapClient {
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {
-      try {
-        const getInfo$ = combineLatest(
-          from(this.getVersion()),
-          from(this.getClientConfig()),
-        ).pipe(
-          // error if no response within 5000 ms
-          timeout(5000),
-          // complete the stream when we receive 1 value
-          take(1),
-        );
-        const [streamVersion, clientConfig] = await getInfo$.toPromise();
-        status = 'Ready';
-        version = streamVersion;
-        address = clientConfig.signerAddress;
-      } catch (err) {
-        status = err.message;
-      }
+      status = 'Ready';
+      version = 'TODO: Not exposed, yet';
+      address = this.channelAddress || 'Waiting for channel';
     }
 
     return { status, address, version };
   }
 
   /**
-   * Gets the connext version.
+   * Creates connext node
    */
-  public getVersion = async (): Promise<string> => {
-    const res = await this.sendRequest('/version', 'GET');
-    const { version } = await parseResponseBody<ConnextVersion>(res);
-    return version;
+  private createNode = async (mnemonic: string): Promise<void> => {
+    await this.sendRequest('/node', 'POST', {
+      mnemonic,
+      index: 0
+    });
   }
 
   /**
    * Gets the configuration of Connext client.
    */
-  public getClientConfig = async (): Promise<ConnextConfigResponse> => {
+  private getClientConfig = async (): Promise<ConnextConfig> => {
     const res = await this.sendRequest('/config', 'GET');
     const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
-    return clientConfig;
+    return clientConfig[0];
+  }
+
+  private getChannel = async (): Promise<string> => {
+    const res = await this.sendRequest(`/${this.publicIdentifier}/channels`, 'GET');
+    const channel = await parseResponseBody<ConnextChannelResponse>(res);
+    if (channel.length === 0) {
+      await this.sendRequest('/setup', 'POST', {
+        counterpartyIdentifier: this.nodeIdentifier,
+        publicIdentifier: this.publicIdentifier,
+        chainId: CHAIN_IDENTIFIERS[this.network],
+        timeout: this.CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT,
+      });
+      return (await this.getChannel());
+    }
+    return channel[0];
   }
 
   public channelBalance = async (
@@ -673,6 +799,7 @@ class ConnextClient extends SwapClient {
       currency,
       units: Number(freeBalanceOffChain),
     });
+
     const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(nodeFreeBalanceOffChain),
@@ -739,20 +866,40 @@ class ConnextClient extends SwapClient {
     if (!getBalancePromise) {
       // if not make a new balance request and store the promise that's waiting for a response
       const tokenAddress = this.getTokenAddress(currency);
-      getBalancePromise = this.sendRequest(`/balance/${tokenAddress}`, 'GET').then((res) => {
-        return parseResponseBody<ConnextBalanceResponse>(res);
+      getBalancePromise = this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET').then(async (res) => {
+        const channelDetails = await parseResponseBody<any>(res);
+        const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
+        if (assetIdIndex === -1) {
+          const response = {
+            freeBalanceOffChain: 0,
+            nodeFreeBalanceOffChain: 0,
+            freeBalanceOnChain: 0,
+          } as unknown as ConnextBalanceResponse;
+          return response;
+        } else {
+          const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
+          const balance = channelDetails.balances[assetIdIndex].amount[1];
+          const response = {
+            freeBalanceOffChain: balance,
+            nodeFreeBalanceOffChain: inboundBalance,
+            freeBalanceOnChain: 0,
+          } as unknown as ConnextBalanceResponse;
+          return response;
+        }
       }).finally(() => {
         this.getBalancePromises.delete(currency); // clear the stored promise
       });
       this.getBalancePromises.set(currency, getBalancePromise);
     }
-
     return getBalancePromise;
   }
 
   public deposit = async () => {
-    const clientConfig = await this.getClientConfig();
-    return clientConfig.signerAddress;
+    if (this.channelAddress) {
+      return this.channelAddress;
+    }
+    const channelAddress = await this.getChannel();
+    return channelAddress;
   }
 
   public openChannel = async ({ currency, units }: OpenChannelParams) => {
@@ -817,27 +964,13 @@ class ConnextClient extends SwapClient {
    * @param amount
    * @param lockHash
    */
-  private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
-    this.logger.debug(`sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`);
-    this.outgoingTransferHashes.add(payload.lockHash);
-    const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
-    const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
-    return appId;
-  }
-
-  /**
-   * Deposits more of a token to an existing client.
-   * @param multisigAddress the address of the client to deposit to
-   * @param balance the amount to deposit to the client
-   */
-  public depositToChannel = async (
-    assetId: string,
-    amount: number,
-  ): Promise<void> => {
-    await this.sendRequest('/hashlock-transfer', 'POST', {
-      assetId,
-      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
-    });
+  private executeHashLockTransfer = async (payload: ConnextTransferRequest): Promise<ConnextTransferResponse> => {
+    const lockHash = payload.details.lockHash;
+    this.logger.debug(`sending payment of ${payload.amount} with hash ${lockHash} to ${payload.recipient}`);
+    this.outgoingTransferHashes.add(lockHash);
+    const res = await this.sendRequest('/transfers/create', 'POST', payload);
+    const transferResponse = await parseResponseBody<ConnextTransferResponse>(res);
+    return transferResponse;
   }
 
   public withdraw = async ({
@@ -884,6 +1017,9 @@ class ConnextClient extends SwapClient {
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
+    if (this._reconcileDepositSubscriber) {
+      this._reconcileDepositSubscriber.unsubscribe();
+    }
     this.setStatus(ClientStatus.Disconnected);
   }
 
@@ -930,7 +1066,8 @@ class ConnextClient extends SwapClient {
             err = errors.INSUFFICIENT_BALANCE;
             break;
           case 404:
-            err = errors.PAYMENT_NOT_FOUND;
+            this.logger.error(`${endpoint} returned not found response`);
+            err = errors.NOT_FOUND;
             break;
           case 408:
             err = errors.TIMEOUT;
@@ -954,7 +1091,7 @@ class ConnextClient extends SwapClient {
       });
 
       req.on('error', async (err: any) => {
-        if (err.code === 'ECONNREFUSED') {
+        if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET') {
           await this.disconnect();
         }
         this.logger.error(err);

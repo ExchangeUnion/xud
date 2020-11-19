@@ -18,8 +18,8 @@ import InitService from './service/InitService';
 import Service from './service/Service';
 import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
-import { createSimnetChannels } from './utils/simnet-connext-channels';
 import { UnitConverter } from './utils/UnitConverter';
+import {createSimnetChannels} from './utils/simnet-connext-channels';
 
 const version: string = require('../package.json').version;
 
@@ -244,19 +244,7 @@ class Xud extends EventEmitter {
               // minimum channelBalance threshold
               minChannelAmount: 100000000,
             },
-            {
-              currency: 'USDT',
-              channelAmount: 100000000000,
-              minChannelAmount: 100000000,
-            },
-            {
-              currency: 'DAI',
-              channelAmount: 150000000000,
-              minChannelAmount: 100000000,
-            },
           ],
-          // we check the channel and on-chain balance every 10 seconds
-          // and refund from faucet if below the walletAmount
           retryInterval: 10000,
         }).subscribe({
           next: (currency) => {

@@ -90,6 +90,7 @@ class SwapClientManager extends EventEmitter {
         unitConverter: this.unitConverter,
         config: this.config.connext,
         logger: this.loggers.connext,
+        network: this.config.network,
       });
     }
 
