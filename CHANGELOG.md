@@ -45,7 +45,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **cli:** case insensitive choices ([4c01b0e](https://github.com/ExchangeUnion/xud/commit/4c01b0e5fe5da75bcb3b4de063e0132929b358bb))
 * **connext:** lazy collateralization ([#1916](https://github.com/ExchangeUnion/xud/issues/1916)) ([0f2b841](https://github.com/ExchangeUnion/xud/commit/0f2b841d3bc353cebca01f0bcdfec52c6c13e9d0)), closes [#1896](https://github.com/ExchangeUnion/xud/issues/1896)
 * **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
-* **connext:** unlock expired transfer apps ([#1857](https://github.com/ExchangeUnion/xud/issues/1857)) ([023434d](https://github.com/ExchangeUnion/xud/commit/023434de1eabe4811986b9156beef7a5a670c047))
 * **logging:** order holds on trace level ([#1865](https://github.com/ExchangeUnion/xud/issues/1865)) ([5e3ad04](https://github.com/ExchangeUnion/xud/commit/5e3ad04ed8f2e35cb06479d2172d25bffa002768))
 * **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
 * **rpc:** add txid to open/close channel response ([0669a3f](https://github.com/ExchangeUnion/xud/commit/0669a3f41f6a8de9cc6afcf4d8d58c91d18d5b58)), closes [#1860](https://github.com/ExchangeUnion/xud/issues/1860)
