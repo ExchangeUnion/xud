@@ -12,7 +12,6 @@ import Peer from '../p2p/Peer';
 import Pool from '../p2p/Pool';
 import { UnitConverter } from '../utils/UnitConverter';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
-import { MAX_PAYMENT_TIME } from './consts';
 import errors, { errorCodes } from './errors';
 import SwapClient, { PaymentState } from './SwapClient';
 import SwapClientManager from './SwapClientManager';
