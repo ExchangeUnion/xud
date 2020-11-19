@@ -31,7 +31,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **lnd:** change gRPC client options ([aefdce8](https://github.com/ExchangeUnion/xud/commit/aefdce84e2c6cae35bf243f21a5224427fe2bfcc))
 * derive child seed for swap clients ([be4121f](https://github.com/ExchangeUnion/xud/commit/be4121fd04156318c68dba28ee5f1a2483fd0c07)), closes [#1576](https://github.com/ExchangeUnion/xud/issues/1576)
 * removeorder output changed to a more meaningful message ([#1526](https://github.com/ExchangeUnion/xud/issues/1526)) ([ba04193](https://github.com/ExchangeUnion/xud/commit/ba041938cdcddb3aedec0db8fe4f571e2608b9d1))
-* **connext:** request collateral for order amount ([75078c0](https://github.com/ExchangeUnion/xud/commit/75078c059bfd752ae47c4530a671bd7a95568975)), closes [#1845](https://github.com/ExchangeUnion/xud/issues/1845)
 * **rpc:** SetLogLevel ([#1955](https://github.com/ExchangeUnion/xud/issues/1955)) ([8d10df0](https://github.com/ExchangeUnion/xud/commit/8d10df00f7442ea58286726f0348d0f43eae7622)), closes [#835](https://github.com/ExchangeUnion/xud/issues/835)
 * added new grpc method to easily cancel all orders ([#1910](https://github.com/ExchangeUnion/xud/issues/1910)) ([c958e86](https://github.com/ExchangeUnion/xud/commit/c958e862542fb52fdeb6532cbe2d92dd4b52cedf))
 * **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
