@@ -36,7 +36,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
 * **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
 * **rpc:** add txid to open/close channel response ([0669a3f](https://github.com/ExchangeUnion/xud/commit/0669a3f41f6a8de9cc6afcf4d8d58c91d18d5b58)), closes [#1860](https://github.com/ExchangeUnion/xud/issues/1860)
-* **rpc:** expose reserved balance for GetBalance ([#1925](https://github.com/ExchangeUnion/xud/issues/1925)) ([8b18dd7](https://github.com/ExchangeUnion/xud/commit/8b18dd7426f01a760e571a0a5bb2310759229b64))
 * **rpc:** reserved order amount for TradingLimits ([7f7cd68](https://github.com/ExchangeUnion/xud/commit/7f7cd683272e738a77480028c16095e8fb34c175)), closes [#1584](https://github.com/ExchangeUnion/xud/issues/1584) [#1678](https://github.com/ExchangeUnion/xud/issues/1678)
 * **rpc:** show connext status on create/restore node ([#1902](https://github.com/ExchangeUnion/xud/issues/1902)) ([82e16a5](https://github.com/ExchangeUnion/xud/commit/82e16a5e4ed4fa91e481eac638b16eb10e5bb7de))
 * **simnet:** add DAI ([#1915](https://github.com/ExchangeUnion/xud/issues/1915)) ([35e85b3](https://github.com/ExchangeUnion/xud/commit/35e85b31bfbfa72430f5db982b7f64f19b346f2a))
