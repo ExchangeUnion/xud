@@ -34,7 +34,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **rpc:** SetLogLevel ([#1955](https://github.com/ExchangeUnion/xud/issues/1955)) ([8d10df0](https://github.com/ExchangeUnion/xud/commit/8d10df00f7442ea58286726f0348d0f43eae7622)), closes [#835](https://github.com/ExchangeUnion/xud/issues/835)
 * added new grpc method to easily cancel all orders ([#1910](https://github.com/ExchangeUnion/xud/issues/1910)) ([c958e86](https://github.com/ExchangeUnion/xud/commit/c958e862542fb52fdeb6532cbe2d92dd4b52cedf))
 * **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
-* **logging:** order holds on trace level ([#1865](https://github.com/ExchangeUnion/xud/issues/1865)) ([5e3ad04](https://github.com/ExchangeUnion/xud/commit/5e3ad04ed8f2e35cb06479d2172d25bffa002768))
 * **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
 * **rpc:** add txid to open/close channel response ([0669a3f](https://github.com/ExchangeUnion/xud/commit/0669a3f41f6a8de9cc6afcf4d8d58c91d18d5b58)), closes [#1860](https://github.com/ExchangeUnion/xud/issues/1860)
 * **rpc:** expose reserved balance for GetBalance ([#1925](https://github.com/ExchangeUnion/xud/issues/1925)) ([8b18dd7](https://github.com/ExchangeUnion/xud/commit/8b18dd7426f01a760e571a0a5bb2310759229b64))
