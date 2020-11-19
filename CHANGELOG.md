@@ -54,7 +54,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **rpc:** show connext status on create/restore node ([#1902](https://github.com/ExchangeUnion/xud/issues/1902)) ([82e16a5](https://github.com/ExchangeUnion/xud/commit/82e16a5e4ed4fa91e481eac638b16eb10e5bb7de))
 * **simnet:** add DAI ([#1915](https://github.com/ExchangeUnion/xud/issues/1915)) ([35e85b3](https://github.com/ExchangeUnion/xud/commit/35e85b31bfbfa72430f5db982b7f64f19b346f2a))
 * sat_per_byte custom fee for openchannel ([#1832](https://github.com/ExchangeUnion/xud/issues/1832)) ([b56ad98](https://github.com/ExchangeUnion/xud/commit/b56ad98ecb31f94d304a31d3c060693506ae829a)), closes [#1829](https://github.com/ExchangeUnion/xud/issues/1829)
-* **simnet:** upgrade simnet USDT contract address ([#1906](https://github.com/ExchangeUnion/xud/issues/1906)) ([7e5f8ef](https://github.com/ExchangeUnion/xud/commit/7e5f8ef30a1d01a4405757d4359b827ef86cf750))
 
 
 
