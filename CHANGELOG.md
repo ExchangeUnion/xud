@@ -32,7 +32,6 @@ This maintenance release includes a number of features, most significantly it sw
 * removeorder output changed to a more meaningful message ([#1526](https://github.com/ExchangeUnion/xud/issues/1526)) ([ba04193](https://github.com/ExchangeUnion/xud/commit/ba041938cdcddb3aedec0db8fe4f571e2608b9d1))
 * **rpc:** SetLogLevel ([#1955](https://github.com/ExchangeUnion/xud/issues/1955)) ([8d10df0](https://github.com/ExchangeUnion/xud/commit/8d10df00f7442ea58286726f0348d0f43eae7622)), closes [#835](https://github.com/ExchangeUnion/xud/issues/835)
 * added new grpc method to easily cancel all orders ([#1910](https://github.com/ExchangeUnion/xud/issues/1910)) ([c958e86](https://github.com/ExchangeUnion/xud/commit/c958e862542fb52fdeb6532cbe2d92dd4b52cedf))
-* **rpc:** add txid to open/close channel response ([0669a3f](https://github.com/ExchangeUnion/xud/commit/0669a3f41f6a8de9cc6afcf4d8d58c91d18d5b58)), closes [#1860](https://github.com/ExchangeUnion/xud/issues/1860)
 
 
 
