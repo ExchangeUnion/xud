@@ -19,7 +19,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **rpc:** no success if no channels to close ([#1689](https://github.com/ExchangeUnion/xud/issues/1689)) ([#1942](https://github.com/ExchangeUnion/xud/issues/1942)) ([17e40de](https://github.com/ExchangeUnion/xud/commit/17e40deda3ced6de23030094b6ada5f11dd383df))
 * getinfo output for lnd channels ([#1940](https://github.com/ExchangeUnion/xud/issues/1940)) ([#1948](https://github.com/ExchangeUnion/xud/issues/1948)) ([962daa4](https://github.com/ExchangeUnion/xud/commit/962daa46081bc3122a04afa82bbe88eb53ec0026))
 * manual ban causes an undefined log entry ([#1779](https://github.com/ExchangeUnion/xud/issues/1779)) ([e7f8178](https://github.com/ExchangeUnion/xud/commit/e7f817841fccee30415f754816644f161fe6cc2c))
-* order invalidation only be sent to peers with active pair ([#1530](https://github.com/ExchangeUnion/xud/issues/1530)) ([#1890](https://github.com/ExchangeUnion/xud/issues/1890)) ([0dc85bd](https://github.com/ExchangeUnion/xud/commit/0dc85bd83ad0514241e85ae3a958bb01d31594b0))
 * rename tradinglimits reserved_inbound json_name ([7e56011](https://github.com/ExchangeUnion/xud/commit/7e560111dbb10079a6e9c488d46fb0ecc8bb1cb6))
 
 
