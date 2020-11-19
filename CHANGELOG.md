@@ -21,7 +21,6 @@ This maintenance release includes a number of features, most significantly it sw
 * manual ban causes an undefined log entry ([#1779](https://github.com/ExchangeUnion/xud/issues/1779)) ([e7f8178](https://github.com/ExchangeUnion/xud/commit/e7f817841fccee30415f754816644f161fe6cc2c))
 * order invalidation only be sent to peers with active pair ([#1530](https://github.com/ExchangeUnion/xud/issues/1530)) ([#1890](https://github.com/ExchangeUnion/xud/issues/1890)) ([0dc85bd](https://github.com/ExchangeUnion/xud/commit/0dc85bd83ad0514241e85ae3a958bb01d31594b0))
 * rename tradinglimits reserved_inbound json_name ([7e56011](https://github.com/ExchangeUnion/xud/commit/7e560111dbb10079a6e9c488d46fb0ecc8bb1cb6))
-* xudrpc GetBalanceResponse json_name ([#1909](https://github.com/ExchangeUnion/xud/issues/1909)) ([26f89e6](https://github.com/ExchangeUnion/xud/commit/26f89e6d01cce2ec9d66dc39c0538d142a5af18c))
 * **connext:** avoid scientific notation for amount ([#1905](https://github.com/ExchangeUnion/xud/issues/1905)) ([cc1e689](https://github.com/ExchangeUnion/xud/commit/cc1e689181bfe4bafa19112d634a6eb12178cbe9))
 * **connext:** remove BigInt to avoid precision loss ([#1893](https://github.com/ExchangeUnion/xud/issues/1893)) ([d9ddd1c](https://github.com/ExchangeUnion/xud/commit/d9ddd1cfa16614fc914c61ded2c5e84fd7bd743c))
 
