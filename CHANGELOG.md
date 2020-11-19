@@ -34,7 +34,6 @@ This maintenance release includes a number of features, most significantly it sw
 * **connext:** request collateral for order amount ([75078c0](https://github.com/ExchangeUnion/xud/commit/75078c059bfd752ae47c4530a671bd7a95568975)), closes [#1845](https://github.com/ExchangeUnion/xud/issues/1845)
 * **rpc:** SetLogLevel ([#1955](https://github.com/ExchangeUnion/xud/issues/1955)) ([8d10df0](https://github.com/ExchangeUnion/xud/commit/8d10df00f7442ea58286726f0348d0f43eae7622)), closes [#835](https://github.com/ExchangeUnion/xud/issues/835)
 * added new grpc method to easily cancel all orders ([#1910](https://github.com/ExchangeUnion/xud/issues/1910)) ([c958e86](https://github.com/ExchangeUnion/xud/commit/c958e862542fb52fdeb6532cbe2d92dd4b52cedf))
-* **cli:** case insensitive choices ([4c01b0e](https://github.com/ExchangeUnion/xud/commit/4c01b0e5fe5da75bcb3b4de063e0132929b358bb))
 * **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
 * **logging:** order holds on trace level ([#1865](https://github.com/ExchangeUnion/xud/issues/1865)) ([5e3ad04](https://github.com/ExchangeUnion/xud/commit/5e3ad04ed8f2e35cb06479d2172d25bffa002768))
 * **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
