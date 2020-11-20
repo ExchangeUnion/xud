@@ -7,6 +7,7 @@ import { Order, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
+import NodeKey from '../nodekey/NodeKey';
 
 /**
  * The components required by the API service layer.
@@ -19,6 +20,7 @@ export type ServiceComponents = {
   version: string;
   swaps: Swaps;
   logger: Logger;
+  nodeKey: NodeKey;
   /** The function to be called to shutdown the parent process */
   shutdown: () => void;
 };

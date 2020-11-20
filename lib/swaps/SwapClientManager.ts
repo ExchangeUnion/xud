@@ -11,7 +11,6 @@ import { Level, Loggers } from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { Currency, OwnLimitOrder } from '../orderbook/types';
 import Peer from '../p2p/Peer';
-import { encipher } from '../utils/seedutil';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
@@ -353,10 +352,7 @@ class SwapClientManager extends EventEmitter {
             let walletCreated = false;
             if (err.details === 'wallet not found') {
               // this wallet hasn't been initialized, so we will try to initialize it now
-              const decipheredSeed = nodeKey.privKey.slice(0, 19);
-              const decipheredSeedHex = decipheredSeed.toString('hex');
-              const seedMnemonic = await encipher(decipheredSeedHex);
-
+              const seedMnemonic = await nodeKey.getMnemonic();
               try {
                 await swapClient.initWallet(this.walletPassword ?? '', seedMnemonic);
                 walletCreated = true;

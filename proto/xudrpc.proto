@@ -126,6 +126,14 @@ service Xud {
     };
   }
 
+  /* Gets the master seed mnemonic .
+   * shell: xucli getnemonic */
+  rpc GetMnemonic(GetMnemonicRequest) returns (GetMnemonicResponse) {
+    option (google.api.http) = {
+      get: "/v1/mnemonic"
+    };
+  }
+
   /* Gets general information about a node.
    * shell: xucli getnodeinfo <node_identifier> */
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
@@ -537,6 +545,11 @@ message GetInfoResponse {
   string network = 10 [json_name = "network"];
   repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
   ConnextInfo connext = 12 [json_name = "connext"];
+}
+
+message GetMnemonicRequest {}
+message GetMnemonicResponse {
+  repeated string seed_mnemonic = 1 [json_name = "seed_mnemonic"];
 }
 
 message GetNodeInfoRequest {

@@ -583,6 +583,23 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.getMnemonic]]
+   */
+  public getMnemonic: grpc.handleUnaryCall<xudrpc.GetMnemonicRequest, xudrpc.GetMnemonicResponse> = async (_, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      const mnemonic = await this.service.getMnemonic();
+      const response = new xudrpc.GetMnemonicResponse();
+      response.setSeedMnemonicList(mnemonic);
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.getNodeInfo]]
    */
   public getNodeInfo: grpc.handleUnaryCall<xudrpc.GetNodeInfoRequest, xudrpc.GetNodeInfoResponse> = async (call, callback) => {

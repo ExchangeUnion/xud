@@ -205,6 +205,7 @@ class Xud extends EventEmitter {
 
       this.service = new Service({
         version,
+        nodeKey,
         orderBook: this.orderBook,
         swapClientManager: this.swapClientManager,
         pool: this.pool,

@@ -254,6 +254,23 @@
         ]
       }
     },
+    "/v1/mnemonic": {
+      "get": {
+        "summary": "Gets the master seed mnemonic .\nshell: xucli getnemonic",
+        "operationId": "GetMnemonic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetMnemonicResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.\nshell: xucli getnodeinfo \u003cnode_identifier\u003e",
@@ -1205,6 +1222,17 @@
         },
         "connext": {
           "$ref": "#/definitions/xudrpcConnextInfo"
+        }
+      }
+    },
+    "xudrpcGetMnemonicResponse": {
+      "type": "object",
+      "properties": {
+        "seed_mnemonic": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
