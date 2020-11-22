@@ -96,7 +96,7 @@ export const waitForClient = (client: XudClient, argv: Arguments, ensureConnecti
       if (printError) console.error(`${error.name}: ${error.message}`);
       setTimeout(ensureConnection.bind(undefined, argv, printError), 3000);
     } else {
-      console.log('Successfully connected, subscribing for alerts');
+      console.log('Successfully connected, subscribing');
       successCallback(argv);
     }
   });
