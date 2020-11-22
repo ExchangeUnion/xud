@@ -182,10 +182,11 @@ export enum DisconnectionReason {
 }
 
 export enum AlertType {
-  LowBalance = 0,
+  LowChannelBalance = 0,
+  LowBalance = 1,
 }
 
-export enum ChannelSide {
+export enum BalanceSide {
   Remote = 0,
   Local = 1,
 }

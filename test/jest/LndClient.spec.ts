@@ -2,7 +2,7 @@ import LndClient from '../../lib/lndclient/LndClient';
 import { LndClientConfig } from '../../lib/lndclient/types';
 import Logger from '../../lib/Logger';
 import { getValidDeal } from '../utils';
-import { ChannelSide, SwapRole } from '../../lib/constants/enums';
+import { BalanceSide, SwapRole } from '../../lib/constants/enums';
 import { ClientStatus } from '../../lib/swaps/SwapClient';
 
 const openChannelSyncResponse = {
@@ -284,7 +284,7 @@ describe('LndClient', () => {
   });
 
   describe('checkLowBalance', () => {
-    test('emits on local channel balance is less than alert threshold of total balance ', async () => {
+    test('emits lowChannelBalance on local channel balance is less than alert threshold of total balance ', async () => {
       const emit = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 10;
@@ -299,16 +299,42 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          channelPoint,
           emit,
+          channelPoint,
       );
 
       expect(emit).toHaveBeenCalledTimes(1);
-      expect(emit).toHaveBeenCalledWith({
+      expect(emit).toHaveBeenCalledWith('lowChannelBalance', {
         totalBalance,
         currency,
         channelPoint,
-        side: ChannelSide.Local,
+        side: BalanceSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    });
+    test('emits lowBalance on local balance is less than alert threshold of total balance ', async () => {
+      const emit = jest.fn().mockImplementation();
+      const totalBalance = 120;
+      const localBalance = 10;
+      const alertThreshold = totalBalance * 0.1;
+      const remoteBalance = 110;
+
+      const currency = 'BTC';
+      lnd['checkLowBalance'](
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          emit
+      );
+
+      expect(emit).toHaveBeenCalledTimes(1);
+      expect(emit).toHaveBeenCalledWith('lowBalance', {
+        totalBalance,
+        currency,
+        side: BalanceSide.Local,
         sideBalance: localBalance,
         bound: 10,
       });
@@ -328,8 +354,8 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          channelPoint,
           emit,
+          channelPoint,
       );
 
       expect(emit).toHaveBeenCalledTimes(0);
@@ -349,8 +375,8 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          channelPoint,
           emit,
+          channelPoint,
       );
 
       expect(emit).toHaveBeenCalledTimes(0);
@@ -370,16 +396,16 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          channelPoint,
           emit,
+          channelPoint,
       );
 
       expect(emit).toHaveBeenCalledTimes(1);
-      expect(emit).toHaveBeenCalledWith({
+      expect(emit).toHaveBeenCalledWith('lowChannelBalance', {
         totalBalance,
         currency,
         channelPoint,
-        side: ChannelSide.Remote,
+        side: BalanceSide.Remote,
         sideBalance: remoteBalance,
         bound: 10,
       });
@@ -399,8 +425,8 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          channelPoint,
           emit,
+          channelPoint,
       );
 
       expect(emit).toHaveBeenCalledTimes(0);
@@ -420,8 +446,8 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          channelPoint,
           emit,
+          channelPoint,
       );
 
       expect(emit).toHaveBeenCalledTimes(0);

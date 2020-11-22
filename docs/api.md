@@ -9,6 +9,7 @@
     - [AddPairResponse](#xudrpc.AddPairResponse)
     - [Alert](#xudrpc.Alert)
     - [Balance](#xudrpc.Balance)
+    - [BalanceAlert](#xudrpc.BalanceAlert)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
@@ -95,6 +96,7 @@
     - [WithdrawResponse](#xudrpc.WithdrawResponse)
   
     - [Alert.AlertType](#xudrpc.Alert.AlertType)
+    - [BalanceAlert.Side](#xudrpc.BalanceAlert.Side)
     - [ChannelBalanceAlert.Side](#xudrpc.ChannelBalanceAlert.Side)
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
@@ -162,7 +164,8 @@
 | ----- | ---- | ----- | ----------- |
 | type | [Alert.AlertType](#xudrpc.Alert.AlertType) |  |  |
 | message | [string](#string) |  | The human readable alert message. |
-| balance_alert | [ChannelBalanceAlert](#xudrpc.ChannelBalanceAlert) |  |  |
+| channel_balance_alert | [ChannelBalanceAlert](#xudrpc.ChannelBalanceAlert) |  |  |
+| balance_alert | [BalanceAlert](#xudrpc.BalanceAlert) |  |  |
 
 
 
@@ -183,6 +186,25 @@
 | inactive_channel_balance | [uint64](#uint64) |  | Sum of inactive channel balances denominated in satoshis. |
 | wallet_balance | [uint64](#uint64) |  | Confirmed wallet balance in satoshis. |
 | unconfirmed_wallet_balance | [uint64](#uint64) |  | Unconfirmed wallet balance in satoshis. |
+
+
+
+
+
+
+<a name="xudrpc.BalanceAlert"></a>
+
+### BalanceAlert
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| total_balance | [uint64](#uint64) |  | The total balance. |
+| side | [BalanceAlert.Side](#xudrpc.BalanceAlert.Side) |  |  |
+| bound | [uint32](#uint32) |  | The bound of the low balance in percentage. |
+| side_balance | [uint64](#uint64) |  | The current side balance. |
+| currency | [string](#string) |  | The currency of the alert. |
 
 
 
@@ -1527,7 +1549,20 @@ The type of the alert.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| LOW_BALANCE | 0 |  |
+| LOW_CHANNEL_BALANCE | 0 |  |
+| LOW_BALANCE | 1 |  |
+
+
+
+<a name="xudrpc.BalanceAlert.Side"></a>
+
+### BalanceAlert.Side
+The side of the low balance.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REMOTE | 0 |  |
+| LOCAL | 1 |  |
 
 
 

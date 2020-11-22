@@ -2,7 +2,7 @@ import { Arguments, Argv } from 'yargs';
 import { XudClient } from '../../proto/xudrpc_grpc_pb';
 import * as xudrpc from '../../proto/xudrpc_pb';
 import { loadXudClient } from '../command';
-import { AlertType, ChannelSide } from '../../constants/enums';
+import { AlertType, BalanceSide } from '../../constants/enums';
 import { onStreamError, waitForClient } from '../utils';
 
 export const command = 'subscribealerts';
@@ -44,15 +44,20 @@ const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
     payload: undefined,
   };
 
-  if (alertObject.type === xudrpc.Alert.AlertType.LOW_BALANCE) {
-    result.payload = {
-      totalBalance: alertObject.balanceAlert?.totalBalance,
-      side: ChannelSide[alertObject.balanceAlert?.side || 0],
-      sideBalance: alertObject.balanceAlert?.sideBalance,
-      bound: alertObject.balanceAlert?.bound,
-      channelPoint: alertObject.balanceAlert?.channelPoint,
-      currency: alertObject.balanceAlert?.currency,
+  function getCommonBalanceAlertFields(payload?: xudrpc.ChannelBalanceAlert.AsObject | xudrpc.BalanceAlert.AsObject) {
+    return {
+      totalBalance: payload?.totalBalance,
+      side: BalanceSide[payload?.side || 0],
+      sideBalance: payload?.sideBalance,
+      bound: payload?.bound,
+      currency: payload?.currency,
     };
+  }
+
+  if (alertObject.type === xudrpc.Alert.AlertType.LOW_BALANCE) {
+    result.payload = getCommonBalanceAlertFields(alertObject.balanceAlert);
+  } else if (alertObject.type === xudrpc.Alert.AlertType.LOW_CHANNEL_BALANCE) {
+    result.payload = { ...getCommonBalanceAlertFields(alertObject.channelBalanceAlert), channelPoint: alertObject.channelBalanceAlert?.channelPoint };
   }
 
   return result;

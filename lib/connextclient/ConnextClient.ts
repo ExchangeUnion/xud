@@ -46,7 +46,7 @@ interface ConnextClient {
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
-  on(event: 'lowBalance', listener: (alert: ChannelBalanceAlert) => void): this;
+  on(event: 'lowChannelBalance', listener: (alert: ChannelBalanceAlert) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -54,7 +54,7 @@ interface ConnextClient {
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
   emit(event: 'depositConfirmed', hash: string): void;
-  emit(event: 'lowBalance', alert: ChannelBalanceAlert): boolean;
+  emit(event: 'lowChannelBalance', alert: ChannelBalanceAlert): boolean;
 }
 
 /**
@@ -347,8 +347,8 @@ class ConnextClient extends SwapClient {
             totalBalance,
             alertThreshold,
             currency,
+            this.emit.bind(this),
             address,
-            this.emit.bind(this, 'lowBalance'),
         );
       }
     } catch (e) {

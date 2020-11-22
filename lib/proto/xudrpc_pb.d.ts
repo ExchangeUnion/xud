@@ -73,10 +73,16 @@ export class Alert extends jspb.Message {
     setMessage(value: string): void;
 
 
+    hasChannelBalanceAlert(): boolean;
+    clearChannelBalanceAlert(): void;
+    getChannelBalanceAlert(): ChannelBalanceAlert | undefined;
+    setChannelBalanceAlert(value?: ChannelBalanceAlert): void;
+
+
     hasBalanceAlert(): boolean;
     clearBalanceAlert(): void;
-    getBalanceAlert(): ChannelBalanceAlert | undefined;
-    setBalanceAlert(value?: ChannelBalanceAlert): void;
+    getBalanceAlert(): BalanceAlert | undefined;
+    setBalanceAlert(value?: BalanceAlert): void;
 
 
     getPayloadCase(): Alert.PayloadCase;
@@ -95,18 +101,22 @@ export namespace Alert {
     export type AsObject = {
         type: Alert.AlertType,
         message: string,
-        balanceAlert?: ChannelBalanceAlert.AsObject,
+        channelBalanceAlert?: ChannelBalanceAlert.AsObject,
+        balanceAlert?: BalanceAlert.AsObject,
     }
 
     export enum AlertType {
-    LOW_BALANCE = 0,
+    LOW_CHANNEL_BALANCE = 0,
+    LOW_BALANCE = 1,
     }
 
 
     export enum PayloadCase {
         PAYLOAD_NOT_SET = 0,
     
-    BALANCE_ALERT = 3,
+    CHANNEL_BALANCE_ALERT = 3,
+
+    BALANCE_ALERT = 4,
 
     }
 
@@ -151,6 +161,49 @@ export namespace Balance {
         walletBalance: number,
         unconfirmedWalletBalance: number,
     }
+}
+
+export class BalanceAlert extends jspb.Message { 
+    getTotalBalance(): number;
+    setTotalBalance(value: number): void;
+
+    getSide(): BalanceAlert.Side;
+    setSide(value: BalanceAlert.Side): void;
+
+    getBound(): number;
+    setBound(value: number): void;
+
+    getSideBalance(): number;
+    setSideBalance(value: number): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): BalanceAlert.AsObject;
+    static toObject(includeInstance: boolean, msg: BalanceAlert): BalanceAlert.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: BalanceAlert, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): BalanceAlert;
+    static deserializeBinaryFromReader(message: BalanceAlert, reader: jspb.BinaryReader): BalanceAlert;
+}
+
+export namespace BalanceAlert {
+    export type AsObject = {
+        totalBalance: number,
+        side: BalanceAlert.Side,
+        bound: number,
+        sideBalance: number,
+        currency: string,
+    }
+
+    export enum Side {
+    REMOTE = 0,
+    LOCAL = 1,
+    }
+
 }
 
 export class BanRequest extends jspb.Message { 

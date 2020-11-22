@@ -12,7 +12,7 @@ import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ChannelBalanceAlert, ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
+import { BalanceAlert, ChannelBalanceAlert, ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -697,28 +697,38 @@ class Service extends EventEmitter {
    * Subscribe to alerts.
    */
   public subscribeAlerts = (
-      callback: (type: AlertType, message: string, payload: ChannelBalanceAlert) => void,
+      callback: (type: AlertType, message: string, payload: ChannelBalanceAlert | BalanceAlert) => void,
       cancelled$: Observable<void>,
   ) => {
-    const lowBalanceObservables: Observable<ChannelBalanceAlert>[] = [];
+    this.subscribeBalanceAlerts(cancelled$, callback, 'lowChannelBalance', AlertType.LowChannelBalance);
+    this.subscribeBalanceAlerts(cancelled$, callback, 'lowBalance', AlertType.LowBalance);
+  }
+
+  private subscribeBalanceAlerts(cancelled$: Observable<void>,
+                                 callback: (type: AlertType,
+                                            message: string,
+                                            payload: ChannelBalanceAlert | BalanceAlert) => void,
+                                 eventName: string,
+                                 alertType: AlertType) {
+    const balanceObservables: Observable<ChannelBalanceAlert | BalanceAlert>[] = [];
     this.swapClientManager.swapClients.forEach((swapClient) => {
-      lowBalanceObservables.push(fromEvent<ChannelBalanceAlert>(swapClient, 'lowBalance'));
+      balanceObservables.push(fromEvent<ChannelBalanceAlert | BalanceAlert>(swapClient, eventName));
     });
 
-    const lowBalance$ = this.getLowBalance$(lowBalanceObservables, cancelled$);
-    lowBalance$.subscribe({
+    const mergedObservable$ = this.getMergedObservable$(balanceObservables, cancelled$);
+    mergedObservable$.subscribe({
       next: (alert) => {
         callback(
-            AlertType.LowBalance,
-            `${alert.side} channel balance is lower than ${alert.totalBalance} for ${alert.currency} by ${alert.bound}%`,
+            alertType,
+            `${alert.side} ${alertType === AlertType.LowChannelBalance ? 'channel ' : ''}balance is lower than ${alert.totalBalance} for ${alert.currency} by ${alert.bound}%`,
             alert);
       },
       error: this.logger.error,
     });
   }
 
-  private getLowBalance$(lowBalanceObservables: Observable<ChannelBalanceAlert>[], cancelled$: Observable<void>) {
-    return merge(...lowBalanceObservables).pipe(takeUntil(cancelled$));
+  private getMergedObservable$(observables: Observable<any>[], cancelled$: Observable<void>) {
+    return merge(...observables).pipe(takeUntil(cancelled$));
   }
 
   /*

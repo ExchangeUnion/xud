@@ -386,14 +386,16 @@ message AddPairResponse {}
 message Alert {
    // The type of the alert.
    enum AlertType {
-     LOW_BALANCE = 0;
+     LOW_CHANNEL_BALANCE = 0;
+     LOW_BALANCE = 1;
    }
    AlertType type = 1 [json_name = "type"];
    // The human readable alert message.
    string message = 2 [json_name = "message"];
    // The structured payload.
    oneof payload {
-     ChannelBalanceAlert balance_alert = 3 [json_name = "balance_alert"];
+     ChannelBalanceAlert channel_balance_alert = 3 [json_name = "channel_balance_alert"];
+     BalanceAlert balance_alert = 4 [json_name = "balance_alert"];
    }
 }
 
@@ -410,6 +412,23 @@ message Balance {
   uint64 wallet_balance = 5 [json_name = "wallet_balance"];
   // Unconfirmed wallet balance in satoshis.
   uint64 unconfirmed_wallet_balance = 6 [json_name = "unconfirmed_wallet_balance"];
+}
+
+message BalanceAlert {
+  // The total balance.
+  uint64 total_balance = 1 [json_name = "total_balance"];
+  // The side of the low balance.
+  enum Side {
+    REMOTE = 0;
+    LOCAL = 1;
+  }
+  Side side = 2 [json_name = "side"];
+  // The bound of the low balance in percentage.
+  uint32 bound = 3 [json_name = "bound"];
+  // The current side balance.
+  uint64 side_balance = 4 [json_name = "side_balance"];
+  // The currency of the alert.
+  string currency = 5 [json_name = "currency"];
 }
 
 message BanRequest {

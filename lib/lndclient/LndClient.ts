@@ -16,7 +16,7 @@ import * as lndwalletunlocker from '../proto/lndwalletunlocker_pb';
 import { BASE_MAX_CLIENT_WAIT_TIME, MAX_FEE_RATIO, MAX_PAYMENT_TIME } from '../swaps/consts';
 import swapErrors from '../swaps/errors';
 import SwapClient, { Channel, ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, WithdrawArguments } from '../swaps/SwapClient';
-import { ChannelBalanceAlert, CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
+import { BalanceAlert, ChannelBalanceAlert, CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
 import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
@@ -28,7 +28,8 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
-  on(event: 'lowBalance', listener: (alert: ChannelBalanceAlert) => void): this;
+  on(event: 'lowBalance', listener: (alert: BalanceAlert) => void): this;
+  on(event: 'lowChannelBalance', listener: (alert: ChannelBalanceAlert) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
 
@@ -38,7 +39,8 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
-  emit(event: 'lowBalance', alert: ChannelBalanceAlert): boolean;
+  emit(event: 'lowBalance', alert: BalanceAlert): boolean;
+  emit(event: 'lowChannelBalance', alert: ChannelBalanceAlert): boolean;
 }
 
 const GRPC_CLIENT_OPTIONS = {
@@ -250,10 +252,21 @@ class LndClient extends SwapClient {
             totalBalance,
             alertThreshold,
             this.currency,
+            this.emit.bind(this),
             channelPoint,
-            this.emit.bind(this, 'lowBalance'),
         );
       });
+
+      const totalBalance = this.totalOutboundAmount + this.totalInboundAmount;
+      const alertThreshold = totalBalance * 0.1;
+      this.checkLowBalance(
+          this.totalInboundAmount,
+          this.totalOutboundAmount,
+          totalBalance,
+          alertThreshold,
+          this.currency,
+          this.emit.bind(this),
+      );
     }).catch(async (err) => {
       this.logger.error('failed to update total outbound capacity', err);
     });

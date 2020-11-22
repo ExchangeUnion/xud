@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { ChannelSide, SwapClientType } from '../constants/enums';
+import { BalanceSide, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
 import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
@@ -235,24 +235,24 @@ abstract class SwapClient extends EventEmitter {
   }
 
   protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
-                               alertThreshold: number, currency: string, channelPoint: string, emit: Function) => {
+                               alertThreshold: number, currency: string, emit: Function, channelPoint?: string) => {
     if (localBalance < alertThreshold) {
-      emit({
+      emit(channelPoint ? 'lowChannelBalance' : 'lowBalance', {
         totalBalance,
         currency,
         channelPoint,
-        side: ChannelSide.Local,
+        side: BalanceSide.Local,
         sideBalance: localBalance,
         bound: 10,
       });
     }
 
     if (remoteBalance < alertThreshold) {
-      emit({
+      emit(channelPoint ? 'lowChannelBalance' : 'lowBalance', {
         totalBalance,
         currency,
         channelPoint,
-        side: ChannelSide.Remote,
+        side: BalanceSide.Remote,
         sideBalance: remoteBalance,
         bound: 10,
       });

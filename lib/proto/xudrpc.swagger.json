@@ -856,19 +856,11 @@
     "AlertAlertType": {
       "type": "string",
       "enum": [
+        "LOW_CHANNEL_BALANCE",
         "LOW_BALANCE"
       ],
-      "default": "LOW_BALANCE",
+      "default": "LOW_CHANNEL_BALANCE",
       "description": "The type of the alert."
-    },
-    "ChannelBalanceAlertSide": {
-      "type": "string",
-      "enum": [
-        "REMOTE",
-        "LOCAL"
-      ],
-      "default": "REMOTE",
-      "description": "The side of the low balance."
     },
     "CurrencySwapClient": {
       "type": "string",
@@ -953,8 +945,11 @@
           "type": "string",
           "description": "The human readable alert message."
         },
-        "balance_alert": {
+        "channel_balance_alert": {
           "$ref": "#/definitions/xudrpcChannelBalanceAlert"
+        },
+        "balance_alert": {
+          "$ref": "#/definitions/xudrpcBalanceAlert"
         }
       }
     },
@@ -993,6 +988,42 @@
         }
       }
     },
+    "xudrpcBalanceAlert": {
+      "type": "object",
+      "properties": {
+        "total_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The total balance."
+        },
+        "side": {
+          "$ref": "#/definitions/xudrpcBalanceAlertSide"
+        },
+        "bound": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The bound of the low balance in percentage."
+        },
+        "side_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The current side balance."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the alert."
+        }
+      }
+    },
+    "xudrpcBalanceAlertSide": {
+      "type": "string",
+      "enum": [
+        "REMOTE",
+        "LOCAL"
+      ],
+      "default": "REMOTE",
+      "description": "The side of the low balance."
+    },
     "xudrpcBanRequest": {
       "type": "object",
       "properties": {
@@ -1027,7 +1058,7 @@
           "description": "The total balance of the channel."
         },
         "side": {
-          "$ref": "#/definitions/ChannelBalanceAlertSide"
+          "$ref": "#/definitions/xudrpcChannelBalanceAlertSide"
         },
         "bound": {
           "type": "integer",
@@ -1048,6 +1079,15 @@
           "description": "The currency of the channel."
         }
       }
+    },
+    "xudrpcChannelBalanceAlertSide": {
+      "type": "string",
+      "enum": [
+        "REMOTE",
+        "LOCAL"
+      ],
+      "default": "REMOTE",
+      "description": "The side of the low balance."
     },
     "xudrpcChannels": {
       "type": "object",

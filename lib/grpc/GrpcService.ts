@@ -8,7 +8,7 @@ import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult 
 import * as xudrpc from '../proto/xudrpc_pb';
 import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
-import { ChannelBalanceAlert, SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
+import { BalanceAlert, ChannelBalanceAlert, SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
 /**
@@ -882,18 +882,28 @@ class GrpcService {
     }
 
     const cancelled$ = getCancelled$(call);
-    this.service.subscribeAlerts((type: AlertType, message: string, payload: ChannelBalanceAlert) => {
+    this.service.subscribeAlerts((type: AlertType, message: string, payload: ChannelBalanceAlert | BalanceAlert) => {
       const alert = new xudrpc.Alert();
       alert.setType(type as number);
       alert.setMessage(message);
-      const channelBalanceAlert = new xudrpc.ChannelBalanceAlert();
-      channelBalanceAlert.setBound(payload.bound);
-      channelBalanceAlert.setChannelPoint(payload.channelPoint);
-      channelBalanceAlert.setSide(payload.side as number);
-      channelBalanceAlert.setSideBalance(payload.sideBalance);
-      channelBalanceAlert.setTotalBalance(payload.totalBalance);
-      channelBalanceAlert.setCurrency(payload.currency);
-      alert.setBalanceAlert(channelBalanceAlert);
+      if (type === AlertType.LowChannelBalance) {
+        const channelBalanceAlert = new xudrpc.ChannelBalanceAlert();
+        channelBalanceAlert.setBound(payload.bound);
+        channelBalanceAlert.setChannelPoint((payload as ChannelBalanceAlert).channelPoint);
+        channelBalanceAlert.setSide(payload.side as number);
+        channelBalanceAlert.setSideBalance(payload.sideBalance);
+        channelBalanceAlert.setTotalBalance(payload.totalBalance);
+        channelBalanceAlert.setCurrency(payload.currency);
+        alert.setChannelBalanceAlert(channelBalanceAlert);
+      } else if (type === AlertType.LowBalance) {
+        const balanceAlert = new xudrpc.BalanceAlert();
+        balanceAlert.setBound(payload.bound);
+        balanceAlert.setSide(payload.side as number);
+        balanceAlert.setSideBalance(payload.sideBalance);
+        balanceAlert.setTotalBalance(payload.totalBalance);
+        balanceAlert.setCurrency(payload.currency);
+        alert.setBalanceAlert(balanceAlert);
+      }
       call.write(alert);
     },
     cancelled$);

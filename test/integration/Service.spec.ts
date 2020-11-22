@@ -192,7 +192,7 @@ describe('API Service', () => {
 
   let testScheduler: TestScheduler;
 
-  describe('getLowBalance$', () => {
+  describe('getMergedObservable$', () => {
     beforeEach(() => {
       testScheduler = new TestScheduler((actual, expected) => {
         expect(actual).to.deep.equal(expected);
@@ -206,7 +206,7 @@ describe('API Service', () => {
         const cancelled = cold('-') as Observable<void>;
 
         const lowBalanceObservables: Observable<ChannelBalanceAlert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
-        const finalObservable = service['getLowBalance$'](lowBalanceObservables, cancelled);
+        const finalObservable = service['getMergedObservable$'](lowBalanceObservables, cancelled);
         expectObservable(finalObservable).toBe('-aa-(bb)c---');
       });
     });
@@ -218,7 +218,7 @@ describe('API Service', () => {
         const cancelled = cold('---a') as Observable<void>;
 
         const lowBalanceObservables: Observable<ChannelBalanceAlert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
-        const finalObservable = service['getLowBalance$'](lowBalanceObservables, cancelled);
+        const finalObservable = service['getMergedObservable$'](lowBalanceObservables, cancelled);
         expectObservable(finalObservable).toBe('-aa|');
       });
     });

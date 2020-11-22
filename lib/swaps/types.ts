@@ -2,7 +2,7 @@ import {
   SwapRole,
   SwapPhase,
   SwapState,
-  SwapFailureReason, ChannelSide,
+  SwapFailureReason, BalanceSide,
 } from '../constants/enums';
 
 export type SwapDeal = {
@@ -173,17 +173,20 @@ export type OpenChannelParams = {
   fee?: number,
 };
 
-export type ChannelBalanceAlert = {
+export type ChannelBalanceAlert = BalanceAlert & {
+  /** The point of the channel. */
+  channelPoint: string,
+};
+
+export type BalanceAlert = {
   /** The total balance of the channel when the alert is triggered. */
   totalBalance: number,
   /** The side of the balance either local or remote. */
-  side: ChannelSide,
+  side: BalanceSide,
   /** The balance that triggered the alert. */
   sideBalance: number,
   /** The alert threshold in percentage, e.g. 10 means %10. */
   bound: number,
-  /** The point of the channel. */
-  channelPoint: string,
   /** The currency of the channel. */
   currency: string,
 };
