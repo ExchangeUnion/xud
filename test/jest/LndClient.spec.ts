@@ -327,7 +327,7 @@ describe('LndClient', () => {
           totalBalance,
           alertThreshold,
           currency,
-          emit
+          emit,
       );
 
       expect(emit).toHaveBeenCalledTimes(1);
