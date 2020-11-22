@@ -705,7 +705,7 @@ class Service extends EventEmitter {
       lowBalanceObservables.push(fromEvent<ChannelBalanceAlert>(swapClient, 'lowBalance'));
     });
 
-    const lowBalance$ = merge(...lowBalanceObservables).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
+    const lowBalance$ = this.getLowBalance$(lowBalanceObservables, cancelled$);
     lowBalance$.subscribe({
       next: (alert) => {
         callback(
@@ -717,9 +717,13 @@ class Service extends EventEmitter {
     });
   }
 
+  private getLowBalance$(lowBalanceObservables: Observable<ChannelBalanceAlert>[], cancelled$: Observable<void>) {
+    return merge(...lowBalanceObservables).pipe(takeUntil(cancelled$));
+  }
+
   /*
-   * Subscribe to orders being added to the order book.
-   */
+     * Subscribe to orders being added to the order book.
+     */
   public subscribeOrders = (
     args: { existing: boolean },
     callback: (order?: ServiceOrder, orderRemoval?: OrderPortion) => void,
