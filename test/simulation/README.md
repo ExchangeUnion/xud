@@ -2,28 +2,47 @@
 
 This test suite simulates real usage of `xud` and the second-layer payment channel network clients that it interacts with. It creates chains, generates blocks, and establishes payment channels. All commands to `xud` are issued via the gRPC API. This helps ensure that `xud` integrates with other nodes and software components properly and allows for more complete and realistic testing of `xud`.
 
----
-
+## Requirements:
 The simulation tests’ only dependencies are [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/).
 
-## Usage (via `xud` npm scripts)
+---
+Successfully tested hw/sw stack:
+- ubuntu `20.04` / `20.10`
+- node `v14.15.1` (via nvm)
+- npm `6.14.8` (via nvm)
+- docker `19.03.13` & docker-compose `1.27.4` (via `apt install docker.io`)
+- 25 GB disk size, 4 CPU, 16 GB memory
+- Good internet connection
 
-### Run all test suites after building all images
+## General Usage
+
+### Build images (if not available) and run all test suites
 
 ```bash
-npm run test:sim:build
 npm run test:sim:run
 ```
 
-### Run every test suite separately after building all images
+### Run test suites separately after building all images manually
 
 ```bash
 npm run test:sim:build
 npm run test:sim:run:integration
 npm run test:sim:run:security
 npm run test:sim:run:stability
-
 ```
+
+### If you encounter issues, try
+
+```bash
+npm run test:sim:clean
+rm -rf /test/simulation/temp
+docker system prune -a
+docker swarm init
+npm install -g typescript
+npm run test:sim:run
+```
+
+## Specific Usage
 
 ### Specific image builds
 
