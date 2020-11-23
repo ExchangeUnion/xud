@@ -8,7 +8,10 @@ import { ServiceComponents } from '../../lib/service/types';
 import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Swaps from '../../lib/swaps/Swaps';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
+jest.mock('../../lib/nodekey/NodeKey');
+const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
 jest.mock('../../lib/orderbook/OrderBook');
 const mockedOrderbook = <jest.Mock<Orderbook>><any>Orderbook;
 jest.mock('../../lib/swaps/Swaps');
@@ -62,6 +65,7 @@ describe('Service', () => {
       swaps: new mockedSwaps(),
       version: '1.0.0',
       shutdown: jest.fn(),
+      nodeKey: new mockedNodeKey(),
       logger: new mockedLogger(),
     };
     peer = new mockedPeer();

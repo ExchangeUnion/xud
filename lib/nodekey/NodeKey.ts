@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import { createCipheriv, createDecipheriv, createHash } from 'crypto';
 import { entropyToMnemonic } from 'bip39';
 import { SwapClientType } from '../constants/enums';
+import { encipher } from '../utils/seedutil';
 
 /**
  * A class representing an ECDSA public/private key pair that identifies an XU node on the network
@@ -128,6 +129,13 @@ class NodeKey {
     return entropyToMnemonic(childSeedEntropy);
   }
 
+  public getMnemonic = async () => {
+    const decipheredSeed = this.privKey.slice(0, 19);
+    const decipheredSeedHex = decipheredSeed.toString('hex');
+    const seedMnemonic = await encipher(decipheredSeedHex);
+
+    return seedMnemonic;
+  }
 }
 
 export default NodeKey;

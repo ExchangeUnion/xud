@@ -84,6 +84,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     discoverNodes: IXudService_IDiscoverNodes;
     getBalance: IXudService_IGetBalance;
     getInfo: IXudService_IGetInfo;
+    getMnemonic: IXudService_IGetMnemonic;
     getNodeInfo: IXudService_IGetNodeInfo;
     listOrders: IXudService_IListOrders;
     listCurrencies: IXudService_IListCurrencies;
@@ -189,6 +190,15 @@ interface IXudService_IGetInfo extends grpc.MethodDefinition<xudrpc_pb.GetInfoRe
     requestDeserialize: grpc.deserialize<xudrpc_pb.GetInfoRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.GetInfoResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.GetInfoResponse>;
+}
+interface IXudService_IGetMnemonic extends grpc.MethodDefinition<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetMnemonicResponse> {
+    path: string; // "/xudrpc.Xud/GetMnemonic"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.GetMnemonicRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.GetMnemonicResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicResponse>;
 }
 interface IXudService_IGetNodeInfo extends grpc.MethodDefinition<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse> {
     path: string; // "/xudrpc.Xud/GetNodeInfo"
@@ -410,6 +420,7 @@ export interface IXudServer {
     discoverNodes: grpc.handleUnaryCall<xudrpc_pb.DiscoverNodesRequest, xudrpc_pb.DiscoverNodesResponse>;
     getBalance: grpc.handleUnaryCall<xudrpc_pb.GetBalanceRequest, xudrpc_pb.GetBalanceResponse>;
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
+    getMnemonic: grpc.handleUnaryCall<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetMnemonicResponse>;
     getNodeInfo: grpc.handleUnaryCall<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse>;
     listOrders: grpc.handleUnaryCall<xudrpc_pb.ListOrdersRequest, xudrpc_pb.ListOrdersResponse>;
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
@@ -463,6 +474,9 @@ export interface IXudClient {
     getInfo(request: xudrpc_pb.GetInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
+    getMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
@@ -558,6 +572,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public getInfo(request: xudrpc_pb.GetInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     public getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     public getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
+    public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;

@@ -19,6 +19,7 @@ import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
+import NodeKey from 'lib/nodekey/NodeKey';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -69,6 +70,7 @@ class Service extends EventEmitter {
   private version: string;
   private swaps: Swaps;
   private logger: Logger;
+  private nodekey: NodeKey;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
@@ -80,6 +82,7 @@ class Service extends EventEmitter {
     this.pool = components.pool;
     this.swaps = components.swaps;
     this.logger = components.logger;
+    this.nodekey = components.nodeKey;
 
     this.version = components.version;
   }
@@ -359,6 +362,14 @@ class Service extends EventEmitter {
     const swapSuccess = await this.orderBook.executeSwap(maker, taker);
     swapSuccess.localId = ''; // we shouldn't return the localId for ExecuteSwap in nomatching mode
     return swapSuccess;
+  }
+
+  /**
+   * Gets information about a specified node.
+   */
+  public getMnemonic = async () => {
+    const mnemonic = await this.nodekey.getMnemonic();
+    return mnemonic;
   }
 
   /**
