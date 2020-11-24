@@ -91,13 +91,6 @@ export type ConnextWithdrawResponse = {
   transferId: '0xc2e4592d3fb6c02ee1d3b07bed83b5914f8ca084b0f91d6b80bf8107e58c9c38'
 };
 
-/**
- * The response for deposit call.
- */
-export type ConnextDepositResponse = {
-  txhash: string;
-};
-
 type ConnextRoutingPath = {
   recipient: string;
   recipientChainId: number;

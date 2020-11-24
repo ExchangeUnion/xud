@@ -31,7 +31,6 @@ import {
   ExpectedIncomingTransfer,
   ProvidePreimageEvent,
   TransferReceivedEvent,
-  ConnextDepositResponse,
   ConnextWithdrawResponse,
   OnchainTransferResponse,
   ConnextBlockNumberResponse,
@@ -891,33 +890,8 @@ class ConnextClient extends SwapClient {
     return channelAddress;
   }
 
-  public openChannel = async ({ currency, units }: OpenChannelParams) => {
-    if (!currency) {
-      throw errors.CURRENCY_MISSING;
-    }
-    const assetId = this.getTokenAddress(currency);
-    const depositResponse = await this.sendRequest('/deposit', 'POST', {
-      assetId,
-      amount: units.toLocaleString('fullwide', { useGrouping: false }), // toLocaleString avoids scientific notation
-    });
-    const { txhash } = await parseResponseBody<ConnextDepositResponse>(depositResponse);
-
-    const minCollateralRequestQuantity = ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency];
-    if (minCollateralRequestQuantity !== undefined) {
-      const minCollateralRequestUnits = this.unitConverter.amountToUnits({ currency, amount: minCollateralRequestQuantity });
-      const depositConfirmed$ = fromEvent(this, 'depositConfirmed').pipe(
-        filter(hash => hash === txhash), // only proceed if the incoming hash matches our expected txhash
-        take(1), // complete the stream after 1 matching event
-        timeout(86400000), // clear up the listener after 1 day
-      );
-      depositConfirmed$.subscribe({
-        complete: () => {
-          this.requestCollateralInBackground(currency, minCollateralRequestUnits);
-        },
-      });
-    }
-
-    return txhash;
+  public openChannel = async (_params: OpenChannelParams) => {
+    throw new Error(`Open channel command is disabled for Connext currencies. Please send funds directly to the channel address ${this.channelAddress} in order to open a channel.`);
   }
 
   public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<string[]> => {
