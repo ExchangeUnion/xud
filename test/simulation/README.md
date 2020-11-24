@@ -5,7 +5,6 @@ This test suite simulates real usage of `xud` and the second-layer payment chann
 ## Requirements:
 The simulation tests’ only dependencies are [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/).
 
----
 Successfully tested hw/sw stack:
 - ubuntu `20.04` / `20.10`
 - node `v14.15.1` (via nvm)
@@ -37,13 +36,14 @@ npm run test:sim:run:stability
 cd xud
 npm run test:sim:clean
 npm run test:sim:clean:indra
-rm -rf ./test/simulation/temp
 docker system prune -a
 npm run test:sim
 ```
 
-If you still have issues, make sure docker swarm is initialized and you have typescript installed:
+If you still have issues, try these commands before running above again:
+
 ```
+rm -rf ./test/simulation/temp
 docker swarm init
 npm install -g typescript
 ```
@@ -118,8 +118,6 @@ For printing them unto console:
 ```bash
 npm run test:sim:logs
 ```
-
----
 
 ## Simulation Test Cases
 
