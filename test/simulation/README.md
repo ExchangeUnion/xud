@@ -19,7 +19,7 @@ Successfully tested hw/sw stack:
 ### Build images (if not available) and run all test suites
 
 ```bash
-npm run test:sim:run
+npm run test:sim
 ```
 
 ### Run test suites separately after building all images manually
@@ -39,10 +39,13 @@ npm run test:sim:clean
 npm run test:sim:clean:indra
 rm -rf ./test/simulation/temp
 docker system prune -a
+npm run test:sim
+```
+
+If you still have issues, make sure docker swarm is initialized and you have typescript installed:
+```
 docker swarm init
 npm install -g typescript
-npm run test:sim:build
-npm run test:sim:run
 ```
 
 ## Specific Usage
