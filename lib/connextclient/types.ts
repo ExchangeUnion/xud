@@ -87,7 +87,8 @@ export type ConnextTransferResponse = {
  * The response for withdraw call.
  */
 export type ConnextWithdrawResponse = {
-  txhash: string;
+  channelAddress: '0xa929dB0530daB525596f5d48Fb5C322fDa8A337B',
+  transferId: '0xc2e4592d3fb6c02ee1d3b07bed83b5914f8ca084b0f91d6b80bf8107e58c9c38'
 };
 
 /**

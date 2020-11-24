@@ -37,7 +37,7 @@ export const builder = (argv: Argv) => argv
   .example('$0 closechannel BTC CheeseMonkey', 'close BTC channels by alias')
   .example('$0 closechannel BTC CheeseMonkey --force', 'force close BTC channels by alias')
   .example('$0 closechannel BTC CheeseMonkey --fee 25', 'close BTC channels by alias with 25 sat/byte fee')
-  .example('$0 closechannel ETH --amount 0.1', 'remove 0.1 ETH from a Connext channel');
+  .example('$0 closechannel ETH --amount 0.1 --destination 0x7d3447e35c73903C971761AF3DBa76cDB1Cd07e2', 'remove 0.1 ETH from a Connext channel');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new CloseChannelRequest();

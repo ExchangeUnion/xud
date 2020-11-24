@@ -104,7 +104,6 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  // public userIdentifier?: string;
   /** Public identifier for Connext */
   public publicIdentifier: string | undefined;
   /**
@@ -925,6 +924,9 @@ class ConnextClient extends SwapClient {
     if (!currency) {
       throw errors.CURRENCY_MISSING;
     }
+    if (!destination) {
+      throw errors.WITHDRAW_ADDRESS_MISSING;
+    }
     const { freeBalanceOffChain } = await this.getBalance(currency);
     const availableUnits = Number(freeBalanceOffChain);
     if (units && availableUnits < units) {
@@ -937,14 +939,16 @@ class ConnextClient extends SwapClient {
     }
 
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
-      recipient: destination,
+      publicIdentifier: this.publicIdentifier,
+      channelAddress: this.channelAddress,
       amount: amount.toLocaleString('fullwide', { useGrouping: false }),
       assetId: this.tokenAddresses.get(currency),
+      recipient: destination,
+      fee: "120", // TODO: estimate fee
     });
 
-    const { txhash } = await parseResponseBody<ConnextWithdrawResponse>(withdrawResponse);
-
-    return [txhash];
+    const { transferId } = await parseResponseBody<ConnextWithdrawResponse>(withdrawResponse);
+    return [transferId];
   }
 
   /**
