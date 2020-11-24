@@ -34,8 +34,10 @@ npm run test:sim:run:stability
 ### If you encounter issues, try
 
 ```bash
+cd xud
 npm run test:sim:clean
-rm -rf /test/simulation/temp
+npm run test:sim:clean:indra
+rm -rf ./test/simulation/temp
 docker system prune -a
 docker swarm init
 npm install -g typescript
