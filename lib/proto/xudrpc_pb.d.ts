@@ -795,6 +795,46 @@ export namespace GetInfoResponse {
     }
 }
 
+export class GetMnemonicRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetMnemonicRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetMnemonicRequest): GetMnemonicRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetMnemonicRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetMnemonicRequest;
+    static deserializeBinaryFromReader(message: GetMnemonicRequest, reader: jspb.BinaryReader): GetMnemonicRequest;
+}
+
+export namespace GetMnemonicRequest {
+    export type AsObject = {
+    }
+}
+
+export class GetMnemonicResponse extends jspb.Message { 
+    clearSeedMnemonicList(): void;
+    getSeedMnemonicList(): Array<string>;
+    setSeedMnemonicList(value: Array<string>): void;
+    addSeedMnemonic(value: string, index?: number): string;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetMnemonicResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetMnemonicResponse): GetMnemonicResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetMnemonicResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetMnemonicResponse;
+    static deserializeBinaryFromReader(message: GetMnemonicResponse, reader: jspb.BinaryReader): GetMnemonicResponse;
+}
+
+export namespace GetMnemonicResponse {
+    export type AsObject = {
+        seedMnemonicList: Array<string>,
+    }
+}
+
 export class GetNodeInfoRequest extends jspb.Message { 
     getNodeIdentifier(): string;
     setNodeIdentifier(value: string): void;

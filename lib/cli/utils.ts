@@ -85,6 +85,26 @@ export const waitForCert = (certPath: string) => {
   });
 };
 
+export function showSeed(seedMnemonicList: string[]) {
+  const WORDS_PER_ROW = 4;
+  const numberedMnemonic = seedMnemonicList.map((value, index) => {
+    return `${index >= 9 ? '' : ' '}${index + 1}. ${value.padEnd(10)}`;
+  });
+  console.log('----------------------BEGIN XUD SEED---------------------');
+  for (let n = 0; n < seedMnemonicList.length / WORDS_PER_ROW; n += 1) {
+    console.log(numberedMnemonic.slice(n * WORDS_PER_ROW, (n + 1) * WORDS_PER_ROW).join(' '));
+  }
+  console.log('-----------------------END XUD SEED----------------------\n');
+
+  console.log(`
+Please write down your 24 word mnemonic. It will allow you to recover your xud \
+node key and on-chain funds for the initialized wallets listed above should you \
+forget your password or lose your device. Off-chain funds in channels can NOT \
+be recovered with it and must be backed up and recovered separately. Keep it \
+somewhere safe, it is your ONLY backup in case of data loss.
+`);
+}
+
 export const waitForClient = (client: XudClient, argv: Arguments, ensureConnection: Function, successCallback: Function, printError?: boolean) => {
   client.waitForReady(Date.now() + 3000, (error: Error | null) => {
     if (error) {

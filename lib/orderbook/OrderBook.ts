@@ -35,7 +35,7 @@ interface OrderBook {
   on(event: 'ownOrder.filled', listener: (order: OwnOrder) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: OwnOrder) => void): this;
-  /** Adds a listener to be called when a local order was removed */
+  /** Adds a listener to be called when a local order was removed either manually or due to a swap initiated by a peer */
   on(event: 'ownOrder.removed', listener: (order: OwnOrder) => void): this;
 
   /** Notifies listeners that a remote order was added */
@@ -44,13 +44,13 @@ interface OrderBook {
   emit(event: 'peerOrder.invalidation', order: OrderPortion): boolean;
   /** Notifies listeners that all or part of a remote order was filled by an own order and removed */
   emit(event: 'peerOrder.filled', order: OrderPortion): boolean;
-  /** Notifies listeners that all or part of a local order was swapped and removed, after it was filled and executed remotely */
+  /** Notifies listeners that all or part of a local order was swapped after being filled and executed remotely */
   emit(event: 'ownOrder.swapped', order: OrderPortion): boolean;
   /** Notifies listeners that all or part of a local order was filled by an own order and removed */
   emit(event: 'ownOrder.filled', order: OwnOrder): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: OwnOrder): boolean;
-  /** Notifies listeners that a local order was removed */
+  /** Notifies listeners that a local order was removed either manually or due to a swap initiated by a peer */
   emit(event: 'ownOrder.removed', order: OwnOrder): boolean;
 }
 
@@ -489,16 +489,6 @@ class OrderBook extends EventEmitter {
 
     const tp = this.getTradingPair(order.pairId);
 
-    if (!this.nobalancechecks) {
-      // for limit orders, we use the price of our order to calculate inbound/outbound amounts
-      // for market orders, we use the price of the best matching order in the order book
-      const price = (order.price === 0 || order.price === Number.POSITIVE_INFINITY) ?
-        (order.isBuy ? tp.quoteAsk() : tp.quoteBid()) :
-        order.price;
-
-      await this.swaps.swapClientManager.checkSwapCapacities({ ...order, price });
-    }
-
     let replacedOrderIdentifier: OrderIdentifier | undefined;
     if (replaceOrderId) {
       assert(!discardRemaining, 'can not replace order and discard remaining order');
@@ -509,6 +499,29 @@ class OrderBook extends EventEmitter {
         throw errors.ORDER_NOT_FOUND(replaceOrderId);
       }
       assert(replacedOrderIdentifier.pairId === order.pairId);
+    }
+
+    if (!this.nobalancechecks) {
+      // for limit orders, we use the price of our order to calculate inbound/outbound amounts
+      // for market orders, we use the price of the best matching order in the order book
+      const price = (order.price === 0 || order.price === Number.POSITIVE_INFINITY) ?
+        (order.isBuy ? tp.quoteAsk() : tp.quoteBid()) :
+        order.price;
+
+      const quantityBeingReplaced =
+        replacedOrderIdentifier ?
+        this.getOwnOrder(replacedOrderIdentifier.id, replacedOrderIdentifier.pairId).quantity :
+        0;
+
+      /** The quantity that's being added to the replaced order. */
+      const quantityDelta = order.quantity - quantityBeingReplaced;
+
+      if (quantityDelta > 0) {
+        await this.swaps.swapClientManager.checkSwapCapacities({ ...order, price, quantity: quantityDelta });
+      }
+    }
+
+    if (replacedOrderIdentifier) {
       this.addOrderHold(replacedOrderIdentifier.id, replacedOrderIdentifier.pairId);
     }
 
