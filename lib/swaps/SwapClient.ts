@@ -102,10 +102,13 @@ abstract class SwapClient extends EventEmitter {
   protected reconnectionTimer?: NodeJS.Timer;
 
   private updateCapacityTimer?: NodeJS.Timer;
+  private balanceAlertTimer?: NodeJS.Timer;
   /** The maximum amount of time we will wait for the connection to be verified during initialization. */
   private static INITIALIZATION_TIME_LIMIT = 5000;
   /** Time in milliseconds between updating the maximum outbound capacity. */
   private static CAPACITY_REFRESH_INTERVAL = 3000;
+  /** Time in milliseconds between low channel/trading balance alert trigger. */
+  private static BALANCE_ALERT_INTERVAL = 30000;
 
   constructor(public logger: Logger, protected disable: boolean) {
     super();
@@ -139,6 +142,7 @@ abstract class SwapClient extends EventEmitter {
 
   public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
+  protected abstract triggerAlert(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {
     // don't wait longer than the allotted time for the connection to
@@ -237,7 +241,7 @@ abstract class SwapClient extends EventEmitter {
   protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
                                alertThreshold: number, currency: string, emit: Function, channelPoint?: string) => {
     if (localBalance < alertThreshold) {
-      emit(channelPoint ? 'lowChannelBalance' : 'lowBalance', {
+      emit(channelPoint ? 'lowChannelBalance' : 'lowTradingBalance', {
         totalBalance,
         currency,
         channelPoint,
@@ -248,7 +252,7 @@ abstract class SwapClient extends EventEmitter {
     }
 
     if (remoteBalance < alertThreshold) {
-      emit(channelPoint ? 'lowChannelBalance' : 'lowBalance', {
+      emit(channelPoint ? 'lowChannelBalance' : 'lowTradingBalance', {
         totalBalance,
         currency,
         channelPoint,
@@ -262,6 +266,12 @@ abstract class SwapClient extends EventEmitter {
   private updateCapacityTimerCallback = async () => {
     if (this.isConnected()) {
       await this.updateCapacity();
+    }
+  }
+
+  private balanceAlertTimerCallback = async () => {
+    if (this.isConnected()) {
+      await this.triggerAlert();
     }
   }
 
@@ -288,6 +298,9 @@ abstract class SwapClient extends EventEmitter {
     }
     if (!this.reconnectionTimer) {
       this.reconnectionTimer = setTimeout(this.reconnectionTimerCallback, SwapClient.RECONNECT_INTERVAL);
+    }
+    if (!this.balanceAlertTimer) {
+      this.balanceAlertTimer = setInterval(this.balanceAlertTimerCallback, SwapClient.BALANCE_ALERT_INTERVAL);
     }
   }
 
@@ -413,6 +426,10 @@ abstract class SwapClient extends EventEmitter {
     if (this.updateCapacityTimer) {
       clearInterval(this.updateCapacityTimer);
       this.updateCapacityTimer = undefined;
+    }
+    if (this.balanceAlertTimer) {
+      clearInterval(this.balanceAlertTimer);
+      this.balanceAlertTimer = undefined;
     }
     this.removeAllListeners();
   }

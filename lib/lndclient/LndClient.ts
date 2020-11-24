@@ -28,7 +28,7 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
-  on(event: 'lowBalance', listener: (alert: BalanceAlert) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlert) => void): this;
   on(event: 'lowChannelBalance', listener: (alert: ChannelBalanceAlert) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
@@ -39,7 +39,7 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
-  emit(event: 'lowBalance', alert: BalanceAlert): boolean;
+  emit(event: 'lowTradingBalance', alert: BalanceAlert): boolean;
   emit(event: 'lowChannelBalance', alert: ChannelBalanceAlert): boolean;
 }
 
@@ -241,7 +241,7 @@ class LndClient extends SwapClient {
     }
   }
 
-  protected updateCapacity = async () => {
+  protected triggerAlert = async () => {
     await this.channelBalance().then(({ channels }) => {
       channels?.forEach(({ remoteBalance, localBalance, channelPoint }) => {
         const totalBalance = localBalance + remoteBalance;
@@ -267,7 +267,11 @@ class LndClient extends SwapClient {
           this.currency,
           this.emit.bind(this),
       );
-    }).catch(async (err) => {
+    });
+  }
+
+  protected updateCapacity = async () => {
+    await this.channelBalance().catch(async (err) => {
       this.logger.error('failed to update total outbound capacity', err);
     });
   }

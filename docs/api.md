@@ -1550,7 +1550,7 @@ The type of the alert.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | LOW_CHANNEL_BALANCE | 0 |  |
-| LOW_BALANCE | 1 |  |
+| LOW_TRADING_BALANCE | 1 |  |
 
 
 

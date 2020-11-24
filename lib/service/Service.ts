@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
-import { AlertType, OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
+import { AlertType, BalanceSide, OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger, { Level, LevelPriority } from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
@@ -19,6 +19,7 @@ import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
+import { satsToCoinsStr } from '../cli/utils';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -701,7 +702,7 @@ class Service extends EventEmitter {
       cancelled$: Observable<void>,
   ) => {
     this.subscribeBalanceAlerts(cancelled$, callback, 'lowChannelBalance', AlertType.LowChannelBalance);
-    this.subscribeBalanceAlerts(cancelled$, callback, 'lowBalance', AlertType.LowBalance);
+    this.subscribeBalanceAlerts(cancelled$, callback, 'lowTradingBalance', AlertType.LowTradingBalance);
   }
 
   private subscribeBalanceAlerts(cancelled$: Observable<void>,
@@ -720,11 +721,22 @@ class Service extends EventEmitter {
       next: (alert) => {
         callback(
             alertType,
-            `${alert.side} ${alertType === AlertType.LowChannelBalance ? 'channel ' : ''}balance is lower than ${alert.totalBalance} for ${alert.currency} by ${alert.bound}%`,
+            this.structAlertMessage(alertType, alert),
             alert);
       },
       error: this.logger.error,
     });
+  }
+
+  private structAlertMessage = (type: AlertType, payload: ChannelBalanceAlert | BalanceAlert) => {
+    switch (type) {
+      case AlertType.LowChannelBalance:
+        return `${BalanceSide[payload.side || 0]} channel balance (${satsToCoinsStr(payload.sideBalance || 0)}) of one of the channels is lower than 10% of channel capacity (${satsToCoinsStr(payload.totalBalance || 0)})`;
+      case AlertType.LowTradingBalance:
+        return `${BalanceSide[payload.side || 0]} trading balance (${satsToCoinsStr(payload.sideBalance || 0)}) is lower than 10% of trading capacity (${satsToCoinsStr(payload.totalBalance || 0)})`;
+      default:
+        return 'unknown alert type';
+    }
   }
 
   private getMergedObservable$(observables: Observable<any>[], cancelled$: Observable<void>) {

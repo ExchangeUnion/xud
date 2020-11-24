@@ -857,7 +857,7 @@
       "type": "string",
       "enum": [
         "LOW_CHANNEL_BALANCE",
-        "LOW_BALANCE"
+        "LOW_TRADING_BALANCE"
       ],
       "default": "LOW_CHANNEL_BALANCE",
       "description": "The type of the alert."

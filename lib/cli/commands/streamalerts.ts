@@ -5,16 +5,16 @@ import { loadXudClient } from '../command';
 import { AlertType, BalanceSide } from '../../constants/enums';
 import { onStreamError, waitForClient } from '../utils';
 
-export const command = 'subscribealerts';
+export const command = 'streamalerts';
 
-export const describe = 'subscribe alerts such as low balance';
+export const describe = 'stream/subscribe alerts such as low balance';
 
 export const builder = (argv: Argv) => argv
     .option('pretty', {
       type: 'boolean',
     })
-    .example('$0 subscribealerts -j', 'prints alert payload in a JSON structure')
-    .example('$0 subscribealerts', 'prints alert message only');
+    .example('$0 streamalerts -j', 'prints alert payload in a JSON structure')
+    .example('$0 streamalerts', 'prints alert message only');
 
 export const handler = async (argv: Arguments) => {
   await ensureConnection(argv, true);
@@ -27,11 +27,11 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
     client = await loadXudClient(argv);
   }
 
-  waitForClient(client, argv, ensureConnection, subscribeAlerts, printError);
+  waitForClient(client, argv, ensureConnection, streamalerts, printError);
 };
 
 const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
-  const result: {type: string, message: string, payload: {
+  const result: {type: string, payload: {
     totalBalance?: number,
     side?: string,
     bound?: number,
@@ -40,7 +40,6 @@ const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
     currency?: string,
   } | undefined } = {
     type: AlertType[alertObject.type],
-    message: alertObject.message,
     payload: undefined,
   };
 
@@ -54,7 +53,7 @@ const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
     };
   }
 
-  if (alertObject.type === xudrpc.Alert.AlertType.LOW_BALANCE) {
+  if (alertObject.type === xudrpc.Alert.AlertType.LOW_TRADING_BALANCE) {
     result.payload = getCommonBalanceAlertFields(alertObject.balanceAlert);
   } else if (alertObject.type === xudrpc.Alert.AlertType.LOW_CHANNEL_BALANCE) {
     result.payload = { ...getCommonBalanceAlertFields(alertObject.channelBalanceAlert), channelPoint: alertObject.channelBalanceAlert?.channelPoint };
@@ -63,7 +62,7 @@ const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
   return result;
 };
 
-const subscribeAlerts = (argv: Arguments<any>) => {
+const streamalerts = (argv: Arguments<any>) => {
   const request = new xudrpc.SubscribeAlertsRequest();
   const alertsSubscription = client.subscribeAlerts(request);
 

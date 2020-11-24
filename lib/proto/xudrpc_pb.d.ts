@@ -107,7 +107,7 @@ export namespace Alert {
 
     export enum AlertType {
     LOW_CHANNEL_BALANCE = 0,
-    LOW_BALANCE = 1,
+    LOW_TRADING_BALANCE = 1,
     }
 
 

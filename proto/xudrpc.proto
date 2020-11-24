@@ -387,7 +387,7 @@ message Alert {
    // The type of the alert.
    enum AlertType {
      LOW_CHANNEL_BALANCE = 0;
-     LOW_BALANCE = 1;
+     LOW_TRADING_BALANCE = 1;
    }
    AlertType type = 1 [json_name = "type"];
    // The human readable alert message.

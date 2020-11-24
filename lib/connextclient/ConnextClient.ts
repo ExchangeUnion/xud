@@ -327,6 +327,26 @@ class ConnextClient extends SwapClient {
     }
   }
 
+  protected triggerAlert = async () => {
+    await this.updateCapacity();
+    for (const [currency, address] of this.tokenAddresses) {
+      const remoteBalance = this.inboundAmounts.get(currency) || 0;
+      const localBalance = this.outboundAmounts.get(currency) || 0;
+      const totalBalance = remoteBalance + localBalance;
+      const alertThreshold = totalBalance * 0.1;
+
+      this.checkLowBalance(
+          remoteBalance,
+          localBalance,
+          totalBalance,
+          alertThreshold,
+          currency,
+          this.emit.bind(this),
+          address,
+      );
+    }
+  }
+
   protected updateCapacity = async () => {
     try {
       const channelBalancePromises = [];
@@ -334,23 +354,6 @@ class ConnextClient extends SwapClient {
         channelBalancePromises.push(this.channelBalance(currency));
       }
       await Promise.all(channelBalancePromises);
-
-      for (const [currency, address] of this.tokenAddresses) {
-        const remoteBalance = this.inboundAmounts.get(currency) || 0;
-        const localBalance = this.outboundAmounts.get(currency) || 0;
-        const totalBalance = remoteBalance + localBalance;
-        const alertThreshold = totalBalance * 0.1;
-
-        this.checkLowBalance(
-            remoteBalance,
-            localBalance,
-            totalBalance,
-            alertThreshold,
-            currency,
-            this.emit.bind(this),
-            address,
-        );
-      }
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);
     }

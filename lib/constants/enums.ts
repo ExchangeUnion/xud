@@ -183,7 +183,7 @@ export enum DisconnectionReason {
 
 export enum AlertType {
   LowChannelBalance = 0,
-  LowBalance = 1,
+  LowTradingBalance = 1,
 }
 
 export enum BalanceSide {

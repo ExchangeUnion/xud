@@ -895,7 +895,7 @@ class GrpcService {
         channelBalanceAlert.setTotalBalance(payload.totalBalance);
         channelBalanceAlert.setCurrency(payload.currency);
         alert.setChannelBalanceAlert(channelBalanceAlert);
-      } else if (type === AlertType.LowBalance) {
+      } else if (type === AlertType.LowTradingBalance) {
         const balanceAlert = new xudrpc.BalanceAlert();
         balanceAlert.setBound(payload.bound);
         balanceAlert.setSide(payload.side as number);
