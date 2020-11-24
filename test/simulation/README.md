@@ -41,6 +41,7 @@ rm -rf ./test/simulation/temp
 docker system prune -a
 docker swarm init
 npm install -g typescript
+npm run test:sim:build
 npm run test:sim:run
 ```
 
