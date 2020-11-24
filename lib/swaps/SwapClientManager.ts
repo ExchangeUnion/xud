@@ -308,7 +308,6 @@ class SwapClientManager extends EventEmitter {
             initializedLndWallets.push(swapClient.currency);
           }).catch((err) => {
             swapClient.logger.error('could not initialize lnd wallet', err.message);
-            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${swapClient.currency}: ${err.message}`);
           });
           initWalletPromises.push(initWalletPromise);
         }
