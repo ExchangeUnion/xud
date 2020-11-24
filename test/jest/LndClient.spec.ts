@@ -331,7 +331,7 @@ describe('LndClient', () => {
       );
 
       expect(emit).toHaveBeenCalledTimes(1);
-      expect(emit).toHaveBeenCalledWith('lowBalance', {
+      expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
         totalBalance,
         currency,
         side: BalanceSide.Local,

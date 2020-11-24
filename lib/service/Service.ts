@@ -742,9 +742,9 @@ class Service extends EventEmitter {
   private structAlertMessage = (type: AlertType, payload: ChannelBalanceAlert | BalanceAlert) => {
     switch (type) {
       case AlertType.LowChannelBalance:
-        return `${BalanceSide[payload.side || 0]} channel balance (${satsToCoinsStr(payload.sideBalance || 0)}) of one of the channels is lower than 10% of channel capacity (${satsToCoinsStr(payload.totalBalance || 0)})`;
+        return `${BalanceSide[payload.side || 0]} channel balance (${satsToCoinsStr(payload.sideBalance || 0)} ${payload.currency}) of one of the channels is lower than 10% of channel capacity (${satsToCoinsStr(payload.totalBalance || 0)} ${payload.currency})`;
       case AlertType.LowTradingBalance:
-        return `${BalanceSide[payload.side || 0]} trading balance (${satsToCoinsStr(payload.sideBalance || 0)}) is lower than 10% of trading capacity (${satsToCoinsStr(payload.totalBalance || 0)})`;
+        return `${BalanceSide[payload.side || 0]} trading balance (${satsToCoinsStr(payload.sideBalance || 0)} ${payload.currency}) is lower than 10% of trading capacity (${satsToCoinsStr(payload.totalBalance || 0)} ${payload.currency})`;
       default:
         return 'unknown alert type';
     }
