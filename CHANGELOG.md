@@ -1,3 +1,18 @@
+## [1.2.2](https://github.com/ExchangeUnion/xud/compare/v1.0.0...v1.2.2) (2020-11-24)
+
+This release includes a critical bug fix for replace order functionality. In addition, a new rpc call GetMnemonic has been added that can be used to retrieve the master seed mnemonic for xud at runtime after an xud node has been created.
+
+### Bug Fixes
+
+* limits account for replaced order quantity ([#2002](https://github.com/ExchangeUnion/xud/issues/2002)) ([eadf5d1](https://github.com/ExchangeUnion/xud/commit/eadf5d1838992297839760743a6c1cd244a926e8)), closes [#1999](https://github.com/ExchangeUnion/xud/issues/1999)
+
+
+### Features
+
+* **rpc:** GetMnemonic ([273dc5a](https://github.com/ExchangeUnion/xud/commit/273dc5abcd7ff2b502e2a9d842111ca7a4840a1f)), closes [#1982](https://github.com/ExchangeUnion/xud/issues/1982)
+
+
+
 ## [1.2.1](https://github.com/ExchangeUnion/xud/compare/v1.0.0...v1.2.1) (2020-11-19)
 
 This maintenance release includes a number of features, most significantly it switches xud to use lnd's new `sendpaymentv2` call to prepare for multi-channel trades. It also improves xud's shutdown behavior and fixes several bugs.
