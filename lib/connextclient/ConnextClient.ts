@@ -131,8 +131,10 @@ class ConnextClient extends SwapClient {
   private inboundAmounts = new Map<string, number>();
   private _reconcileDepositSubscriber: Subscription | undefined;
 
-  /** Channel multisig address for Connext */
+  /** Channel multisig address */
   private channelAddress: string | undefined;
+  /** On-chain deposit address */
+  public signerAddress: string | undefined;
 
   private pendingRequests = new Set<http.ClientRequest>();
   private criticalRequestPaths = ['/hashlock-resolve', '/hashlock-transfer'];
@@ -384,8 +386,9 @@ class ConnextClient extends SwapClient {
       }
       await this.createNode(this.seed);
       const config = await this.getClientConfig();
-      const { publicIdentifier } = config;
+      const { publicIdentifier, signerAddress } = config;
       this.publicIdentifier = publicIdentifier;
+      this.signerAddress = signerAddress;
       const channel = await this.getChannel();
       this.channelAddress = channel;
       await this.subscribeIncomingTransfer();
@@ -882,12 +885,12 @@ class ConnextClient extends SwapClient {
     return getBalancePromise;
   }
 
+  // Returns on-chain deposit address
   public deposit = async () => {
-    if (this.channelAddress) {
-      return this.channelAddress;
+    if (this.signerAddress) {
+      return this.signerAddress;
     }
-    const channelAddress = await this.getChannel();
-    return channelAddress;
+    throw new Error('Could not get signer address');
   }
 
   public openChannel = async (_params: OpenChannelParams) => {
@@ -941,6 +944,7 @@ class ConnextClient extends SwapClient {
     return transferResponse;
   }
 
+  // Withdraw on-chain funds
   public withdraw = async ({
     all,
     currency,
