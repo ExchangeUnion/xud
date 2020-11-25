@@ -3,7 +3,10 @@
 This test suite simulates real usage of `xud` and the second-layer payment channel network clients that it interacts with. It creates chains, generates blocks, and establishes payment channels. All commands to `xud` are issued via the gRPC API. This helps ensure that `xud` integrates with other nodes and software components properly and allows for more complete and realistic testing of `xud`.
 
 ## Requirements:
-The simulation tests’ only dependencies are [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/).
+- [docker](https://docs.docker.com/install/)
+- [docker-compose](https://docs.docker.com/compose/install/)
+- [node / npm](https://nodejs.org/en/download/), [build-essential](https://packages.ubuntu.com/focal/build-essential) and [python](https://www.python.org/downloads/) (needed for `xud` build and scripts)
+- [jq](https://packages.ubuntu.com/focal/jq)
 
 Successfully tested hw/sw stack:
 - ubuntu `20.04` / `20.10`
