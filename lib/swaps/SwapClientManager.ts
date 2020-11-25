@@ -521,6 +521,16 @@ class SwapClientManager extends EventEmitter {
     }
   }
 
+  public walletDeposit = async (currency: string) => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+
+    const address = await swapClient.walletDeposit();
+    return address;
+  }
+
   public deposit = async (currency: string) => {
     const swapClient = this.get(currency);
     if (!swapClient) {

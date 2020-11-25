@@ -886,11 +886,19 @@ class ConnextClient extends SwapClient {
   }
 
   // Returns on-chain deposit address
-  public deposit = async () => {
+  public walletDeposit = async () => {
     if (this.signerAddress) {
       return this.signerAddress;
     }
     throw new Error('Could not get signer address');
+  }
+
+  // Returns channel deposit address
+  public deposit = async () => {
+    if (this.channelAddress) {
+      return this.channelAddress;
+    }
+    throw new Error('Could not get channel address');
   }
 
   public openChannel = async (_params: OpenChannelParams) => {
