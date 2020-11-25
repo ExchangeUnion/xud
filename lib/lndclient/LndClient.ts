@@ -557,7 +557,7 @@ class LndClient extends SwapClient {
   }
 
   public deposit = async () => {
-    throw new Error('Depositing directly to channel is not supported. Please use lightning service provider such as Boltz to create a channel with 1 transaction or deposit to the on-chain wallet first.');
+    throw new Error('Depositing directly to channel is not supported. Please use a lightning service provider such as Boltz to create a channel with 1 transaction or deposit to the on-chain wallet first.');
   }
 
   public withdraw = async ({ amount, destination, all = false, fee }: WithdrawArguments) => {
