@@ -234,7 +234,7 @@ class SwapClientManager extends EventEmitter {
       const reservedInbound = this.inboundReservedAmounts.get(inboundCurrency) ?? 0;
       const availableInboundCapacity = inboundCapacities.totalInboundCapacity - reservedInbound;
       if (inboundAmount > availableInboundCapacity) {
-        throw errors.INSUFFICIENT_INBOUND_CAPACITY(outboundCurrency, outboundAmount, availableOutboundCapacity);
+        throw errors.INSUFFICIENT_INBOUND_CAPACITY(inboundCurrency, inboundAmount, availableInboundCapacity);
       }
     }
   }
