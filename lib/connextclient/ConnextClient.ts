@@ -737,7 +737,6 @@ class ConnextClient extends SwapClient {
       ]
     });
     const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
-    console.log('getBalanceResponse', getBalanceResponse);
     return parseInt(getBalanceResponse.result, 16);
   };
 
