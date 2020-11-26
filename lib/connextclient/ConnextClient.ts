@@ -21,8 +21,9 @@ import {
   ConnextErrorResponse,
   ConnextConfig,
   ConnextConfigResponse,
-  ConnextChannelResponse,
   ConnextBalanceResponse,
+  ConnextChannelResponse,
+  ConnextChannelBalanceResponse,
   ConnextTransferResponse,
   ConnextClientConfig,
   ConnextInfo,
@@ -34,6 +35,7 @@ import {
   ConnextWithdrawResponse,
   OnchainTransferResponse,
   ConnextBlockNumberResponse,
+  ConnextChannelDetails,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent, from, defer, Subscription, throwError, interval, timer } from 'rxjs';
@@ -117,14 +119,13 @@ class ConnextClient extends SwapClient {
   private host: string;
   private webhookport: number;
   private webhookhost: string;
-  // private nodeUrl: string;
   private nodeIdentifier: string;
   private unitConverter: UnitConverter;
   private network: string;
   private seed: string | undefined;
   private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '36000';
   /** A map of currencies to promises representing balance requests. */
-  private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
+  private getBalancePromises = new Map<string, Promise<ConnextChannelBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
@@ -168,7 +169,6 @@ class ConnextClient extends SwapClient {
     this.host = config.host;
     this.webhookhost = config.webhookhost;
     this.webhookport = config.webhookport;
-    // this.nodeUrl = config.nodeUrl;
     this.nodeIdentifier = config.nodeIdentifier;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
@@ -728,6 +728,19 @@ class ConnextClient extends SwapClient {
     return parseInt(blockNumberResponse.result, 16);
   }
 
+  private getBalanceForAddress = async (assetId: string) => {
+    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
+      method: 'eth_getBalance',
+      params: [
+        assetId,
+        'latest'
+      ]
+    });
+    const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
+    console.log('getBalanceResponse', getBalanceResponse);
+    return parseInt(getBalanceResponse.result, 16);
+  };
+
   public getInfo = async (): Promise<ConnextInfo> => {
     let address: string | undefined;
     let version: string | undefined;
@@ -849,7 +862,7 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  private getBalance = (currency: string): Promise<ConnextBalanceResponse> => {
+  private getBalance = (currency: string): Promise<ConnextChannelBalanceResponse> => {
     // check if we already have a balance request that we are waiting a response for
     // it's not helpful to have simultaneous requests for the current balance, as they
     // should return the same info.
@@ -857,15 +870,18 @@ class ConnextClient extends SwapClient {
     if (!getBalancePromise) {
       // if not make a new balance request and store the promise that's waiting for a response
       const tokenAddress = this.getTokenAddress(currency);
-      getBalancePromise = this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET').then(async (res) => {
-        const channelDetails = await parseResponseBody<any>(res);
+      getBalancePromise = Promise.all([
+        this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET'),
+        this.getBalanceForAddress(this.signerAddress!),
+      ]).then(async ([channelDetailsRes, onChainBalance]) => {
+        const channelDetails = await parseResponseBody<ConnextChannelDetails>(channelDetailsRes);
         const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
         if (assetIdIndex === -1) {
           const response = {
             freeBalanceOffChain: 0,
             nodeFreeBalanceOffChain: 0,
-            freeBalanceOnChain: 0,
-          } as unknown as ConnextBalanceResponse;
+            freeBalanceOnChain: onChainBalance,
+          } as unknown as ConnextChannelBalanceResponse;
           return response;
         } else {
           const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
@@ -873,8 +889,8 @@ class ConnextClient extends SwapClient {
           const response = {
             freeBalanceOffChain: balance,
             nodeFreeBalanceOffChain: inboundBalance,
-            freeBalanceOnChain: 0,
-          } as unknown as ConnextBalanceResponse;
+            freeBalanceOnChain: onChainBalance,
+          } as unknown as ConnextChannelBalanceResponse;
           return response;
         }
       }).finally(() => {

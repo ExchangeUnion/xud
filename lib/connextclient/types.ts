@@ -25,6 +25,50 @@ export type ConnextBlockNumberResponse = {
   result: string;
 };
 
+type Balance = {
+  amount: string[];
+  to: string[];
+};
+
+/** Connext channel details */
+export type ConnextChannelDetails = {
+  assetIds: string[];
+  balances: Balance[];
+  channelAddress: string;
+  merkleRoot: string;
+  processedDepositsA: string[];
+  processedDepositsB: string[];
+  networkContext: {
+    chainId: number;
+    channelFactoryAddress: string;
+    transferRegistryAddress: string;
+    providerUrl: string;
+  };
+  nonce: number;
+  alice: string;
+  aliceIdentifier: string;
+  bob: string;
+  bobIdentifier: string;
+  timeout: string;
+  latestUpdate: {
+    assetId: string;
+    balance: Balance;
+    channelAddress: string;
+    details: {
+      totalDepositsAlice: string;
+      totalDepositsBob: string;
+    };
+    fromIdentifier: string;
+    nonce: number;
+    aliceSignature: string;
+    bobSignature: string;
+    toIdentifier: string;
+    type: string;
+  };
+  defundNonce: string;
+  inDispute: boolean;
+};
+
 /**
  * The payload for tokenPayment call.
  */
@@ -68,10 +112,19 @@ export type ConnextChannelResponse = string[];
 /**
  * The response for balance call.
  */
-export type ConnextBalanceResponse = {
+export type ConnextChannelBalanceResponse = {
   freeBalanceOffChain: string;
   nodeFreeBalanceOffChain: string;
   freeBalanceOnChain: string;
+};
+
+/**
+ * The response for ethprovider eth_getBalance call.
+ */
+export type ConnextBalanceResponse = {
+  id: number;
+  jsonrpc: string;
+  result: string;
 };
 
 /**
@@ -87,8 +140,8 @@ export type ConnextTransferResponse = {
  * The response for withdraw call.
  */
 export type ConnextWithdrawResponse = {
-  channelAddress: '0xa929dB0530daB525596f5d48Fb5C322fDa8A337B',
-  transferId: '0xc2e4592d3fb6c02ee1d3b07bed83b5914f8ca084b0f91d6b80bf8107e58c9c38'
+  channelAddress: "0xa929dB0530daB525596f5d48Fb5C322fDa8A337B";
+  transferId: "0xc2e4592d3fb6c02ee1d3b07bed83b5914f8ca084b0f91d6b80bf8107e58c9c38";
 };
 
 type ConnextRoutingPath = {
