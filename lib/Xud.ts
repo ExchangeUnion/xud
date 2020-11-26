@@ -19,7 +19,7 @@ import Service from './service/Service';
 import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
-import {createSimnetChannels} from './utils/simnet-connext-channels';
+import { createSimnetChannels } from './utils/simnet-connext-channels';
 
 const version: string = require('../package.json').version;
 

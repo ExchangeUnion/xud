@@ -242,11 +242,11 @@ export type ConnextIncomingTransferRequest = {
   };
   transfer: {
     channelFactoryAddress: string;
-    assetId: string; // TODO
-    chainId: number; // TODO
+    assetId: string;
+    chainId: number;
     channelAddress: string;
     balance: {
-      amount: string[]; // TODO
+      amount: string[];
       to: string[];
     };
     initiator: string;
@@ -254,14 +254,14 @@ export type ConnextIncomingTransferRequest = {
     initialStateHash: string;
     transferDefinition: string;
     transferEncodings: string[];
-    transferId: string; // TODO
+    transferId: string;
     transferState: {
-      lockHash: string; // TODO
-      expiry: string; // TODO
+      lockHash: string;
+      expiry: string;
     };
-    transferTimeout: string; // TODO
+    transferTimeout: string;
     meta: {
-      routingId: string; // TODO
+      routingId: string;
     };
   };
   conditionType: string;
