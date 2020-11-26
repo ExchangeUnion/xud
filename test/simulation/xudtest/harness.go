@@ -2,8 +2,8 @@ package xudtest
 
 import (
 	"context"
-	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/connexttest"
+	// "fmt"
+	// "github.com/ExchangeUnion/xud-simulation/connexttest"
 	"sync"
 	"time"
 
@@ -25,9 +25,9 @@ type NetworkHarness struct {
 	Carol *HarnessNode
 	Dave  *HarnessNode
 
-	LndBtcNetwork  *lntest.NetworkHarness
-	LndLtcNetwork  *lntest.NetworkHarness
-	ConnextNetwork *connexttest.NetworkHarness
+	LndBtcNetwork *lntest.NetworkHarness
+	LndLtcNetwork *lntest.NetworkHarness
+	// ConnextNetwork *connexttest.NetworkHarness
 
 	errorChan chan *XudError
 
@@ -50,6 +50,7 @@ type CtxSetter interface {
 	SetCtx(ctx context.Context, cancel context.CancelFunc)
 }
 
+/*
 func (n *NetworkHarness) newConnextClient(ctx context.Context, node *HarnessNode, envVars *[]string) (*connexttest.HarnessClient, error) {
 	if err := n.ConnextNetwork.TearDown(node.ConnextClient.ID); err != nil {
 		return nil, err
@@ -72,14 +73,17 @@ func (n *NetworkHarness) newConnextClient(ctx context.Context, node *HarnessNode
 
 	return client, nil
 }
+*/
 
 func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, node *HarnessNode, envVars []string) (*HarnessNode, error) {
 	t := time.Now()
 
-	connextClient, err := n.newConnextClient(ctx, node, &envVars)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		connextClient, err := n.newConnextClient(ctx, node, &envVars)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	if err := node.shutdown(true, true); err != nil {
 		return nil, err
@@ -93,7 +97,7 @@ func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, 
 	customNode.SetEnvVars(envVars)
 	customNode.SetLnd(node.LndBtcNode, "BTC")
 	customNode.SetLnd(node.LndLtcNode, "LTC")
-	customNode.SetConnextClient(connextClient)
+	// customNode.SetConnextClient(connextClient)
 
 	if err := customNode.Start(n.errorChan); err != nil {
 		return nil, err
@@ -193,6 +197,7 @@ func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
 	n.Dave.SetLnd(ln.Dave, chain)
 }
 
+/*
 func (n *NetworkHarness) SetConnext(net *connexttest.NetworkHarness) {
 	n.ConnextNetwork = net
 	n.Alice.SetConnextClient(net.Alice)
@@ -200,6 +205,7 @@ func (n *NetworkHarness) SetConnext(net *connexttest.NetworkHarness) {
 	n.Carol.SetConnextClient(net.Carol)
 	n.Dave.SetConnextClient(net.Dave)
 }
+*/
 
 // ProcessErrors returns a channel used for reporting any fatal process errors.
 // If any of the active nodes within the harness' test network incur a fatal
