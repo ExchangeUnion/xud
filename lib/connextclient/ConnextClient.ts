@@ -698,7 +698,7 @@ class ConnextClient extends SwapClient {
           return { state: PaymentState.Pending };
       }
     } catch (err) {
-      if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
+      if (err.code === errorCodes.NOT_FOUND) {
         this.logger.trace(`hashlock status for connext transfer with hash ${rHash} not found`);
         return { state: PaymentState.Failed };
       }

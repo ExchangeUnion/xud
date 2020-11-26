@@ -29,7 +29,11 @@ describe('HttpServer - preimage', () => {
   it('should receive and parse a preimage request', (done) => {
     request(`http://localhost:${port}`)
       .post('/preimage')
-      .send({ data: { transferMeta: { preImage } } })
+      .send({
+        transfer: {
+          transferResolver: { preImage }
+        }
+      })
       .expect(200)
       .expect('Content-Type', 'application/json')
       .end((err) => {
