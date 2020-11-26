@@ -1,9 +1,9 @@
-import secp256k1 from 'secp256k1';
-import { randomBytes } from '../utils/utils';
-import { promises as fs } from 'fs';
-import { createCipheriv, createDecipheriv, createHash } from 'crypto';
 import { entropyToMnemonic } from 'bip39';
+import { createHash } from 'crypto';
+import { promises as fs } from 'fs';
+import secp256k1 from 'secp256k1';
 import { SwapClientType } from '../constants/enums';
+import { decrypt, encrypt, randomBytes } from '../utils/cryptoUtils';
 import { encipher } from '../utils/seedutil';
 
 /**
@@ -11,8 +11,6 @@ import { encipher } from '../utils/seedutil';
  * and can sign messages to prove their veracity.
  */
 class NodeKey {
-  private static ENCRYPTION_IV_LENGTH = 16;
-
   /**
    * @param privKey The 32 byte private key
    * @param pubKey The public key in hex string format.
@@ -51,10 +49,6 @@ class NodeKey {
     return new NodeKey(privKey, pubKey);
   }
 
-  private static getCipherKey = (password: string) => {
-    return createHash('sha256').update(password).digest();
-  }
-
   /**
    * Load a NodeKey from a file.
    * @param path the path to the file
@@ -67,12 +61,7 @@ class NodeKey {
 
     if (password) {
       // decrypt file using the password
-      // the first 16 bytes contain the initialization vector
-      const iv = fileBuffer.slice(0, NodeKey.ENCRYPTION_IV_LENGTH);
-      const key = NodeKey.getCipherKey(password);
-      const encrypted = fileBuffer.slice(NodeKey.ENCRYPTION_IV_LENGTH);
-      const decipher = createDecipheriv('aes-256-cbc', key, iv);
-      privKey = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+      privKey = decrypt(fileBuffer, password);
     } else {
       privKey = fileBuffer;
     }
@@ -106,10 +95,7 @@ class NodeKey {
   public toFile = async (path: string, password?: string): Promise<void> => {
     let buf: Buffer;
     if (password) {
-      const iv = await randomBytes(NodeKey.ENCRYPTION_IV_LENGTH);
-      const key = NodeKey.getCipherKey(password);
-      const cipher = createCipheriv('aes-256-cbc', key, iv);
-      buf = Buffer.concat([iv, cipher.update(this.privKey), cipher.final()]);
+      buf = await encrypt(this.privKey, password);
     } else {
       buf = this.privKey;
     }

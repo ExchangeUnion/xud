@@ -1,4 +1,3 @@
-import { createHash, randomBytes as cryptoRandomBytes } from 'crypto';
 import http from 'http';
 // @ts-ignore
 import createKeccakHash from 'keccak';
@@ -158,9 +157,6 @@ export const isPlainObject = (obj: any) => {
 /** A promisified wrapper for the NodeJS `setTimeout` method. */
 export const setTimeoutPromise = promisify(setTimeout);
 
-/** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
-export const randomBytes = promisify(cryptoRandomBytes);
-
 export const removeUndefinedProps = <T>(typedObj: T): T => {
   const obj = typedObj as any;
   Object.keys(obj).forEach((key) => {
@@ -203,14 +199,6 @@ export const sortOrders = <T extends SortableOrder>(orders: T[], isBuy: boolean)
       ? a.price - b.price
       : b.price - a.price;
   });
-};
-
-/** Returns a random payment preimage and hash in hex encoding. */
-export const generatePreimageAndHash = async () => {
-  const bytes = await randomBytes(32);
-  const rPreimage = bytes.toString('hex');
-  const rHash = createHash('sha256').update(bytes).digest('hex');
-  return { rPreimage, rHash };
 };
 
 export const base64ToHex = (b64: string) => {

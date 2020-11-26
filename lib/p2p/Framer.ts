@@ -1,10 +1,10 @@
 import assert from 'assert';
 import { createCipheriv, createDecipheriv } from 'crypto';
+import { magicValsXuNetwork } from '../constants/enums';
+import { randomBytes } from '../utils/cryptoUtils';
+import errors from './errors';
 import Network from './Network';
 import Packet from './packets/Packet';
-import errors from './errors';
-import { magicValsXuNetwork } from '../constants/enums';
-import { randomBytes } from '../utils/utils';
 
 type WireMsgHeader = {
   magic?: number,

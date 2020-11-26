@@ -1,8 +1,8 @@
 import secp256k1 from 'secp256k1';
-import NodeKey from '../../lib/nodekey/NodeKey';
-import { randomBytes } from '../../lib/utils/utils';
-import { getTempDir } from '../utils';
 import { SwapClientType } from '../../lib/constants/enums';
+import NodeKey from '../../lib/nodekey/NodeKey';
+import { randomBytes } from '../../lib/utils/cryptoUtils';
+import { getTempDir } from '../utils';
 
 function validateNodeKey(nodeKey: NodeKey) {
   expect(nodeKey.pubKey).toHaveLength(66);
