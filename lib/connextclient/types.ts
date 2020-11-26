@@ -7,7 +7,6 @@ export type ConnextClientConfig = {
   port: number;
   webhookhost: string;
   webhookport: number;
-  nodeUrl: string;
   nodeIdentifier: string;
 };
 
