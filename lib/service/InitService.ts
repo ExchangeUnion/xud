@@ -39,7 +39,7 @@ class InitService extends EventEmitter {
       // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
       // to generate an xud nodekey from the same seed used for wallets
       const decipheredSeed = await decipher(seedMnemonic);
-      const nodeKey = NodeKey.fromBytes(decipheredSeed);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed, this.nodeKeyPath);
 
       // use this seed to init any lnd wallets that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
@@ -48,7 +48,7 @@ class InitService extends EventEmitter {
         walletPassword: password,
       });
 
-      await nodeKey.toFile(this.nodeKeyPath, password);
+      await nodeKey.toFile(password);
       this.emit('nodekey', nodeKey);
       return {
         initializedLndWallets: initWalletResult.initializedLndWallets,
@@ -112,7 +112,7 @@ class InitService extends EventEmitter {
       await this.prepareCall();
 
       const decipheredSeed = await decipher(seedMnemonicList);
-      const nodeKey = NodeKey.fromBytes(decipheredSeed);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed, this.nodeKeyPath);
 
       // use the seed and database backups to restore any swap clients' wallets
       // that are uninitialized
@@ -127,7 +127,7 @@ class InitService extends EventEmitter {
       if (xudDatabase.byteLength) {
         await fs.writeFile(this.databasePath, xudDatabase);
       }
-      await nodeKey.toFile(this.nodeKeyPath, password);
+      await nodeKey.toFile(password);
       this.emit('nodekey', nodeKey);
       return {
         initializedLndWallets: initWalletResult.initializedLndWallets,

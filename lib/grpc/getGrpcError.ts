@@ -67,6 +67,7 @@ const getGrpcError = (err: any) => {
       break;
     case serviceErrorCodes.NODE_ALREADY_EXISTS:
     case serviceErrorCodes.NODE_DOES_NOT_EXIST:
+    case serviceErrorCodes.NO_ENCRYPT_MODE_ENABLED:
       code = status.UNIMPLEMENTED;
       break;
     case p2pErrorCodes.POOL_CLOSED:

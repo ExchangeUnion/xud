@@ -50,6 +50,7 @@ class LndClient extends SwapClient {
   public readonly finalLock: number;
   public config: LndClientConfig;
   public currency: string;
+  public walletPassword?: string;
   private lightning?: LightningClient;
   private walletUnlocker?: WalletUnlockerClient;
   /** The maximum time to wait for a client to be ready for making grpc calls, can be used for exponential backoff. */
@@ -418,34 +419,10 @@ class LndClient extends SwapClient {
     if (isWalletInitialized) {
       // admin.macaroon will not necessarily be created by the time lnd responds to a successful
       // InitWallet call, so we watch the folder that we expect it to be in for it to be created
-      const watchMacaroonPromise = new Promise<boolean>((resolve) => {
-        this.watchMacaroonResolve = resolve;
-      });
-      const macaroonDir = path.join(this.macaroonpath!, '..');
-      const fsWatcher = watch(macaroonDir, (event, filename) => {
-        if (event === 'change' && filename === 'admin.macaroon') {
-          this.logger.debug('admin.macaroon was created');
-          if (this.watchMacaroonResolve) {
-            this.watchMacaroonResolve(true);
-          }
-        }
-      });
-      this.logger.debug(`watching ${macaroonDir} for admin.macaroon to be created`);
-      const macaroonCreated = await watchMacaroonPromise;
-      fsWatcher.close();
-      this.watchMacaroonResolve = undefined;
+      await this.watchThenLoadMacaroon();
 
-      if (macaroonCreated) {
-        try {
-          await this.loadMacaroon();
-
-          // once we've loaded the macaroon we can attempt to verify the conneciton
-          this.verifyConnection().catch(this.logger.error);
-        } catch (err) {
-          this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
-          this.setStatus(ClientStatus.Disabled);
-        }
-      }
+      // once we've loaded the macaroon we can attempt to verify the conneciton
+      this.verifyConnection().catch(this.logger.error);
     }
   }
 
@@ -950,6 +927,7 @@ class LndClient extends SwapClient {
 
   public initWallet = async (walletPassword: string, seedMnemonic: string[], restore = false, backup?: Uint8Array):
     Promise<lndwalletunlocker.InitWalletResponse.AsObject> => {
+    this.walletPassword = walletPassword;
     const request = new lndwalletunlocker.InitWalletRequest();
 
     // from the master seed/mnemonic we derive a child mnemonic for this specific client
@@ -980,6 +958,7 @@ class LndClient extends SwapClient {
   }
 
   public unlockWallet = async (walletPassword: string): Promise<void> => {
+    this.walletPassword = walletPassword;
     const request = new lndwalletunlocker.UnlockWalletRequest();
     request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
     await this.unaryWalletUnlockerCall<lndwalletunlocker.UnlockWalletRequest, lndwalletunlocker.UnlockWalletResponse>(
@@ -987,6 +966,57 @@ class LndClient extends SwapClient {
     );
     this.setUnlocked();
     this.logger.info('wallet unlocked');
+  }
+
+  /**
+   * Watches for a change in the admin.macaroon file at the configured path,
+   * then loads the macaroon.
+   */
+  private watchThenLoadMacaroon = async () => {
+    const watchMacaroonPromise = new Promise<boolean>((resolve) => {
+      this.watchMacaroonResolve = resolve;
+    });
+    const macaroonDir = path.join(this.macaroonpath!, '..');
+    const fsWatcher = watch(macaroonDir, (event, filename) => {
+      if (event === 'change' && filename === 'admin.macaroon') {
+        this.logger.debug('admin.macaroon was created');
+        if (this.watchMacaroonResolve) {
+          this.watchMacaroonResolve(true);
+        }
+      }
+    });
+    this.logger.debug(`watching ${macaroonDir} for admin.macaroon to be created`);
+    const macaroonCreated = await watchMacaroonPromise;
+    fsWatcher.close();
+    this.watchMacaroonResolve = undefined;
+
+    if (macaroonCreated) {
+      try {
+        await this.loadMacaroon();
+      } catch (err) {
+        this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
+        this.setStatus(ClientStatus.Disabled);
+      }
+    }
+  }
+
+  public changePassword = async (oldPassword: string, newPassword: string) => {
+    this.walletPassword = newPassword;
+    const request = new lndwalletunlocker.ChangePasswordRequest();
+    request.setCurrentPassword(Uint8Array.from(Buffer.from(oldPassword, 'utf8')));
+    request.setNewPassword(Uint8Array.from(Buffer.from(newPassword, 'utf8')));
+    await this.unaryWalletUnlockerCall<lndwalletunlocker.ChangePasswordResponse, lndwalletunlocker.ChangePasswordRequest>(
+      'changePassword', request,
+    );
+
+    // the macaroons change every time lnd changes its password, so we must remove the old one and reload the new one
+    this.meta.remove('macaroon');
+    // admin.macaroon will not necessarily be created by the time lnd responds to a successful
+    // ChangePassword call, so we watch the folder that we expect it to be in for it to be created
+    await this.watchThenLoadMacaroon();
+
+    this.setUnlocked();
+    this.logger.info('password changed & wallet unlocked');
   }
 
   public addInvoice = async (

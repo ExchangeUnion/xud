@@ -1,8 +1,11 @@
-import { derivePairId } from '../utils/utils';
+import assert from 'assert';
+import { promises as fs } from 'fs';
 import { ModelCtor, Sequelize } from 'sequelize';
 import { XuNetwork } from '../constants/enums';
 import { defaultCurrencies, defaultNodes, defaultPairs } from '../db/seeds';
 import Logger from '../Logger';
+import { derivePairId } from '../utils/utils';
+import migrations from './migrations';
 import * as Models from './models';
 import * as db from './types';
 
@@ -14,6 +17,7 @@ type Models = {
   ReputationEvent: ModelCtor<db.ReputationEventInstance>;
   Order: ModelCtor<db.OrderInstance>;
   Trade: ModelCtor<db.TradeInstance>;
+  Password: ModelCtor<db.PasswordInstance>;
 };
 
 function loadModels(sequelize: Sequelize): Models {
@@ -25,6 +29,7 @@ function loadModels(sequelize: Sequelize): Models {
     ReputationEvent: Models.ReputationEvent(sequelize),
     SwapDeal: Models.SwapDeal(sequelize),
     Trade: Models.Trade(sequelize),
+    Password: Models.Password(sequelize),
   };
 
   models.Currency.hasMany(models.Pair, {
@@ -118,6 +123,8 @@ class DB {
   public sequelize: Sequelize;
   public models: Models;
 
+  private static VERSION = 1;
+
   /**
    * @param storage the file path for the sqlite database file, if ':memory:' or not specified the db is stored in memory
    */
@@ -136,6 +143,8 @@ class DB {
    * @param initDb whether to intialize a new database with default values if no database exists
    */
   public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
+    const isNewDb = await this.isNewDb();
+
     try {
       await this.sequelize.authenticate();
       this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
@@ -143,12 +152,40 @@ class DB {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
-    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade } = this.models;
+
+    if (isNewDb) {
+      await this.sequelize.query(`PRAGMA user_version=${DB.VERSION};`);
+    }
+
+    // version is useful for tracking migrations & upgrades to the xud database when
+    // the database schema is modified or restructured
+    let version: number;
+    const userVersionPragma = (await this.sequelize.query('PRAGMA user_version;'));
+    assert(Array.isArray(userVersionPragma) && Array.isArray(userVersionPragma[0]));
+    const userVersion = userVersionPragma[0][0].user_version;
+    assert(typeof userVersion === 'number');
+    version = userVersion;
+    this.logger.trace(`db version is ${version}`);
+
+    if (version <= DB.VERSION) {
+      // if our db is not the latest version, we call each migration procedure necessary
+      // to bring us from our current version up to the latest version.
+      for (let n = version; n < DB.VERSION; n += 1) {
+        this.logger.info(`migrating db from version ${n} to version ${n + 1}`);
+        await migrations[n](this.sequelize);
+        await this.sequelize.query(`PRAGMA user_version=${n + 1};`);
+        this.logger.info(`migration to version ${n + 1} complete`);
+      }
+    }
+
+    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade, Password } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Node.sync(),
       Currency.sync(),
+      Password.sync(),
     ]);
+
     // Pair is dependent on Currency, ReputationEvent is dependent on Node
     await Promise.all([
       Pair.sync(),
@@ -197,6 +234,26 @@ class DB {
         }
       }
     }
+  }
+
+  /**
+   * Checks whether the database is new, in other words whether we are not
+   * loading a preexisting database from disk.
+   */
+  private isNewDb = async () => {
+    if (this.storage && this.storage !== ':memory:') {
+      // check if database file exists
+      try {
+        await fs.access(this.storage);
+        return false;
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          // we ignore errors due to file not existing, otherwise throw
+          throw err;
+        }
+      }
+    }
+    return true;
   }
 
   public close = () => {

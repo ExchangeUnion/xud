@@ -1,5 +1,5 @@
 import { BelongsToGetAssociationMixin, Model } from 'sequelize';
-import { ReputationEvent } from '../constants/enums';
+import { ReputationEvent, SwapClientType } from '../constants/enums';
 import { Currency, Order, Pair } from '../orderbook/types';
 import { Address, NodeConnectionInfo } from '../p2p/types';
 import { SwapDeal } from '../swaps/types';
@@ -110,3 +110,17 @@ export type ReputationEventAttributes = ReputationEventCreationAttributes & {
 };
 
 export interface ReputationEventInstance extends Model<ReputationEventAttributes, ReputationEventCreationAttributes>, ReputationEventAttributes {}
+
+/* Passwords */
+export type PasswordCreationAttributes = {
+  encryptedPassword: string;
+  currency?: string;
+  swapClient: SwapClientType;
+};
+
+export type PasswordAttributes = PasswordCreationAttributes & {
+  createdAt: number;
+  id: number;
+};
+
+export interface PasswordInstance extends Model<PasswordAttributes, PasswordCreationAttributes>, PasswordAttributes {}

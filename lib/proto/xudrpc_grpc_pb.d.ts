@@ -78,6 +78,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     addCurrency: IXudService_IAddCurrency;
     addPair: IXudService_IAddPair;
     ban: IXudService_IBan;
+    changePassword: IXudService_IChangePassword;
     closeChannel: IXudService_ICloseChannel;
     connect: IXudService_IConnect;
     walletDeposit: IXudService_IWalletDeposit;
@@ -136,6 +137,15 @@ interface IXudService_IBan extends grpc.MethodDefinition<xudrpc_pb.BanRequest, x
     requestDeserialize: grpc.deserialize<xudrpc_pb.BanRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.BanResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.BanResponse>;
+}
+interface IXudService_IChangePassword extends grpc.MethodDefinition<xudrpc_pb.ChangePasswordRequest, xudrpc_pb.ChangePasswordResponse> {
+    path: string; // "/xudrpc.Xud/ChangePassword"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.ChangePasswordRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ChangePasswordRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.ChangePasswordResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.ChangePasswordResponse>;
 }
 interface IXudService_ICloseChannel extends grpc.MethodDefinition<xudrpc_pb.CloseChannelRequest, xudrpc_pb.CloseChannelResponse> {
     path: string; // "/xudrpc.Xud/CloseChannel"
@@ -414,6 +424,7 @@ export interface IXudServer {
     addCurrency: grpc.handleUnaryCall<xudrpc_pb.Currency, xudrpc_pb.AddCurrencyResponse>;
     addPair: grpc.handleUnaryCall<xudrpc_pb.AddPairRequest, xudrpc_pb.AddPairResponse>;
     ban: grpc.handleUnaryCall<xudrpc_pb.BanRequest, xudrpc_pb.BanResponse>;
+    changePassword: grpc.handleUnaryCall<xudrpc_pb.ChangePasswordRequest, xudrpc_pb.ChangePasswordResponse>;
     closeChannel: grpc.handleUnaryCall<xudrpc_pb.CloseChannelRequest, xudrpc_pb.CloseChannelResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
     walletDeposit: grpc.handleUnaryCall<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse>;
@@ -456,6 +467,9 @@ export interface IXudClient {
     ban(request: xudrpc_pb.BanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: xudrpc_pb.ChangePasswordRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     closeChannel(request: xudrpc_pb.CloseChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
@@ -554,6 +568,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public ban(request: xudrpc_pb.BanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     public ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     public ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: xudrpc_pb.ChangePasswordRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     public closeChannel(request: xudrpc_pb.CloseChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     public closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     public closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;

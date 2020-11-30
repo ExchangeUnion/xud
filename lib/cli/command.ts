@@ -99,16 +99,16 @@ export const callback = (argv: Arguments, formatOutput?: Function, displayJson?:
       }
     } else {
       const responseObj = response.toObject();
-      if (Object.keys(responseObj).length === 0) {
-        console.log('success');
-      } else {
-        if (!argv.json && formatOutput) {
-          formatOutput(responseObj, argv);
+      if (argv.json || !formatOutput) {
+        if (Object.keys(responseObj).length === 0) {
+          console.log('success');
         } else {
           displayJson
-            ? displayJson(responseObj, argv)
-            : console.log(JSON.stringify(responseObj, undefined, 2));
+          ? displayJson(responseObj, argv)
+          : console.log(JSON.stringify(responseObj, undefined, 2));
         }
+      } else {
+        formatOutput(responseObj, argv);
       }
     }
   };

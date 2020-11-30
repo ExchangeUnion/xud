@@ -11,6 +11,8 @@
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
+    - [ChangePasswordRequest](#xudrpc.ChangePasswordRequest)
+    - [ChangePasswordResponse](#xudrpc.ChangePasswordResponse)
     - [Channels](#xudrpc.Channels)
     - [CloseChannelRequest](#xudrpc.CloseChannelRequest)
     - [CloseChannelResponse](#xudrpc.CloseChannelResponse)
@@ -204,6 +206,32 @@
 | ----- | ---- | ----- | ----------- |
 | chain | [string](#string) |  | The blockchain the swap client is on (eg bitcoin, litecoin) |
 | network | [string](#string) |  | The network the swap client is on (eg regtest, testnet, mainnet) |
+
+
+
+
+
+
+<a name="xudrpc.ChangePasswordRequest"></a>
+
+### ChangePasswordRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| new_password | [string](#string) |  |  |
+| old_password | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.ChangePasswordResponse"></a>
+
+### ChangePasswordResponse
+
 
 
 
@@ -1577,6 +1605,7 @@ The primary service for interacting with a running xud node.
 | AddCurrency | [Currency](#xudrpc.Currency) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. shell: xucli addcurrency &lt;currency&gt; &lt;swap_client&gt; [decimal_places] [token_address] |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. shell: xucli addpair &lt;base_currency&gt; &lt;quote_currency&gt; |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. shell: xucli ban &lt;node_identifier&gt; |
+| ChangePassword | [ChangePasswordRequest](#xudrpc.ChangePasswordRequest) | [ChangePasswordResponse](#xudrpc.ChangePasswordResponse) | Changes the xud master password, including the wallet passwords for any underlying clients. shell: xucli changepass |
 | CloseChannel | [CloseChannelRequest](#xudrpc.CloseChannelRequest) | [CloseChannelResponse](#xudrpc.CloseChannelResponse) | Closes any existing payment channels with a peer for the specified currency. shell: xucli closechannel &lt;currency&gt; [node_identifier ] [--force] |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. shell: xucli connect &lt;node_uri&gt; |
 | WalletDeposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli walletdeposit &lt;currency&gt; |

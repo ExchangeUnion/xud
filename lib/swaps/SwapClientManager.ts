@@ -11,6 +11,7 @@ import { Level, Loggers } from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { Currency, OwnLimitOrder } from '../orderbook/types';
 import Peer from '../p2p/Peer';
+import { encrypt, decrypt } from '../utils/cryptoUtils';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
@@ -45,7 +46,6 @@ class SwapClientManager extends EventEmitter {
   public swapClients = new Map<string, SwapClient>();
   public connextClient?: ConnextClient;
   public misconfiguredClients = new Set<SwapClient>();
-  private walletPassword?: string;
 
   /** A map of supported currency tickers to the inbound amount that is reserved by existing orders. */
   private inboundReservedAmounts = new Map<string, number>();
@@ -56,6 +56,7 @@ class SwapClientManager extends EventEmitter {
     private config: Config,
     private loggers: Loggers,
     private unitConverter: UnitConverter,
+    private models: Models,
   ) {
     super();
   }
@@ -65,7 +66,7 @@ class SwapClientManager extends EventEmitter {
    * and waits for the swap clients to initialize.
    * @returns A promise that resolves upon successful initialization, rejects otherwise.
    */
-  public init = async (models: Models): Promise<void> => {
+  public init = async (): Promise<void> => {
     const initPromises = [];
     // setup configured LND clients and initialize them
     for (const currency in this.config.lnd) {
@@ -83,7 +84,7 @@ class SwapClientManager extends EventEmitter {
 
     if (!this.config.connext.disable) {
       // setup Connext
-      const currencyInstances = await models.Currency.findAll();
+      const currencyInstances = await this.models.Currency.findAll();
       this.connextClient = new ConnextClient({
         currencyInstances,
         unitConverter: this.unitConverter,
@@ -289,8 +290,6 @@ class SwapClientManager extends EventEmitter {
     lndBackups?: Map<string, Uint8Array>,
     nodeKey: NodeKey,
   }) => {
-    this.walletPassword = walletPassword;
-
     // loop through swap clients to initialize locked lnd clients
     const initWalletPromises: Promise<any>[] = [];
     const initializedLndWallets: string[] = [];
@@ -336,37 +335,57 @@ class SwapClientManager extends EventEmitter {
     nodeKey: NodeKey,
     connextSeed: string,
   }) => {
-    this.walletPassword = walletPassword;
-
     // loop through swap clients to find locked lnd clients
     const unlockWalletPromises: Promise<any>[] = [];
     const unlockedLndClients: string[] = [];
     const lockedLndClients: string[] = [];
 
+    const oldEncryptedPasswords = await this.models.Password.findAll();
+
     for (const swapClient of this.swapClients.values()) {
       if (isLndClient(swapClient)) {
         if (swapClient.isWaitingUnlock()) {
-          const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
-            unlockedLndClients.push(swapClient.currency);
-          }).catch(async (err) => {
-            let walletCreated = false;
-            if (err.details === 'wallet not found') {
-              // this wallet hasn't been initialized, so we will try to initialize it now
-              const seedMnemonic = await nodeKey.getMnemonic();
-              try {
-                await swapClient.initWallet(this.walletPassword ?? '', seedMnemonic);
-                walletCreated = true;
-              } catch (err) {
-                swapClient.logger.error('could not initialize lnd wallet', err);
-              }
-            }
-
-            if (!walletCreated) {
-              lockedLndClients.push(swapClient.currency);
-              swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
-            }
+          // first we check whether this lnd is using an old wallet password
+          const oldEncryptedPassword = oldEncryptedPasswords.find((oldEncryptedPassword) => {
+            return oldEncryptedPassword.swapClient === SwapClientType.Lnd && oldEncryptedPassword.currency === swapClient.currency;
           });
-          unlockWalletPromises.push(unlockWalletPromise);
+          const oldPassword = oldEncryptedPassword ? decrypt(oldEncryptedPassword.encryptedPassword, walletPassword).toString() : undefined;
+
+          if (oldPassword) {
+            // if we have an old password for this lnd client, then we use it to change its password
+            // to the new password, which in turn will unlock the client
+            const changePasswordPromise = swapClient.changePassword(oldPassword, walletPassword).then(() => {
+              unlockedLndClients.push(swapClient.currency);
+              return oldEncryptedPassword?.destroy(); // we can remove the old password from the database
+            }).catch(async (err) => {
+              this.loggers.lnd.error(`could not change password for ${swapClient.currency}`, err);
+              lockedLndClients.push(swapClient.currency);
+            });
+
+            unlockWalletPromises.push(changePasswordPromise);
+          } else {
+            const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
+              unlockedLndClients.push(swapClient.currency);
+            }).catch(async (err) => {
+              let walletCreated = false;
+              if (err.details === 'wallet not found') {
+                // this wallet hasn't been initialized, so we will try to initialize it now
+                const seedMnemonic = await nodeKey.getMnemonic();
+                try {
+                  await swapClient.initWallet(walletPassword ?? '', seedMnemonic);
+                  walletCreated = true;
+                } catch (err) {
+                  swapClient.logger.error('could not initialize lnd wallet', err);
+                }
+              }
+
+              if (!walletCreated) {
+                lockedLndClients.push(swapClient.currency);
+                swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
+              }
+            });
+            unlockWalletPromises.push(unlockWalletPromise);
+          }
         } else if (swapClient.isDisconnected() || swapClient.isMisconfigured() || swapClient.isNotInitialized()) {
           // if the swap client is not connected, we treat it as locked since lnd will likely be locked when it comes online
           lockedLndClients.push(swapClient.currency);
@@ -382,6 +401,31 @@ class SwapClientManager extends EventEmitter {
     await Promise.all(unlockWalletPromises);
 
     return { unlockedLndClients, lockedLndClients };
+  }
+
+  /**
+   * Changes the wallet passwords for all lnd clients by either calling ChangePassword
+   * right away if lnd is in a WaitingUnlock state or, more often, by persisting the
+   * current wallet password so that xud will try to automatically change it the next
+   * time it is unlocked.
+   */
+  public changeLndPasswords = async (oldPassword: string, newPassword: string) => {
+    const lndClients = this.getLndClientsMap().values();
+    const promises: Promise<any>[] = [];
+    for (const lndClient of lndClients) {
+      if (lndClient.isWaitingUnlock()) {
+        // we can change the password and unlock right now
+        promises.push(lndClient.changePassword(oldPassword, newPassword));
+      } else if (lndClient.isOperational()) {
+        const encryptedPassword = (await encrypt(oldPassword, newPassword)).toString('base64');
+        promises.push(this.models.Password.create({
+          encryptedPassword,
+          swapClient: SwapClientType.Lnd,
+          currency: lndClient.currency,
+        }));
+      }
+    }
+    await Promise.all(promises);
   }
 
   /**
@@ -648,8 +692,8 @@ class SwapClientManager extends EventEmitter {
           this.emit('htlcAccepted', swapClient, rHash, amount, currency);
         });
         swapClient.on('locked', () => {
-          if (this.walletPassword) {
-            swapClient.unlockWallet(this.walletPassword).catch(swapClient.logger.error);
+          if (isLndClient(swapClient) && swapClient.walletPassword) {
+            swapClient.unlockWallet(swapClient.walletPassword).catch(swapClient.logger.error);
           }
           // TODO(connext): unlock ConnextClient when it's implemented
         });
