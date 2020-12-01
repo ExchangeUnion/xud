@@ -72,7 +72,7 @@ export type ConnextChannelDetails = {
  * The payload for tokenPayment call.
  */
 export type ConnextTransferRequest = {
-  type: 'HashlockTransfer';
+  type: "HashlockTransfer";
   channelAddress: string;
   amount: string;
   assetId: string;
@@ -126,6 +126,31 @@ export type ConnextBalanceResponse = {
   result: string;
 };
 
+export type GetBlockByNumberResponse = {
+  result: {
+    difficulty: string;
+    extraData: string;
+    gasLimit: string;
+    gasUsed: string;
+    hash: string;
+    logsBloom: string;
+    miner: string;
+    mixHash: string;
+    nonce: string;
+    number: string;
+    parentHash: string;
+    receiptsRoot: string;
+    sha3Uncles: string;
+    size: string;
+    stateRoot: string;
+    timestamp: string;
+    totalDifficulty: string;
+    transactions: string[];
+    transactionsRoot: string;
+    uncles: string[];
+  };
+};
+
 /**
  * The response for hashLockTransfer call.
  */
@@ -139,8 +164,8 @@ export type ConnextTransferResponse = {
  * The response for withdraw call.
  */
 export type ConnextWithdrawResponse = {
-  channelAddress: '0xa929dB0530daB525596f5d48Fb5C322fDa8A337B';
-  transferId: '0xc2e4592d3fb6c02ee1d3b07bed83b5914f8ca084b0f91d6b80bf8107e58c9c38';
+  channelAddress: "0xa929dB0530daB525596f5d48Fb5C322fDa8A337B";
+  transferId: "0xc2e4592d3fb6c02ee1d3b07bed83b5914f8ca084b0f91d6b80bf8107e58c9c38";
 };
 
 type ConnextRoutingPath = {

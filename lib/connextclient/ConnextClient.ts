@@ -36,6 +36,7 @@ import {
   OnchainTransferResponse,
   ConnextBlockNumberResponse,
   ConnextChannelDetails,
+  GetBlockByNumberResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent, from, defer, Subscription, throwError, interval, timer } from 'rxjs';
@@ -95,6 +96,9 @@ const CHAIN_IDENTIFIERS: { [key: string]: number } = {
   testnet: 4,
   mainnet: 1,
 };
+
+const AVERAGE_ETH_BLOCK_TIME_SECONDS = 15;
+const ONE_SECOND_IN_MS = 1000;
 
 /**
  * A class representing a client to interact with connext.
@@ -214,15 +218,19 @@ class ConnextClient extends SwapClient {
     } = expectedIncomingTransfer;
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
     const blockHeight = await this.getHeight();
-    const timelock = expiry - blockHeight;
+    const block = await this.getBlockByNumber(blockHeight);
+    const currentTime = parseInt(block.result.timestamp, 16);
     // The timelock can be up to 10 blocks less than the agreed upon value
     const TIMELOCK_BUFFER = 10;
+    // We calculate the timelock from current timestamp to the expiry
+    const TIME_DIFF_IN_MS = expiry - currentTime;
+    const timelock = TIME_DIFF_IN_MS / ONE_SECOND_IN_MS / AVERAGE_ETH_BLOCK_TIME_SECONDS;
     if (
       tokenAddress === expectedTokenAddress &&
       units === expectedUnits &&
       timelock >= expectedTimelock - TIMELOCK_BUFFER
     ) {
-      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and routingId ${routingId}`);
+      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock.toFixed(0)}, currency ${currency}, and routingId ${routingId}`);
       this.expectedIncomingTransfers.delete(rHash);
       this.emit('htlcAccepted', rHash, units, currency);
     } else {
@@ -437,36 +445,17 @@ class ConnextClient extends SwapClient {
   }
 
   public sendSmallestAmount = async (
-    rHash: string,
-    destination: string,
-    currency: string,
   ) => {
-    const tokenAddress = this.getTokenAddress(currency);
-
-    assert(this.channelAddress, 'cannot send transfer without channel address');
-    assert(this.publicIdentifier, 'cannot send transfer with channel address');
-    const expiry = await this.getExpiry(this.finalLock);
-    await this.executeHashLockTransfer({
-      type: 'HashlockTransfer',
-      amount: '1',
-      assetId: tokenAddress,
-      details: {
-        expiry,
-        lockHash: `0x${rHash}`,
-      },
-      recipient: destination,
-      meta: {
-        routingId: this.deriveRoutingId(rHash, tokenAddress),
-      },
-      channelAddress: this.channelAddress,
-      publicIdentifier: this.publicIdentifier,
-    });
-    return 'sendSmallestAmount is broken';
+    throw new Error('Connext.sendSmallestAmount is not implemented');
   }
 
   private getExpiry = async (locktime: number): Promise<string> => {
     const blockHeight = await this.getHeight();
-    return (blockHeight + locktime).toString();
+    const currentBlock = await this.getBlockByNumber(blockHeight);
+    const currentTimeStamp = parseInt(currentBlock.result.timestamp, 16);
+    const locktimeMilliseconds = AVERAGE_ETH_BLOCK_TIME_SECONDS * locktime * ONE_SECOND_IN_MS;
+    const expiry = currentTimeStamp + locktimeMilliseconds;
+    return expiry.toString();
   }
 
   private deriveRoutingId = (lockHash: string, assetId: string): string => {
@@ -717,6 +706,18 @@ class ConnextClient extends SwapClient {
 
   public canRouteToNode = async () => {
     return true;
+  }
+
+  private getBlockByNumber = async (blockNumber: number) => {
+    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
+      method: 'eth_getBlockByNumber',
+      params: [
+        `0x${blockNumber.toString(16)}`,
+        false
+      ],
+    });
+    const block = await parseResponseBody<GetBlockByNumberResponse>(res);
+    return block;
   }
 
   public getHeight = async () => {
