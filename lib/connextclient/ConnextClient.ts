@@ -187,6 +187,7 @@ class ConnextClient extends SwapClient {
   public signerAddress: string | undefined;
   /** The set of hashes for outgoing transfers. */
   private outgoingTransferHashes = new Set<string>();
+  private connextTransferActive = false;
   private port: number;
   private host: string;
   private webhookport: number;
@@ -509,6 +510,10 @@ class ConnextClient extends SwapClient {
     assert(deal.destination);
     assert(this.channelAddress, "cannot send transfer without channel address");
     assert(this.publicIdentifier, "cannot send transfer with channel address");
+    if (this.connextTransferActive) {
+      throw new Error('connext transfer is already active');
+    }
+    this.connextTransferActive = true;
     let amount: string;
     let tokenAddress: string;
     try {
@@ -539,7 +544,9 @@ class ConnextClient extends SwapClient {
         const [executeTransferResponse, preimage] = await Promise.all([
           executeTransfer,
           waitForPreimageByHash(this, deal.rHash),
-        ]);
+        ]).finally(() => {
+          this.connextTransferActive = false;
+        });
         this.logger.debug(
           `received preimage ${preimage} for payment with hash ${deal.rHash}`
         );
@@ -570,11 +577,14 @@ class ConnextClient extends SwapClient {
           },
           channelAddress: this.channelAddress,
           publicIdentifier: this.publicIdentifier,
+        }).finally(() => {
+          this.connextTransferActive = false;
         });
         await executeTransfer;
       }
       return secret;
     } catch (err) {
+      this.connextTransferActive = false;
       switch (err.code) {
         case "ECONNRESET":
         case errorCodes.UNEXPECTED:
