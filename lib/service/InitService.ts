@@ -33,7 +33,7 @@ class InitService extends EventEmitter {
     this.newWalletValidation(password);
 
     try {
-      await this.prepareCall();
+      await this.prepareCall(true);
       const seedMnemonic = await generate();
 
       // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
