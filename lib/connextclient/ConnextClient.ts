@@ -147,10 +147,11 @@ const transferReceived = (
   );
   return combineLatest(of(expectedTransfer), transferReceived$).pipe(
     // filter out events that do not match our expected hash
-    filter(([expectedTransfer, receivedTransfer]) =>
-      expectedTransfer.rHash === receivedTransfer.rHash;
+    filter(
+      ([expectedTransfer, receivedTransfer]) =>
+        expectedTransfer.rHash === receivedTransfer.rHash
     ),
-    take(1),
+    take(1)
   );
 };
 
