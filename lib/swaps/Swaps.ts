@@ -668,7 +668,20 @@ class Swaps extends EventEmitter {
 
     this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
     const sendSwapAcceptedPromise = peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
-    await Promise.all([newPhasePromise, sendSwapAcceptedPromise]);
+    try {
+      await Promise.all([newPhasePromise, sendSwapAcceptedPromise]);
+    } catch(e) {
+      this.logger.trace(`failed to accept deal because: ${JSON.stringify(e)}`);
+      await this.failDeal({
+        deal,
+        peer,
+        reqId,
+        failureReason: SwapFailureReason.UnknownError,
+        errorMessage: 'Unable to accept deal',
+        failedCurrency: deal.takerCurrency,
+      });
+      return false;
+    }
     return true;
   }
 
