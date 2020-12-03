@@ -617,7 +617,7 @@ class Peer extends EventEmitter {
   }
 
   private initStall = (): void => {
-    if (this.status !== PeerStatus.Closed) {
+    if (this.status === PeerStatus.Closed) {
       return;
     }
     assert(!this.stallTimer);
