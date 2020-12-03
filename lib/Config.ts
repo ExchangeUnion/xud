@@ -27,7 +27,11 @@ function validateConfig(propVal: any, defaultVal: any, propKey?: string, prefix?
   if (expectedType === 'undefined') {
     return; // this is a superfluous property that we ignore for now
   }
-  assert.equal(actualType, expectedType, `${prefix || ''}${propKey} is type ${actualType} but should be ${expectedType}`);
+  assert.equal(
+    actualType,
+    expectedType,
+    `${prefix || ''}${propKey} is type ${actualType} but should be ${expectedType}`,
+  );
 
   if (actualType === 'object') {
     // if this is an object, we recurse
@@ -51,12 +55,12 @@ class Config {
   public logdateformat: string;
   public network: XuNetwork;
   public strict: boolean;
-  public rpc: { disable: boolean, host: string, port: number };
-  public http: { host: string, port: number };
+  public rpc: { disable: boolean; host: string; port: number };
+  public http: { host: string; port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public connext: ConnextClientConfig;
   public orderthresholds: OrderBookThresholds;
-  public webproxy: { port: number, disable: boolean };
+  public webproxy: { port: number; disable: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -81,19 +85,22 @@ class Config {
     const platform = os.platform();
     let lndDefaultDatadir: string;
     switch (platform) {
-      case 'win32': { // windows
+      case 'win32': {
+        // windows
         const homeDir = process.env.LOCALAPPDATA!;
         this.xudir = path.join(homeDir, 'Xud');
         lndDefaultDatadir = path.join(homeDir, 'Lnd');
         break;
       }
-      case 'darwin': { // mac
+      case 'darwin': {
+        // mac
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
         break;
       }
-      default: { // linux
+      default: {
+        // linux
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, '.lnd');
@@ -174,11 +181,13 @@ class Config {
       try {
         configProps = toml.parse(configText);
       } catch (e) {
-        throw new Error(`Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`);
+        throw new Error(
+          `Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`,
+        );
       }
     }
     return configProps;
-  }
+  };
 
   /**
    * Loads the xud configuration from an optional file and any command line arguments.
@@ -207,7 +216,9 @@ class Config {
       // set the network and xudir props up front because they influence default config values
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
-        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)) {
+        if (
+          ![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)
+        ) {
           throw new Error(`Invalid network config: ${configProps.network}`);
         }
       }
@@ -252,7 +263,7 @@ class Config {
     await this.mkDirIfNotExist(logDir);
 
     return !!configProps;
-  }
+  };
 
   /**
    * Creates a directory if it does not exist, otherwise does nothing.
@@ -266,7 +277,7 @@ class Config {
         throw err;
       }
     }
-  }
+  };
 
   private getNetwork = (args: { [argName: string]: any }) => {
     const networks: { [val: string]: boolean } = {
@@ -276,7 +287,7 @@ class Config {
       [XuNetwork.RegTest]: args.regtest,
     };
 
-    const selected = Object.keys(networks).filter(key => networks[key]);
+    const selected = Object.keys(networks).filter((key) => networks[key]);
     if (selected.length > 1) {
       throw Error('only one network selection is allowed');
     }
@@ -286,28 +297,39 @@ class Config {
     } else {
       return selected[0] as XuNetwork;
     }
-  }
+  };
 
   private setDefaultMacaroonPaths = () => {
     for (const currency in this.lnd) {
       switch (currency) {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
-          this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
-            this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+          this.lnd.LTC!.macaroonpath = path.join(
+            this.lnd.LTC!.macaroonpath,
+            '..',
+            '..',
+            this.network === XuNetwork.TestNet ? 'testnet4' : this.network,
+            'admin.macaroon',
+          );
           break;
         default:
           // by default we want to update the network folder name to the selected network
-          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', this.network, 'admin.macaroon');
+          this.lnd[currency]!.macaroonpath = path.join(
+            this.lnd[currency]!.macaroonpath,
+            '..',
+            '..',
+            this.network,
+            'admin.macaroon',
+          );
           break;
       }
     }
-  }
+  };
 
   private getDefaultP2pPort = () => {
     switch (this.network) {
       case XuNetwork.MainNet:
-        return 8885;  // X = 88, U = 85 in ASCII
+        return 8885; // X = 88, U = 85 in ASCII
       case XuNetwork.TestNet:
         return 18885;
       case XuNetwork.SimNet:
@@ -317,7 +339,7 @@ class Config {
       default:
         throw new Error('unrecognized network');
     }
-  }
+  };
 
   private getDefaultRpcPort = () => {
     switch (this.network) {
@@ -332,7 +354,7 @@ class Config {
       default:
         throw new Error('unrecognized network');
     }
-  }
+  };
 
   private getDefaultHttpPort = () => {
     switch (this.network) {
@@ -347,19 +369,19 @@ class Config {
       default:
         throw new Error('unrecognized network');
     }
-  }
+  };
 
   private getDefaultDbPath = () => {
     return path.join(this.xudir, `xud-${this.network}.db`);
-  }
+  };
 
   private getDefaultLogPath = (): string => {
     return path.resolve(this.xudir, 'logs', 'xud.log');
-  }
+  };
 
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
-  }
+  };
 }
 
 export default Config;

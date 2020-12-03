@@ -40,7 +40,7 @@ const lookupServiceMetadata = (service: any, implementation: any) => {
   const implementationKeys = Object.keys(implementation);
   const intersectingMethods = serviceKeys
     .filter((k) => {
-      return implementationKeys.map(k => toLowerCamelCase(k)).indexOf(k) !== -1;
+      return implementationKeys.map((k) => toLowerCamelCase(k)).indexOf(k) !== -1;
     })
     .reduce((acc: any, k) => {
       const method = service[k];
@@ -61,8 +61,9 @@ const lookupServiceMetadata = (service: any, implementation: any) => {
 
   return (key: any) => {
     return Object.keys(intersectingMethods)
-      .filter(k => toLowerCamelCase(key) === k)
-      .map(k => intersectingMethods[k]).pop();
+      .filter((k) => toLowerCamelCase(key) === k)
+      .map((k) => intersectingMethods[k])
+      .pop();
   };
 };
 
@@ -100,7 +101,8 @@ const handler = {
 
           const interceptors = target.intercept();
           const first = interceptors.next();
-          if (!first.value) { // if we don't have any interceptors
+          if (!first.value) {
+            // if we don't have any interceptors
             return new Promise((resolve) => {
               return resolve(fn(call, newCallback(callback)));
             });

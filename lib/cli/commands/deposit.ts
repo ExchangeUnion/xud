@@ -6,12 +6,13 @@ export const command = 'deposit <currency>';
 
 export const describe = 'gets an address to deposit funds to a channel';
 
-export const builder = (argv: Argv) => argv
-  .positional('currency', {
-    description: 'the ticker symbol of the currency to deposit.',
-    type: 'string',
-  })
-  .example('$0 deposit ETH', 'get a ETH deposit address');
+export const builder = (argv: Argv) =>
+  argv
+    .positional('currency', {
+      description: 'the ticker symbol of the currency to deposit.',
+      type: 'string',
+    })
+    .example('$0 deposit ETH', 'get a ETH deposit address');
 
 const openChannelText = (depositAddressResponse: DepositResponse.AsObject) => {
   console.log(`

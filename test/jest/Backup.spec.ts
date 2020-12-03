@@ -55,10 +55,7 @@ describe('Backup', () => {
   const backup = new Backup();
 
   beforeAll(async () => {
-    await fs.promises.writeFile(
-      xudDatabasePath,
-      backups.xud.startup,
-    );
+    await fs.promises.writeFile(xudDatabasePath, backups.xud.startup);
 
     await backup.start({
       backupdir,
@@ -72,39 +69,21 @@ describe('Backup', () => {
   });
 
   test('should write LND backups on startup', () => {
-    expect(
-      fs.readFileSync(
-        path.join(backupdir, 'lnd-BTC'),
-        'utf8',
-      ),
-    ).toEqual(backups.lnd.startup);
+    expect(fs.readFileSync(path.join(backupdir, 'lnd-BTC'), 'utf8')).toEqual(backups.lnd.startup);
   });
 
   test('should write LND backups on new event', () => {
     channelBackupCallback(backups.lnd.event);
 
-    expect(
-      fs.readFileSync(
-        path.join(backupdir, 'lnd-BTC'),
-        'utf8',
-      ),
-    ).toEqual(backups.lnd.event);
+    expect(fs.readFileSync(path.join(backupdir, 'lnd-BTC'), 'utf8')).toEqual(backups.lnd.event);
   });
 
   test('should write XUD database backups on startup', () => {
-    expect(
-      fs.readFileSync(
-        path.join(backupdir, 'xud'),
-        'utf8',
-      ),
-    ).toEqual(backups.xud.startup);
+    expect(fs.readFileSync(path.join(backupdir, 'xud'), 'utf8')).toEqual(backups.xud.startup);
   });
 
   test('should detect XUD database backups on new event', async () => {
-    fs.writeFileSync(
-      xudDatabasePath,
-      backups.xud.event,
-    );
+    fs.writeFileSync(xudDatabasePath, backups.xud.event);
 
     // Wait to make sure the file watcher handled the new file
     await new Promise((resolve, reject) => {

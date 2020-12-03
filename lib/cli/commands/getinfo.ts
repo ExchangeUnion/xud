@@ -2,32 +2,38 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import {
-  GetInfoRequest,
-  GetInfoResponse,
-  LndInfo,
-  ConnextInfo,
-} from '../../proto/xudrpc_pb';
+import { GetInfoRequest, GetInfoResponse, LndInfo, ConnextInfo } from '../../proto/xudrpc_pb';
 
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
-  basicInfotable.push(
-    { [colors.blue('Status')]: info.status },
-  );
+  basicInfotable.push({ [colors.blue('Status')]: info.status });
 
-  const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
-${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
+  const address = info.urisList[0]
+    ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
+${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
+    : '';
 
-  const pendingChannelText = info.channels && info.channels['pending'] > 0 ? ` | Pending: ${info.channels['pending']}` : '';
+  const pendingChannelText =
+    info.channels && info.channels['pending'] > 0 ? ` | Pending: ${info.channels['pending']}` : '';
   const closedChannelText = info.channels && info.channels['closed'] > 0 ? ` | Closed: ${info.channels['closed']}` : '';
-  const inactiveChannelText = info.channels && info.channels['inactive'] > 0 ? ` | Inactive: ${info.channels['inactive']}` : '';
+  const inactiveChannelText =
+    info.channels && info.channels['inactive'] > 0 ? ` | Inactive: ${info.channels['inactive']}` : '';
 
   basicInfotable.push(
     { [colors.blue('Version')]: info.version || '' },
     { [colors.blue('Address')]: address },
-    { [colors.blue('Alias')] : info.alias || '' },
-    { [colors.blue('Channels')] : `Active: ${info.channels ? info.channels['active'] : 0}${inactiveChannelText}${pendingChannelText}${closedChannelText}` },
-    { [colors.blue('Network')] : info.chainsList && info.chainsList.length > 0 ? `${info.chainsList[0].chain} ${info.chainsList[0].network}` : '' },
+    { [colors.blue('Alias')]: info.alias || '' },
+    {
+      [colors.blue('Channels')]: `Active: ${
+        info.channels ? info.channels['active'] : 0
+      }${inactiveChannelText}${pendingChannelText}${closedChannelText}`,
+    },
+    {
+      [colors.blue('Network')]:
+        info.chainsList && info.chainsList.length > 0
+          ? `${info.chainsList[0].chain} ${info.chainsList[0].network}`
+          : '',
+    },
   );
 
   console.log(colors.underline(colors.bold(`\nLND-${asset} Info:`)));
@@ -54,8 +60,10 @@ const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject]
 
 const displayGeneral = (info: GetInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
-  const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
-${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
+  const address = info.urisList[0]
+    ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
+${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
+    : '';
 
   table.push(
     { [colors.blue('Status')]: determineXudStatus(info.numPeers, info.lndMap) },
@@ -68,7 +76,11 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
     { [colors.blue('Pairs')]: info.numPairs },
     { [colors.blue('Own orders')]: info.orders ? info.orders.own : '0' },
     { [colors.blue('Peer orders')]: info.orders ? info.orders.peer : '0' },
-    { [colors.blue('Pending swaps')]: info.pendingSwapHashesList ? JSON.stringify(info.pendingSwapHashesList, undefined, 1) : '' },
+    {
+      [colors.blue('Pending swaps')]: info.pendingSwapHashesList
+        ? JSON.stringify(info.pendingSwapHashesList, undefined, 1)
+        : '',
+    },
   );
   console.log(colors.underline(colors.bold('\nGeneral XUD Info')));
   console.log(table.toString(), '\n');
@@ -81,12 +93,11 @@ const displayConnext = (info: ConnextInfo.AsObject) => {
     { [colors.blue('Status')]: info.status },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Address')]: info.address },
-    { [colors.blue('Network')] : info.chain },
+    { [colors.blue('Network')]: info.chain },
   );
 
   console.log(colors.underline(colors.bold('\nConnext info:')));
   console.log(table.toString(), '\n');
-
 };
 
 const displayGetInfo = (response: GetInfoResponse.AsObject) => {
@@ -95,7 +106,7 @@ const displayGetInfo = (response: GetInfoResponse.AsObject) => {
     displayConnext(response.connext);
   }
 
-  response.lndMap.forEach(asset => displayLndInfo(asset[0], asset[1]));
+  response.lndMap.forEach((asset) => displayLndInfo(asset[0], asset[1]));
 };
 
 export const command = 'getinfo';

@@ -64,16 +64,30 @@ describe('NodeKey', () => {
   test('it should derive a child seed from private key', async () => {
     const nodeKey = NodeKey.fromBytes(
       Buffer.from([
-        0x60, 0x6c, 0x9b, 0xfe,
-        0x90, 0x76, 0xdd, 0x00,
-        0x9b, 0x7a, 0xbb, 0x5b,
-        0xa0, 0x82 , 0x4d, 0x14,
-        0xb1, 0x18, 0x49, 0x8c,
-        0x4c, 0x5e,
+        0x60,
+        0x6c,
+        0x9b,
+        0xfe,
+        0x90,
+        0x76,
+        0xdd,
+        0x00,
+        0x9b,
+        0x7a,
+        0xbb,
+        0x5b,
+        0xa0,
+        0x82,
+        0x4d,
+        0x14,
+        0xb1,
+        0x18,
+        0x49,
+        0x8c,
+        0x4c,
+        0x5e,
       ]),
     );
-    expect(
-      nodeKey.childSeed(SwapClientType.Connext),
-    ).toMatchSnapshot();
+    expect(nodeKey.childSeed(SwapClientType.Connext)).toMatchSnapshot();
   });
 });

@@ -58,7 +58,7 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   public unlockNode = async (args: { password: string }) => {
     const { password } = args;
@@ -87,20 +87,15 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   public restoreNode = async (args: {
-    password: string,
-    xudDatabase: Uint8Array,
-    lndBackupsMap: Map<string, Uint8Array>,
-    seedMnemonicList: string[],
+    password: string;
+    xudDatabase: Uint8Array;
+    lndBackupsMap: Map<string, Uint8Array>;
+    seedMnemonicList: string[];
   }) => {
-    const {
-      password,
-      xudDatabase,
-      lndBackupsMap,
-      seedMnemonicList,
-    } = args;
+    const { password, xudDatabase, lndBackupsMap, seedMnemonicList } = args;
 
     if (seedMnemonicList.length !== 24) {
       throw errors.INVALID_ARGUMENT('mnemonic must be exactly 24 words');
@@ -136,7 +131,7 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   private newWalletValidation = (password: string) => {
     if (this.nodeKeyExists) {
@@ -153,7 +148,7 @@ class InitService extends EventEmitter {
       });
       throw swapErrors.SWAP_CLIENT_MISCONFIGURED(misconfiguredClientLabels);
     }
-  }
+  };
 
   private prepareCall = async (ignoreUnavailableClients = false) => {
     if (this.pendingCall) {
@@ -170,7 +165,7 @@ class InitService extends EventEmitter {
         throw err;
       }
     }
-  }
+  };
 }
 
 export default InitService;

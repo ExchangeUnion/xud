@@ -65,7 +65,7 @@ class Backup extends EventEmitter {
     this.startFilewatcher('xud', this.config.dbpath).catch(this.logger.error);
 
     this.logger.info('Started backup daemon');
-  }
+  };
 
   public stop = () => {
     if (this.checkLndTimer) {
@@ -80,7 +80,7 @@ class Backup extends EventEmitter {
     }
 
     clearInterval(this.xudBackupTimer);
-  }
+  };
 
   private waitForLndConnected = (lndClient: LndClient) => {
     return new Promise((resolve) => {
@@ -90,7 +90,7 @@ class Backup extends EventEmitter {
         lndClient.on('connectionVerified', resolve);
       }
     });
-  }
+  };
 
   private startLndSubscriptions = async () => {
     // Start the LND SCB subscriptions
@@ -143,7 +143,7 @@ class Backup extends EventEmitter {
     }
 
     await Promise.all(lndPromises);
-  }
+  };
 
   private startFilewatcher = async (client: string, dbPath: string) => {
     const backupPath = this.getBackupPath(client);
@@ -168,35 +168,34 @@ class Backup extends EventEmitter {
       });
     }
 
-    this.fileWatchers.push(fs.watch(dbPath, { persistent: true, recursive: false }, (event: string) => {
-      if (event === 'change') {
-        this.logger.trace(`${client} database changed`);
-        this.emit('changeDetected', client);
-        this.databaseChangedMap.set(client, true);
-      }
-    }));
+    this.fileWatchers.push(
+      fs.watch(dbPath, { persistent: true, recursive: false }, (event: string) => {
+        if (event === 'change') {
+          this.logger.trace(`${client} database changed`);
+          this.emit('changeDetected', client);
+          this.databaseChangedMap.set(client, true);
+        }
+      }),
+    );
 
     this.logger.verbose(`Listening for changes to the ${client} database`);
-  }
+  };
 
   private readDatabase = (path: string) => {
     const content = fs.readFileSync(path);
 
     return content;
-  }
+  };
 
   private writeBackup = (backupPath: string, data: Uint8Array) => {
     try {
-      fs.writeFileSync(
-        backupPath,
-        data,
-      );
+      fs.writeFileSync(backupPath, data);
       this.logger.trace(`new backup written to ${backupPath}`);
       this.emit('newBackup', backupPath);
     } catch (error) {
       this.logger.error(`Could not write backup file: ${error}`);
     }
-  }
+  };
 
   private getBackupPath = (client: string, currency?: string) => {
     let clientName = client;
@@ -206,7 +205,7 @@ class Backup extends EventEmitter {
     }
 
     return path.join(this.backupDir, clientName);
-  }
+  };
 }
 
 export default Backup;

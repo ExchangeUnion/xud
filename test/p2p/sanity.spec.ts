@@ -65,15 +65,22 @@ describe('P2P Sanity Tests', () => {
     nodeTwoPubKey = nodeTwo['pool'].nodePubKey;
 
     nodeTwoPort = nodeTwo['pool']['listenPort']!;
-    nodeOneUri = toUri({ nodePubKey: nodeOnePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
-    nodeTwoUri = toUri({ nodePubKey: nodeTwoPubKey, host: 'localhost', port: nodeTwoPort });
+    nodeOneUri = toUri({
+      nodePubKey: nodeOnePubKey,
+      host: 'localhost',
+      port: nodeOne['pool']['listenPort']!,
+    });
+    nodeTwoUri = toUri({
+      nodePubKey: nodeTwoPubKey,
+      host: 'localhost',
+      port: nodeTwoPort,
+    });
 
     unusedPort = await getUnusedPort();
   });
 
   it('should connect successfully', async () => {
-    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
-      .to.be.fulfilled;
+    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.fulfilled;
 
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult.length).to.equal(1);
@@ -95,8 +102,9 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail connecting to the same node', async () => {
-    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
-      .to.be.rejectedWith('already connected');
+    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.rejectedWith(
+      'already connected',
+    );
   });
 
   it('should disconnect successfully', async () => {
@@ -112,8 +120,13 @@ describe('P2P Sanity Tests', () => {
     const port = nodeTwoPort;
     const nodeUri = toUri({ host, port, nodePubKey: randomPubKey });
 
-    const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: false });
-    await expect(connectPromise).to.be.rejectedWith(`Peer ${randomPubKey}@${host}:${port} disconnected from us due to AuthFailureInvalidTarget`);
+    const connectPromise = nodeOne.service.connect({
+      nodeUri,
+      retryConnecting: false,
+    });
+    await expect(connectPromise).to.be.rejectedWith(
+      `Peer ${randomPubKey}@${host}:${port} disconnected from us due to AuthFailureInvalidTarget`,
+    );
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
@@ -124,15 +137,21 @@ describe('P2P Sanity Tests', () => {
     const port = nodeTwoPort;
     const nodeUri = toUri({ host, port, nodePubKey: invalidPubKey });
 
-    const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: false });
-    await expect(connectPromise).to.be.rejectedWith(`Peer ${invalidPubKey}@${host}:${port} disconnected from us due to AuthFailureInvalidTarget`);
+    const connectPromise = nodeOne.service.connect({
+      nodeUri,
+      retryConnecting: false,
+    });
+    await expect(connectPromise).to.be.rejectedWith(
+      `Peer ${invalidPubKey}@${host}:${port} disconnected from us due to AuthFailureInvalidTarget`,
+    );
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
 
   it('should fail when connecting to self', async () => {
-    await expect(nodeOne.service.connect({ nodeUri: nodeOneUri, retryConnecting: false }))
-    .to.be.rejectedWith('cannot attempt connection to self');
+    await expect(nodeOne.service.connect({ nodeUri: nodeOneUri, retryConnecting: false })).to.be.rejectedWith(
+      'cannot attempt connection to self',
+    );
   });
 
   it('should fail connecting to a non-existing node', async () => {
@@ -140,7 +159,10 @@ describe('P2P Sanity Tests', () => {
     const port = unusedPort;
     const nodeUri = toUri({ host, port, nodePubKey: 'notarealnodepubkey' });
 
-    const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: false });
+    const connectPromise = nodeOne.service.connect({
+      nodeUri,
+      retryConnecting: false,
+    });
     await expect(connectPromise).to.be.rejectedWith(`could not connect to peer at localhost:${port}`);
   });
 
@@ -149,11 +171,15 @@ describe('P2P Sanity Tests', () => {
     const host = 'localhost';
     const port = unusedPort;
     const nodeUri = toUri({ host, port, nodePubKey });
-    const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: true });
+    const connectPromise = nodeOne.service.connect({
+      nodeUri,
+      retryConnecting: true,
+    });
 
     setImmediate(() => {
-      expect(nodeOne.service.connect({ nodeUri, retryConnecting: false }))
-        .to.be.rejectedWith(`could not connect to peer at localhost:${unusedPort}`);
+      expect(nodeOne.service.connect({ nodeUri, retryConnecting: false })).to.be.rejectedWith(
+        `could not connect to peer at localhost:${unusedPort}`,
+      );
       done();
     });
 
@@ -162,8 +188,9 @@ describe('P2P Sanity Tests', () => {
 
   it('should fail when connecting to a node that has banned us', async () => {
     await nodeTwo.service.ban({ nodeIdentifier: nodeOnePubKey });
-    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
-      .to.be.rejectedWith(`Peer ${nodeTwoPubKey}@localhost:${nodeTwoPort} disconnected from us due to Banned`);
+    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.rejectedWith(
+      `Peer ${nodeTwoPubKey}@localhost:${nodeTwoPort} disconnected from us due to Banned`,
+    );
   });
 
   after(async () => {

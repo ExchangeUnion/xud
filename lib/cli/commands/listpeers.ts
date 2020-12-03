@@ -5,11 +5,7 @@ import { ListPeersRequest, ListPeersResponse, Peer } from '../../proto/xudrpc_pb
 import { callback, loadXudClient } from '../command';
 import { generateHeaders, shorten } from '../utils';
 
-const HEADERS = [
-  'Peer',
-  'Pairs',
-  'Details',
-];
+const HEADERS = ['Peer', 'Pairs', 'Details'];
 
 const createTable = () => {
   const table = new Table({
@@ -37,9 +33,8 @@ const formatLndPubKeys = (lndKeys: string[][]) => {
 const formatPeers = (peers: ListPeersResponse.AsObject) => {
   const formattedPeers: string[][] = [];
   peers.peersList.forEach((peer: Peer.AsObject) => {
-
     const address = `${peer.nodePubKey}
-@${peer.address}` ;
+@${peer.address}`;
 
     const details = [
       `Alias: ${peer.alias}
