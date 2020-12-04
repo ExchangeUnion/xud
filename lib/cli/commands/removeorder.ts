@@ -26,7 +26,7 @@ const displayOutput = (orderId: string, removeOrderResponse: RemoveOrderResponse
   } else {
     let message = `Order ${orderId} partially removed`;
     if (remainingQuantity) {
-      message += `, ${remainingQuantity} ${removedCurrency} remaining quantity`;
+      message += `, ${satsToCoinsStr(remainingQuantity)} ${removedCurrency} remaining quantity`;
     }
     if (quantityOnHold) {
       message += `, ${satsToCoinsStr(quantityOnHold)} ${removedCurrency} was on hold`;
