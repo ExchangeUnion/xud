@@ -1,3 +1,22 @@
+## [1.2.3](https://github.com/ExchangeUnion/xud/compare/v1.2.0...v1.2.3) (2020-12-03)
+
+This release includes several fixes, including a regression bug relating to disconnecting offline peers from 1.2.1, as well as a new call & cli command to change the xud master password.
+
+### Bug Fixes
+
+* **p2p:** fix stall timer checks ([#2015](https://github.com/ExchangeUnion/xud/issues/2015)) ([405f50e](https://github.com/ExchangeUnion/xud/commit/405f50e95da3f9866d3852c863a9800ee4688b23)), closes [#1994](https://github.com/ExchangeUnion/xud/issues/1994) [#2010](https://github.com/ExchangeUnion/xud/issues/2010)
+* changes removeorder output to a more meaningful message ([#1526](https://github.com/ExchangeUnion/xud/issues/1526)) ([#1986](https://github.com/ExchangeUnion/xud/issues/1986)) ([43e7c8e](https://github.com/ExchangeUnion/xud/commit/43e7c8e1f1006ce21eb6fa3c0a23d67d0fec137c))
+* wrong error message on insufficient inbound capacity ([#2003](https://github.com/ExchangeUnion/xud/issues/2003)) ([#2006](https://github.com/ExchangeUnion/xud/issues/2006)) ([22c474a](https://github.com/ExchangeUnion/xud/commit/22c474aa517384ff990096bc2bc0b7ae0baae2fc))
+
+
+### Features
+
+* change master password ([#2007](https://github.com/ExchangeUnion/xud/issues/2007)) ([7ecdd7e](https://github.com/ExchangeUnion/xud/commit/7ecdd7ec8f10d3fdb48f29715d5850ffec2c0c85)), closes [#1981](https://github.com/ExchangeUnion/xud/issues/1981)
+* enhance simulation test README ([#2001](https://github.com/ExchangeUnion/xud/issues/2001)) ([9d71552](https://github.com/ExchangeUnion/xud/commit/9d7155268602c8033104d654524a803830deca2f))
+* ignore unavailable swap clients on create ([#1815](https://github.com/ExchangeUnion/xud/issues/1815)) ([#2004](https://github.com/ExchangeUnion/xud/issues/2004)) ([360cca7](https://github.com/ExchangeUnion/xud/commit/360cca70d57a0621887fbd773c5fed0ba99819e4))
+
+
+
 ## [1.2.2](https://github.com/ExchangeUnion/xud/compare/v1.0.0...v1.2.2) (2020-11-24)
 
 This release includes a critical bug fix for replace order functionality. In addition, a new rpc call GetMnemonic has been added that can be used to retrieve the master seed mnemonic for xud at runtime after an xud node has been created.
