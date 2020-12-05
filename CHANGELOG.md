@@ -1,3 +1,12 @@
+## [1.2.4](https://github.com/ExchangeUnion/xud/compare/v1.2.0...v1.2.4) (2020-12-05)
+
+
+### Bug Fixes
+
+* **p2p:** fix stall timer checks ([#2015](https://github.com/ExchangeUnion/xud/issues/2015)) ([405f50e](https://github.com/ExchangeUnion/xud/commit/405f50e95da3f9866d3852c863a9800ee4688b23)), closes [#1994](https://github.com/ExchangeUnion/xud/issues/1994) [#2010](https://github.com/ExchangeUnion/xud/issues/2010)
+
+
+
 ## [1.2.3](https://github.com/ExchangeUnion/xud/compare/v1.2.0...v1.2.3) (2020-12-03)
 
 This release includes several fixes, including a regression bug relating to disconnecting offline peers from 1.2.1, as well as a new call & cli command to change the xud master password.
