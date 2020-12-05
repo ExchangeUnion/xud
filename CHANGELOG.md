@@ -1,3 +1,47 @@
+## [1.2.4](https://github.com/ExchangeUnion/xud/compare/v1.2.0...v1.2.4) (2020-12-05)
+
+
+### Bug Fixes
+
+* **p2p:** fix stall timer checks ([#2015](https://github.com/ExchangeUnion/xud/issues/2015)) ([405f50e](https://github.com/ExchangeUnion/xud/commit/405f50e95da3f9866d3852c863a9800ee4688b23)), closes [#1994](https://github.com/ExchangeUnion/xud/issues/1994) [#2010](https://github.com/ExchangeUnion/xud/issues/2010)
+* added swap success log entry ([#1649](https://github.com/ExchangeUnion/xud/issues/1649)) ([e914ec0](https://github.com/ExchangeUnion/xud/commit/e914ec028f6420bbf2d973b92626f6284a9a8ba5))
+* alias missing in streamorders ([#1725](https://github.com/ExchangeUnion/xud/issues/1725)) ([#1962](https://github.com/ExchangeUnion/xud/issues/1962)) ([d537206](https://github.com/ExchangeUnion/xud/commit/d537206abec4835f96807853c66b23acaeb62e88))
+* changes removeorder output to a more meaningful message ([#1526](https://github.com/ExchangeUnion/xud/issues/1526)) ([#1986](https://github.com/ExchangeUnion/xud/issues/1986)) ([43e7c8e](https://github.com/ExchangeUnion/xud/commit/43e7c8e1f1006ce21eb6fa3c0a23d67d0fec137c))
+* graceful shutdown ([#1994](https://github.com/ExchangeUnion/xud/issues/1994)) ([cde3203](https://github.com/ExchangeUnion/xud/commit/cde320312dcd08f70123b5949d038205748d6148))
+* limits account for replaced order quantity ([#2002](https://github.com/ExchangeUnion/xud/issues/2002)) ([eadf5d1](https://github.com/ExchangeUnion/xud/commit/eadf5d1838992297839760743a6c1cd244a926e8)), closes [#1999](https://github.com/ExchangeUnion/xud/issues/1999)
+* wrong error message on insufficient inbound capacity ([#2003](https://github.com/ExchangeUnion/xud/issues/2003)) ([#2006](https://github.com/ExchangeUnion/xud/issues/2006)) ([22c474a](https://github.com/ExchangeUnion/xud/commit/22c474aa517384ff990096bc2bc0b7ae0baae2fc))
+* **connext:** not enough balance for closechannel ([#1963](https://github.com/ExchangeUnion/xud/issues/1963)) ([6599d88](https://github.com/ExchangeUnion/xud/commit/6599d885cfce3361715b99037013aca89220a658))
+* **lnd:** don't calculate negative capacities ([b1020c1](https://github.com/ExchangeUnion/xud/commit/b1020c1a5cf2b386b9948efad9b5868232323945))
+* rename tradinglimits reserved_inbound json_name ([7e56011](https://github.com/ExchangeUnion/xud/commit/7e560111dbb10079a6e9c488d46fb0ecc8bb1cb6))
+* tls certificate check on startup ([#1510](https://github.com/ExchangeUnion/xud/issues/1510)) ([9633678](https://github.com/ExchangeUnion/xud/commit/9633678de77fcd1728118998b896e60ec1261f90))
+* use regtest instead of regnet arg ([7c6a226](https://github.com/ExchangeUnion/xud/commit/7c6a22640c414003ec3a88adc623d622065677df))
+* **cli:** openchannel assertion error for string amount ([#1950](https://github.com/ExchangeUnion/xud/issues/1950)) ([a0cc6d7](https://github.com/ExchangeUnion/xud/commit/a0cc6d74dc73176cb43ba496a73f32be31adb8cd)), closes [#1643](https://github.com/ExchangeUnion/xud/issues/1643)
+* **cli:** typo in unlock.ts ([#1944](https://github.com/ExchangeUnion/xud/issues/1944)) ([7f61b32](https://github.com/ExchangeUnion/xud/commit/7f61b321c7e5c77585650ef7ff8415bdc29f6c15))
+* **lnd:** handling hold invoice check errors ([#1969](https://github.com/ExchangeUnion/xud/issues/1969)) ([5746516](https://github.com/ExchangeUnion/xud/commit/57465168e24ed467427265af446c27a31427912a)), closes [#1968](https://github.com/ExchangeUnion/xud/issues/1968)
+* **p2p:** don't reconnect peers when pool closed ([#1965](https://github.com/ExchangeUnion/xud/issues/1965)) ([8483e1e](https://github.com/ExchangeUnion/xud/commit/8483e1e35d7fdc80404cac59768ddc61a773b465)), closes [#1668](https://github.com/ExchangeUnion/xud/issues/1668) [/github.com/ExchangeUnion/xud/issues/1668#issuecomment-684828808](https://github.com//github.com/ExchangeUnion/xud/issues/1668/issues/issuecomment-684828808)
+* **rpc:** no success if no channels to close ([#1689](https://github.com/ExchangeUnion/xud/issues/1689)) ([#1942](https://github.com/ExchangeUnion/xud/issues/1942)) ([17e40de](https://github.com/ExchangeUnion/xud/commit/17e40deda3ced6de23030094b6ada5f11dd383df))
+* addpair should prevent adding same base and quote assets ([#1559](https://github.com/ExchangeUnion/xud/issues/1559)) ([69f502f](https://github.com/ExchangeUnion/xud/commit/69f502f12b9fab12a558cc304eb5b58e19836561))
+* getinfo output for lnd channels ([#1940](https://github.com/ExchangeUnion/xud/issues/1940)) ([#1948](https://github.com/ExchangeUnion/xud/issues/1948)) ([962daa4](https://github.com/ExchangeUnion/xud/commit/962daa46081bc3122a04afa82bbe88eb53ec0026))
+* manual ban causes an undefined log entry ([#1779](https://github.com/ExchangeUnion/xud/issues/1779)) ([e7f8178](https://github.com/ExchangeUnion/xud/commit/e7f817841fccee30415f754816644f161fe6cc2c))
+
+
+### Features
+
+* change master password ([#2007](https://github.com/ExchangeUnion/xud/issues/2007)) ([7ecdd7e](https://github.com/ExchangeUnion/xud/commit/7ecdd7ec8f10d3fdb48f29715d5850ffec2c0c85)), closes [#1981](https://github.com/ExchangeUnion/xud/issues/1981)
+* enhance simulation test README ([#2001](https://github.com/ExchangeUnion/xud/issues/2001)) ([9d71552](https://github.com/ExchangeUnion/xud/commit/9d7155268602c8033104d654524a803830deca2f))
+* ignore unavailable swap clients on create ([#1815](https://github.com/ExchangeUnion/xud/issues/1815)) ([#2004](https://github.com/ExchangeUnion/xud/issues/2004)) ([360cca7](https://github.com/ExchangeUnion/xud/commit/360cca70d57a0621887fbd773c5fed0ba99819e4))
+* **lnd:** change gRPC client options ([aefdce8](https://github.com/ExchangeUnion/xud/commit/aefdce84e2c6cae35bf243f21a5224427fe2bfcc))
+* **lnd:** SendPaymentV2 ([51c60dc](https://github.com/ExchangeUnion/xud/commit/51c60dcdc09df38a641dcc6142bee2539b8c85f6)), closes [#1590](https://github.com/ExchangeUnion/xud/issues/1590)
+* **rpc:** GetMnemonic ([273dc5a](https://github.com/ExchangeUnion/xud/commit/273dc5abcd7ff2b502e2a9d842111ca7a4840a1f)), closes [#1982](https://github.com/ExchangeUnion/xud/issues/1982)
+* **rpc:** runtime addcurrency for lnd & connext ([#1746](https://github.com/ExchangeUnion/xud/issues/1746)) ([fc83823](https://github.com/ExchangeUnion/xud/commit/fc8382313854b259ca97256004c8ddbb35dcffca))
+* **swapclient:** auto init wallets on xud unlock ([#1973](https://github.com/ExchangeUnion/xud/issues/1973)) ([a1287dd](https://github.com/ExchangeUnion/xud/commit/a1287dda7740a92e92d8799bf4f2a8a0279d21a8)), closes [#1929](https://github.com/ExchangeUnion/xud/issues/1929)
+* added new grpc method to easily cancel all orders ([#1910](https://github.com/ExchangeUnion/xud/issues/1910)) ([c958e86](https://github.com/ExchangeUnion/xud/commit/c958e862542fb52fdeb6532cbe2d92dd4b52cedf))
+* removeorder output changed to a more meaningful message ([#1526](https://github.com/ExchangeUnion/xud/issues/1526)) ([ba04193](https://github.com/ExchangeUnion/xud/commit/ba041938cdcddb3aedec0db8fe4f571e2608b9d1))
+* reserved capacity checks on PlaceOrder ([#1949](https://github.com/ExchangeUnion/xud/issues/1949)) ([d458745](https://github.com/ExchangeUnion/xud/commit/d4587458ab15a43bb6f4cfea18ee13cbd2653075)), closes [#1947](https://github.com/ExchangeUnion/xud/issues/1947)
+* **rpc:** SetLogLevel ([#1955](https://github.com/ExchangeUnion/xud/issues/1955)) ([8d10df0](https://github.com/ExchangeUnion/xud/commit/8d10df00f7442ea58286726f0348d0f43eae7622)), closes [#835](https://github.com/ExchangeUnion/xud/issues/835)
+
+
+
 ## [1.2.3](https://github.com/ExchangeUnion/xud/compare/v1.2.0...v1.2.3) (2020-12-03)
 
 This release includes several fixes, including a regression bug relating to disconnecting offline peers from 1.2.1, as well as a new call & cli command to change the xud master password.
