@@ -126,6 +126,7 @@ const loggers = {
   swaps: logger,
   http: logger,
   service: logger,
+  alerts: logger,
 };
 
 const localId = '97945230-8144-11e9-beb7-49ba94e5bd74';

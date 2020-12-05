@@ -180,3 +180,12 @@ export enum DisconnectionReason {
   AuthFailureInvalidSignature = 12,
   WireProtocolErr = 13,
 }
+
+export enum AlertType {
+  LowTradingBalance = 0,
+}
+
+export enum ChannelSide {
+  Remote,
+  Local,
+}

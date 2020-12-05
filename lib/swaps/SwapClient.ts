@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { SwapClientType } from '../constants/enums';
+import { ChannelSide, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
 import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
@@ -220,6 +220,29 @@ abstract class SwapClient extends EventEmitter {
       this.status = newStatus;
     } else {
       this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
+    }
+  }
+
+  protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
+                               alertThreshold: number, currency: string, emit: Function) => {
+    if (localBalance < alertThreshold) {
+      emit('lowTradingBalance', {
+        totalBalance,
+        currency,
+        side: ChannelSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    }
+
+    if (remoteBalance < alertThreshold) {
+      emit('lowTradingBalance', {
+        totalBalance,
+        currency,
+        side: ChannelSide.Remote,
+        sideBalance: remoteBalance,
+        bound: 10,
+      });
     }
   }
 

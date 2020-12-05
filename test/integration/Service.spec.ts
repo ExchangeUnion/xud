@@ -5,6 +5,9 @@ import p2pErrors from '../../lib/p2p/errors';
 import Service from '../../lib/service/Service';
 import Xud from '../../lib/Xud';
 import { getTempDir } from '../utils';
+import { TestScheduler } from 'rxjs/testing';
+import { Observable } from 'rxjs';
+import { BalanceAlert } from '../../lib/alerts/types';
 
 chai.use(chaiAsPromised);
 
@@ -185,5 +188,39 @@ describe('API Service', () => {
       xud.on('shutdown', () => resolve());
     });
     await expect(shutdownPromise).to.be.fulfilled;
+  });
+
+  let testScheduler: TestScheduler;
+
+  describe('getMergedObservable$', () => {
+    beforeEach(() => {
+      testScheduler = new TestScheduler((actual, expected) => {
+        expect(actual).to.deep.equal(expected);
+      });
+    });
+
+    it('should continue without cancelled$', async () => {
+      testScheduler.run(({ cold, expectObservable }) => {
+        const firstLowBalanceEvent = cold('-a--b---c---') as Observable<BalanceAlert>;
+        const secondLowBalanceEvent = cold('--a-b|') as Observable<BalanceAlert>;
+        const cancelled = cold('-') as Observable<void>;
+
+        const lowBalanceObservables: Observable<BalanceAlert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
+        const finalObservable = service['getMergedObservable$'](lowBalanceObservables, cancelled);
+        expectObservable(finalObservable).toBe('-aa-(bb)c---');
+      });
+    });
+
+    it('should cancelled with cancelled$', async () => {
+      testScheduler.run(({ cold, expectObservable }) => {
+        const firstLowBalanceEvent = cold('-a--b---c---') as Observable<BalanceAlert>;
+        const secondLowBalanceEvent = cold('--a-b|') as Observable<BalanceAlert>;
+        const cancelled = cold('---a') as Observable<void>;
+
+        const lowBalanceObservables: Observable<BalanceAlert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
+        const finalObservable = service['getMergedObservable$'](lowBalanceObservables, cancelled);
+        expectObservable(finalObservable).toBe('-aa|');
+      });
+    });
   });
 });

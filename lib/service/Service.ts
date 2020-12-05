@@ -20,6 +20,7 @@ import commitHash from '../Version';
 import errors from './errors';
 import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
 import NodeKey from 'lib/nodekey/NodeKey';
+import Alerts from '../alerts/Alerts';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -71,6 +72,7 @@ class Service extends EventEmitter {
   private swaps: Swaps;
   private logger: Logger;
   private nodekey: NodeKey;
+  private alerts: Alerts;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
@@ -83,6 +85,7 @@ class Service extends EventEmitter {
     this.swaps = components.swaps;
     this.logger = components.logger;
     this.nodekey = components.nodeKey;
+    this.alerts = components.alerts;
 
     this.version = components.version;
   }
@@ -703,6 +706,26 @@ class Service extends EventEmitter {
     argChecks.HAS_NODE_IDENTIFIER(args);
     const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.discoverNodes(nodePubKey);
+  }
+  /*
+   * Subscribe to alerts.
+   */
+  public subscribeAlerts = (callback: (payload: any) => void, cancelled$: Observable<void>) => {
+    const observables: Observable<any>[] = [];
+    observables.push(fromEvent<any>(this.alerts, 'alert'));
+
+    const mergedObservable$ = this.getMergedObservable$(observables, cancelled$);
+
+    mergedObservable$.subscribe({
+      next: (alert) => {
+        callback(alert);
+      },
+      error: this.logger.error,
+    });
+  }
+
+  private getMergedObservable$(observables: Observable<any>[], cancelled$: Observable<void>) {
+    return merge(...observables).pipe(takeUntil(cancelled$));
   }
 
   /*

@@ -21,6 +21,7 @@ import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
+import { BalanceAlert } from '../alerts/types';
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
@@ -28,6 +29,7 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlert) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
 
@@ -37,6 +39,7 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
+  emit(event: 'lowTradingBalance', alert: BalanceAlert): boolean;
 }
 
 const GRPC_CLIENT_OPTIONS = {
@@ -239,7 +242,18 @@ class LndClient extends SwapClient {
   }
 
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(async (err) => {
+    await this.channelBalance().then(() => {
+      const totalBalance = this.totalOutboundAmount + this.totalInboundAmount;
+      const alertThreshold = totalBalance * 0.1;
+      this.checkLowBalance(
+          this.totalInboundAmount,
+          this.totalOutboundAmount,
+          totalBalance,
+          alertThreshold,
+          this.currency,
+          this.emit.bind(this),
+      );
+    }).catch(async (err) => {
       this.logger.error('failed to update total outbound capacity', err);
     });
   }

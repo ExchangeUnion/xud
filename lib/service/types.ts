@@ -8,6 +8,7 @@ import Pool from '../p2p/Pool';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
 import NodeKey from '../nodekey/NodeKey';
+import Alerts from '../alerts/Alerts';
 
 /**
  * The components required by the API service layer.
@@ -21,6 +22,7 @@ export type ServiceComponents = {
   swaps: Swaps;
   logger: Logger;
   nodeKey: NodeKey;
+  alerts: Alerts;
   /** The function to be called to shutdown the parent process */
   shutdown: () => void;
 };
