@@ -1,7 +1,7 @@
 {
   "name": "xud",
   "minCompatibleVersion": "1.0.0-rc.1",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -209,7 +209,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "concurrently": "^5.2.0",
-    "conventional-changelog-cli": "^2.0.34",
+    "conventional-changelog-cli": "^2.1.1",
     "grpc-tools": "1.8.0",
     "grpc_tools_node_protoc_ts": "^2.5.5",
     "jest": "^26.2.2",
