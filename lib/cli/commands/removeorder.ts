@@ -19,14 +19,19 @@ export const builder = (argv: Argv) => argv
   .example('$0 removeorder 79d2cd30-8a26-11ea-90cf-439fb244cf44 0.1', 'remove 0.1 quantity from an order by id');
 
 const displayOutput = (orderId: string, removeOrderResponse: RemoveOrderResponse.AsObject) => {
-  const removedCurrency = removeOrderResponse.pairId.split('/')[0];
-  if (removeOrderResponse.quantityOnHold === 0 && removeOrderResponse.remainingQuantity === 0) {
+  const { remainingQuantity, quantityOnHold, pairId } = removeOrderResponse;
+  const removedCurrency = pairId.split('/')[0];
+  if (quantityOnHold === 0 && remainingQuantity === 0) {
     console.log(`Order ${orderId} successfully removed.`);
   } else {
-    console.log(`
-Order ${orderId} partially removed, remaining quantity: \
-${satsToCoinsStr(removeOrderResponse.remainingQuantity)} ${removedCurrency}, \
-on hold: ${satsToCoinsStr(removeOrderResponse.quantityOnHold)} ${removedCurrency}`);
+    let message = `Order ${orderId} partially removed`;
+    if (remainingQuantity) {
+      message += `, ${satsToCoinsStr(remainingQuantity)} ${removedCurrency} remaining quantity`;
+    }
+    if (quantityOnHold) {
+      message += `, ${satsToCoinsStr(quantityOnHold)} ${removedCurrency} was on hold`;
+    }
+    console.log(message);
   }
 };
 

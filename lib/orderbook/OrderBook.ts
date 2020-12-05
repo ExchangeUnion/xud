@@ -870,7 +870,9 @@ class OrderBook extends EventEmitter {
    * the order is on hold, an error will be thrown.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the entire
    * order is removed.
-   * @returns any quantity of the order that was on hold and could not be immediately removed (if allowed).
+   * @returns an object summarizing the result of the order removal, including any quantity that
+   * was on hold and could not be immediately removed, the total quantity removed, and the quantity
+   * remaining on the order.
    */
   public removeOwnOrderByLocalId = (localId: string, allowAsyncRemoval?: boolean, quantityToRemove?: number) => {
     const order = this.getOwnOrderByLocalId(localId);
