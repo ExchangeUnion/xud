@@ -31,6 +31,7 @@ type PeerInfo = {
   xudVersion?: string,
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
+  lndUris?: { [currency: string]: string[] | undefined },
   connextIdentifier?: string,
 };
 
@@ -184,6 +185,7 @@ class Peer extends EventEmitter {
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
       connextIdentifier: this.nodeState ? this.nodeState.connextIdentifier : undefined,
+      lndUris: this.nodeState ? this.nodeState.lndUris : undefined,
     };
   }
 

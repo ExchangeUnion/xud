@@ -764,6 +764,14 @@ class GrpcService {
             map.set(key, peer.lndPubKeys[key]);
           }
         }
+        if (peer.lndUris) {
+          for (const key in peer.lndUris) {
+            const grpcUri = new xudrpc.Peer.LndUris();
+            grpcUri.setCurrency(key);
+            grpcUri.getUriList().push(...peer.lndUris[key] || []);
+            grpcPeer.getLndUrisList().push(grpcUri);
+          }
+        }
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
