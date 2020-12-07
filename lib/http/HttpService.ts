@@ -12,9 +12,9 @@ class HttpService {
 
   public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
     if (
-      preimageRequest.data && preimageRequest.data.transferMeta
+      preimageRequest.transfer
     ) {
-      const { preImage: preimage } = preimageRequest.data.transferMeta;
+      const { preImage: preimage } = preimageRequest.transfer.transferResolver;
       if (!preimage) {
         throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
@@ -33,24 +33,25 @@ class HttpService {
   public incomingTransfer = async (
     incomingTransferRequest: ConnextIncomingTransferRequest,
   ): Promise<object> => {
-    if (incomingTransferRequest.data) {
+    if (incomingTransferRequest.transfer) {
+      const transfer = incomingTransferRequest.transfer;
       const {
-        amount: amountHex,
+        transferState,
+        meta,
         assetId,
-        paymentId,
-      } = incomingTransferRequest.data;
-      const {
-        lockHash,
-        timelock: timelockString,
-      } = incomingTransferRequest.data.transferMeta;
+        balance,
+      } = transfer;
+      const { routingId } = meta;
+      const { lockHash, expiry: expiryString } = transferState;
       const rHash = lockHash.slice(2);
-      const timelock = parseInt(timelockString, 10);
-      const units = parseInt(amountHex._hex, 16);
+      const expiry = parseInt(expiryString, 10);
+      const { amount } = balance;
+      const units = parseInt(amount[0], 10);
       await this.service.transferReceived({
         rHash,
-        timelock,
+        expiry,
         units,
-        paymentId,
+        routingId,
         tokenAddress: assetId,
       });
       return {};

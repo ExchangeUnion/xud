@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/connexttest"
-	"math/big"
+	// "github.com/ExchangeUnion/xud-simulation/connexttest"
+	// "math/big"
 	"time"
 
 	"github.com/roasbeef/btcutil"
@@ -56,13 +56,14 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 	// Add currencies.
 	a.addCurrency(node, "BTC", xudrpc.Currency_LND, "", 8)
 	a.addCurrency(node, "LTC", xudrpc.Currency_LND, "", 8)
-	a.addCurrency(node, "ETH", xudrpc.Currency_CONNEXT, connexttest.ETHTokenAddress, 18)
+	// a.addCurrency(node, "ETH", xudrpc.Currency_CONNEXT, connexttest.ETHTokenAddress, 18)
 
 	// Add pairs.
 	a.addPair(node, "LTC", "BTC")
-	a.addPair(node, "BTC", "ETH")
+	// a.addPair(node, "BTC", "ETH")
 }
 
+/*
 func (a *actions) FundETH(net *xudtest.NetworkHarness, node *xudtest.HarnessNode) {
 	// Wait for node's connext connection to catch-up.
 	a.waitConnextReady(node)
@@ -84,6 +85,7 @@ func (a *actions) FundETH(net *xudtest.NetworkHarness, node *xudtest.HarnessNode
 	a.assert.Equal(uint64(200000000), ethBal.WalletBalance)
 	a.assert.Equal(uint64(0), ethBal.ChannelBalance)
 }
+*/
 
 func (a *actions) waitConnextReady(node *xudtest.HarnessNode) {
 	isReady := func() bool {

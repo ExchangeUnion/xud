@@ -101,9 +101,11 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
+  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -1609,6 +1611,7 @@ The primary service for interacting with a running xud node.
 | CloseChannel | [CloseChannelRequest](#xudrpc.CloseChannelRequest) | [CloseChannelResponse](#xudrpc.CloseChannelResponse) | Closes any existing payment channels with a peer for the specified currency. shell: xucli closechannel &lt;currency&gt; [node_identifier ] [--force] |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. shell: xucli connect &lt;node_uri&gt; |
 | WalletDeposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli walletdeposit &lt;currency&gt; |
+| Deposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency directly into a channel. shell: xucli deposit &lt;currency&gt; |
 | DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. shell: xucli getbalance [currency] |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. shell: xucli getinfo |
