@@ -35,11 +35,17 @@ enum PacketDirection {
 type ResponseType = PacketType | PacketType[] | undefined;
 
 function isPacketType(val: any): val is PacketType {
-  return val !== undefined && typeof val === 'number' && PacketType[val] !== undefined;
+  return (
+    val !== undefined &&
+    typeof val === 'number' &&
+    PacketType[val] !== undefined
+  );
 }
 
 function isPacketTypeArray(val: any): val is PacketType[] {
-  return val !== undefined && val instanceof Array && val.every(v => isPacketType(v));
+  return (
+    val !== undefined && val instanceof Array && val.every(v => isPacketType(v))
+  );
 }
 
 /**
@@ -93,7 +99,7 @@ abstract class Packet<T = any> implements PacketInterface {
 
   public toJSON = () => {
     return stringify({ header: this.header, body: this.body });
-  }
+  };
 
   /**
    * Serialize this packet to binary Buffer.
@@ -101,28 +107,37 @@ abstract class Packet<T = any> implements PacketInterface {
    */
   public toRaw = (): Buffer => {
     return Buffer.from(this.serialize().buffer as ArrayBuffer);
-  }
+  };
 
   /**
    * Calculating the packet checksum using its JSON representation hash first 4 bytes.
    */
   public checksum = (): number => {
-    return createHash('sha256')
-      .update(this.toJSON())
-      .digest()
-      .readUInt32LE(0);
-  }
+    return createHash('sha256').update(this.toJSON()).digest().readUInt32LE(0);
+  };
 }
 
 function isPacket(val: any): val is Packet {
-  const p = (<Packet>val);
+  const p = <Packet>val;
   return (
-    p.toRaw !== undefined && typeof p.toRaw === 'function'
-    && p.serialize !== undefined && typeof p.serialize === 'function'
-    && p.type !== undefined && typeof p.type === 'number'
-    && p.direction !== undefined && typeof p.direction === 'number'
+    p.toRaw !== undefined &&
+    typeof p.toRaw === 'function' &&
+    p.serialize !== undefined &&
+    typeof p.serialize === 'function' &&
+    p.type !== undefined &&
+    typeof p.type === 'number' &&
+    p.direction !== undefined &&
+    typeof p.direction === 'number'
   );
 }
 
 export default Packet;
-export { PacketHeader, PacketDirection, ResponseType, PacketInterface, isPacket, isPacketType, isPacketTypeArray };
+export {
+  PacketHeader,
+  PacketDirection,
+  ResponseType,
+  PacketInterface,
+  isPacket,
+  isPacketType,
+  isPacketTypeArray,
+};

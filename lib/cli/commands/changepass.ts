@@ -11,7 +11,9 @@ export const builder = {};
 
 const formatOutput = () => {
   console.log('The master xud password was succesfully changed.');
-  console.log('Passwords for lnd wallets will be changed the next time xud is restarted and unlocked.');
+  console.log(
+    'Passwords for lnd wallets will be changed the next time xud is restarted and unlocked.'
+  );
 };
 
 export const handler = (argv: Arguments<any>) => {
@@ -24,11 +26,11 @@ export const handler = (argv: Arguments<any>) => {
 You are changing the master password for xud and underlying wallets.\
 `);
   process.stdout.write('Enter old password: ');
-  rl.question('', (oldPassword) => {
+  rl.question('', oldPassword => {
     process.stdout.write('\nEnter new password: ');
-    rl.question('', (password1) => {
+    rl.question('', password1 => {
       process.stdout.write('\nRe-enter password: ');
-      rl.question('', async (password2) => {
+      rl.question('', async password2 => {
         process.stdout.write('\n\n');
         rl.close();
         if (password1 === password2) {

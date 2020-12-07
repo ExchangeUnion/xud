@@ -35,7 +35,10 @@ describe('P2P Pool', () => {
           clearTimeout(timeout);
           resolve();
         });
-        const timeout = setTimeout(() => reject('timed out waiting for inbound peer'), 500);
+        const timeout = setTimeout(
+          () => reject('timed out waiting for inbound peer'),
+          500
+        );
       } else {
         resolve();
       }
@@ -110,29 +113,37 @@ describe('P2P Pool', () => {
     const createNodeSpy = jest.spyOn(pool['nodes'], 'createNode');
     await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
 
-    expect(createNodeSpy).toHaveBeenCalledWith({ addresses: pool2.addresses, nodePubKey: pool2nodeKey.pubKey, lastAddress: pool2address });
+    expect(createNodeSpy).toHaveBeenCalledWith({
+      addresses: pool2.addresses,
+      nodePubKey: pool2nodeKey.pubKey,
+      lastAddress: pool2address,
+    });
   });
 
   test('should reject connecting to its own addresses', async () => {
-    const selfAddresses = [
-      '::',
-      '0.0.0.0',
-      '::1',
-      '127.0.0.1',
-      'localhost',
-    ];
+    const selfAddresses = ['::', '0.0.0.0', '::1', '127.0.0.1', 'localhost'];
 
     for (const address of selfAddresses) {
-      await expect(pool.addOutbound({
-        host: address,
-        port: poolPort,
-      }, '', false, false)).rejects.toEqual(errors.ATTEMPTED_CONNECTION_TO_SELF);
+      await expect(
+        pool.addOutbound(
+          {
+            host: address,
+            port: poolPort,
+          },
+          '',
+          false,
+          false
+        )
+      ).rejects.toEqual(errors.ATTEMPTED_CONNECTION_TO_SELF);
     }
   });
 
   test('it rejects inbound peer because of pubKey mismatch (AuthFailureInvalidTarget)', async () => {
     const ownNodeState = {
-      addresses: [{ host: '1.1.1.1', port: poolPort }, { host: '2.2.2.2', port: poolPort }],
+      addresses: [
+        { host: '1.1.1.1', port: poolPort },
+        { host: '2.2.2.2', port: poolPort },
+      ],
       pairs: [uuid()],
       connextIdentifier: uuid(),
       lndPubKeys: { BTC: uuid(), LTC: uuid() },
@@ -141,19 +152,26 @@ describe('P2P Pool', () => {
     };
     const ownNodeKey = await NodeKey['generate']();
     const expectedNodePubKey = (await NodeKey['generate']()).pubKey;
-    await expect(remotePeer.beginOpen({
-      ownNodeState,
-      ownNodeKey,
-      expectedNodePubKey,
-      ownVersion: version,
-      torport: 0,
-    })).rejects.toHaveProperty(
-      'message', expect.stringContaining('AuthFailureInvalidTarget'));
+    await expect(
+      remotePeer.beginOpen({
+        ownNodeState,
+        ownNodeKey,
+        expectedNodePubKey,
+        ownVersion: version,
+        torport: 0,
+      })
+    ).rejects.toHaveProperty(
+      'message',
+      expect.stringContaining('AuthFailureInvalidTarget')
+    );
   });
 
   test('it responds to inbound peer by beginning the handshake', async () => {
     const ownNodeState = {
-      addresses: [{ host: '1.1.1.1', port: poolPort }, { host: '2.2.2.2', port: poolPort }],
+      addresses: [
+        { host: '1.1.1.1', port: poolPort },
+        { host: '2.2.2.2', port: poolPort },
+      ],
       pairs: [uuid()],
       connextIdentifier: uuid(),
       lndPubKeys: { BTC: uuid(), LTC: uuid() },
@@ -179,8 +197,9 @@ describe('P2P Pool', () => {
     await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
     await awaitInboundPeer(pool2);
 
-    await expect(pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false)).rejects
-      .toHaveProperty('code', errorCodes.NODE_ALREADY_CONNECTED);
+    await expect(
+      pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false)
+    ).rejects.toHaveProperty('code', errorCodes.NODE_ALREADY_CONNECTED);
     expect(pool.peerCount).toEqual(1);
     expect(pool2.peerCount).toEqual(1);
   });
@@ -189,22 +208,38 @@ describe('P2P Pool', () => {
     expect(pool.peerCount).toEqual(0);
     expect(pool2.peerCount).toEqual(0);
 
-    const pool1Promise = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
-    const pool2Promise = pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false);
+    const pool1Promise = pool.addOutbound(
+      pool2address,
+      pool2nodeKey.pubKey,
+      true,
+      false
+    );
+    const pool2Promise = pool2.addOutbound(
+      pool1address,
+      pool1nodeKey.pubKey,
+      true,
+      false
+    );
 
     try {
       await pool1Promise;
       expect(pool.peerCount).toEqual(1);
     } catch (err) {
       // if an addOutbound call errors, it should be due to AlreadyConnected
-      expect(err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'));
+      expect(
+        err.code === errorCodes.NODE_ALREADY_CONNECTED ||
+          err.message.includes('AlreadyConnected')
+      );
     }
 
     try {
       await pool2Promise;
     } catch (err) {
       // if an addOutbound call errors, it should be due to AlreadyConnected
-      expect(err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'));
+      expect(
+        err.code === errorCodes.NODE_ALREADY_CONNECTED ||
+          err.message.includes('AlreadyConnected')
+      );
     }
 
     if (!pool.peerCount) {
@@ -220,14 +255,26 @@ describe('P2P Pool', () => {
   test('it rejects multiple outbound connections to same peer', async () => {
     expect(pool.peerCount).toEqual(0);
     expect(pool2.peerCount).toEqual(0);
-    const firstOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
-    const secondOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+    const firstOutboundAttempt = pool.addOutbound(
+      pool2address,
+      pool2nodeKey.pubKey,
+      true,
+      false
+    );
+    const secondOutboundAttempt = pool.addOutbound(
+      pool2address,
+      pool2nodeKey.pubKey,
+      true,
+      false
+    );
 
-    await expect(secondOutboundAttempt).rejects.toHaveProperty('code', errorCodes.ALREADY_CONNECTING);
+    await expect(secondOutboundAttempt).rejects.toHaveProperty(
+      'code',
+      errorCodes.ALREADY_CONNECTING
+    );
     await firstOutboundAttempt;
 
     expect(pool['pendingOutboundPeers'].size).toEqual(0);
     expect(pool.peerCount).toEqual(1);
   });
-
 });

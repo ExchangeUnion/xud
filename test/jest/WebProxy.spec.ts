@@ -40,12 +40,12 @@ describe('WebProxy', () => {
     await xud.start(config);
   });
 
-  it('should respond with http status 200', (done) => {
+  it('should respond with http status 200', done => {
     request(`http://localhost:${config.webproxy.port}/api/v1/info`)
       .get('/')
       .expect(200)
       .expect('Content-Type', 'application/json; charset=utf-8')
-      .end((err) => {
+      .end(err => {
         expect(err).toBeNull();
         done();
       });

@@ -88,10 +88,11 @@ export type OwnMarketOrder = MarketOrder & Local;
 export type OwnLimitOrder = LimitOrder & Local;
 
 /** A local order that may enter the order book. */
-export type OwnOrder = OwnLimitOrder & Stamp & {
-  /** The amount of an order that is on hold pending swap execution. */
-  hold: number;
-};
+export type OwnOrder = OwnLimitOrder &
+  Stamp & {
+    /** The amount of an order that is on hold pending swap execution. */
+    hold: number;
+  };
 
 /** A peer order that may enter the order book. */
 export type PeerOrder = LimitOrder & Stamp & Remote;
@@ -99,7 +100,10 @@ export type PeerOrder = LimitOrder & Stamp & Remote;
 export type Order = OwnOrder | PeerOrder;
 
 /** An outgoing local order which only includes fields that are relevant to peers. */
-export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>> & {
+export type OutgoingOrder = Pick<
+  OwnOrder,
+  Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>
+> & {
   replaceOrderId?: string;
 };
 
@@ -140,9 +144,15 @@ export type Pair = {
 };
 
 export function isOwnOrder(order: Order): order is OwnOrder {
-  return (order as PeerOrder).peerPubKey === undefined && typeof (order as OwnOrder).localId === 'string';
+  return (
+    (order as PeerOrder).peerPubKey === undefined &&
+    typeof (order as OwnOrder).localId === 'string'
+  );
 }
 
 export function isPeerOrder(order: Order): order is PeerOrder {
-  return (order as OwnOrder).localId === undefined && typeof (order as PeerOrder).peerPubKey === 'string';
+  return (
+    (order as OwnOrder).localId === undefined &&
+    typeof (order as PeerOrder).peerPubKey === 'string'
+  );
 }

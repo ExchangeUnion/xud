@@ -2,7 +2,7 @@ import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
 
-export type SanitySwapAckPacketBody = { };
+export type SanitySwapAckPacketBody = {};
 
 class SanitySwapAckPacket extends Packet<SanitySwapAckPacketBody> {
   public get type() {
@@ -17,26 +17,30 @@ class SanitySwapAckPacket extends Packet<SanitySwapAckPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): SanitySwapAckPacket | pb.SanitySwapAckPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): SanitySwapAckPacket | pb.SanitySwapAckPacket.AsObject => {
     const obj = pb.SanitySwapAckPacket.deserializeBinary(binary).toObject();
-    return SanitySwapAckPacket.validate(obj) ? SanitySwapAckPacket.convert(obj) : obj;
-  }
+    return SanitySwapAckPacket.validate(obj)
+      ? SanitySwapAckPacket.convert(obj)
+      : obj;
+  };
 
   private static validate = (obj: pb.SanitySwapAckPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.reqId
-    );
-  }
+    return !!(obj.id && obj.reqId);
+  };
 
-  private static convert = (obj: pb.SanitySwapAckPacket.AsObject): SanitySwapAckPacket => {
+  private static convert = (
+    obj: pb.SanitySwapAckPacket.AsObject
+  ): SanitySwapAckPacket => {
     return new SanitySwapAckPacket({
       header: {
         id: obj.id,
         reqId: obj.reqId,
       },
-      body: { },
+      body: {},
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SanitySwapAckPacket();
@@ -44,7 +48,7 @@ class SanitySwapAckPacket extends Packet<SanitySwapAckPacketBody> {
     msg.setReqId(this.header.reqId!);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SanitySwapAckPacket;

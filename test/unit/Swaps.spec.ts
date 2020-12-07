@@ -9,9 +9,11 @@ describe('Swaps', () => {
   const price = 0.005;
   const takerCltvDelta = 144;
   const orderId = 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8';
-  const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
+  const rHash =
+    '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
   const pairId = 'LTC/BTC';
-  const peerPubKey = '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
+  const peerPubKey =
+    '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
 
   /** A swap deal for a buy order. */
   const buyDeal: SwapDeal = {
@@ -69,10 +71,19 @@ describe('Swaps', () => {
   };
 
   it('should calculate swap amounts and currencies for a buy order', () => {
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } =
-      Swaps['calculateMakerTakerAmounts'](
-        buyDeal.quantity!, buyDeal.price, buyDeal.isBuy, buyDeal.pairId,
-      );
+    const {
+      makerCurrency,
+      makerAmount,
+      takerCurrency,
+      takerAmount,
+      makerUnits,
+      takerUnits,
+    } = Swaps['calculateMakerTakerAmounts'](
+      buyDeal.quantity!,
+      buyDeal.price,
+      buyDeal.isBuy,
+      buyDeal.pairId
+    );
     expect(makerAmount).to.equal(buyDeal.makerAmount);
     expect(takerAmount).to.equal(buyDeal.takerAmount);
     expect(makerUnits).to.equal(buyDeal.makerUnits);
@@ -82,10 +93,19 @@ describe('Swaps', () => {
   });
 
   it('should calculate swap amounts and currencies for a sell order', () => {
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } =
-      Swaps['calculateMakerTakerAmounts'](
-        sellDeal.quantity!, sellDeal.price, sellDeal.isBuy, sellDeal.pairId,
-      );
+    const {
+      makerCurrency,
+      makerAmount,
+      takerCurrency,
+      takerAmount,
+      makerUnits,
+      takerUnits,
+    } = Swaps['calculateMakerTakerAmounts'](
+      sellDeal.quantity!,
+      sellDeal.price,
+      sellDeal.isBuy,
+      sellDeal.pairId
+    );
     expect(makerAmount).to.equal(sellDeal.makerAmount);
     expect(takerAmount).to.equal(sellDeal.takerAmount);
     expect(makerUnits).to.equal(sellDeal.makerUnits);
@@ -95,8 +115,13 @@ describe('Swaps', () => {
   });
 
   it('should calculate swap amounts and currencies for a WETH buy order', () => {
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps['calculateMakerTakerAmounts'](
-      buyDealEth.quantity!, buyDealEth.price, buyDealEth.isBuy, buyDealEth.pairId,
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps[
+      'calculateMakerTakerAmounts'
+    ](
+      buyDealEth.quantity!,
+      buyDealEth.price,
+      buyDealEth.isBuy,
+      buyDealEth.pairId
     );
     expect(makerAmount).to.equal(buyDealEth.makerAmount);
     expect(takerAmount).to.equal(buyDealEth.takerAmount);
@@ -109,11 +134,15 @@ describe('Swaps', () => {
   });
 
   it('should flag a swap request with a non-positive proposed quantity', () => {
-    expect(Swaps.validateSwapRequest({ ...swapRequest, proposedQuantity: 0 })).to.be.false;
-    expect(Swaps.validateSwapRequest({ ...swapRequest, proposedQuantity: -1 })).to.be.false;
+    expect(Swaps.validateSwapRequest({ ...swapRequest, proposedQuantity: 0 }))
+      .to.be.false;
+    expect(Swaps.validateSwapRequest({ ...swapRequest, proposedQuantity: -1 }))
+      .to.be.false;
   });
 
   it('should flag a swap request with an rHash that is not 64 characters', () => {
-    expect(Swaps.validateSwapRequest({ ...swapRequest, rHash: 'notavalidhash' })).to.be.false;
+    expect(
+      Swaps.validateSwapRequest({ ...swapRequest, rHash: 'notavalidhash' })
+    ).to.be.false;
   });
 });

@@ -16,6 +16,10 @@ export default function Password(sequelize: Sequelize) {
     updatedAt: false,
   };
 
-  const Password = sequelize.define<PasswordInstance>('Password', attributes, options);
+  const Password = sequelize.define<PasswordInstance>(
+    'Password',
+    attributes,
+    options
+  );
   return Password;
 }

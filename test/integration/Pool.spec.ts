@@ -36,7 +36,8 @@ describe('P2P Pool Tests', async () => {
     peer.socket = {};
     peer.sendPacket = () => {};
     peer.close = async () => {
-      peer.sentDisconnectionReason = DisconnectionReason.NotAcceptingConnections;
+      peer.sentDisconnectionReason =
+        DisconnectionReason.NotAcceptingConnections;
       await pool['handlePeerClose'](peer);
     };
     pool['bindPeer'](peer);
@@ -78,15 +79,25 @@ describe('P2P Pool Tests', async () => {
   });
 
   it('should close a peer', async () => {
-    await pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+    await pool.closePeer(
+      nodeKeyOne.pubKey,
+      DisconnectionReason.NotAcceptingConnections
+    );
     expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.false;
     expect(pool['peers'].size).to.equal(0);
   });
 
   it('should throw error when connecting to tor node with tor disabled', async () => {
     const address = addressUtils.fromString('3g2upl4pq6kufc4m.onion');
-    const addPromise = pool.addOutbound(address, nodeKeyOne.pubKey, false, false);
-    await expect(addPromise).to.be.rejectedWith(errors.NODE_TOR_ADDRESS(nodeKeyOne.pubKey, address).message);
+    const addPromise = pool.addOutbound(
+      address,
+      nodeKeyOne.pubKey,
+      false,
+      false
+    );
+    await expect(addPromise).to.be.rejectedWith(
+      errors.NODE_TOR_ADDRESS(nodeKeyOne.pubKey, address).message
+    );
   });
 
   it('should update a node on new handshake', async () => {
@@ -107,7 +118,10 @@ describe('P2P Pool Tests', async () => {
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
 
-    await pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+    await pool.closePeer(
+      nodeKeyOne.pubKey,
+      DisconnectionReason.NotAcceptingConnections
+    );
   });
 
   describe('reconnect logic', () => {
@@ -143,7 +157,6 @@ describe('P2P Pool Tests', async () => {
       await pool['handlePeerClose'](dcPeer);
       expect(tryConnectNodeStub.calledOnce).to.be.equal(true);
     });
-
   });
 
   after(async () => {

@@ -61,7 +61,13 @@ export const getTempDir = (unique: boolean) => {
   return dir;
 };
 
-export const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms(), pairId = 'LTC/BTC'): OwnOrder => ({
+export const createOwnOrder = (
+  price: number,
+  quantity: number,
+  isBuy: boolean,
+  createdAt = ms(),
+  pairId = 'LTC/BTC'
+): OwnOrder => ({
   price,
   quantity,
   isBuy,
@@ -79,7 +85,7 @@ export const createPeerOrder = (
   isBuy: boolean,
   createdAt = ms(),
   peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
-  pairId = 'LTC/BTC',
+  pairId = 'LTC/BTC'
 ): PeerOrder => ({
   quantity,
   price,
@@ -91,7 +97,10 @@ export const createPeerOrder = (
   id: uuidv1(),
 });
 
-export const getValidDeal = (phase = SwapPhase.SendingPayment, role = SwapRole.Maker) => {
+export const getValidDeal = (
+  phase = SwapPhase.SendingPayment,
+  role = SwapRole.Maker
+) => {
   return {
     phase,
     role,
@@ -101,7 +110,8 @@ export const getValidDeal = (phase = SwapPhase.SendingPayment, role = SwapRole.M
     rHash: '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80',
     takerCltvDelta: 40,
     makerCltvDelta: 576,
-    takerPubKey: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
+    takerPubKey:
+      '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
     price: 0.1,
     isBuy: true,
     quantity: 10000,
@@ -111,8 +121,10 @@ export const getValidDeal = (phase = SwapPhase.SendingPayment, role = SwapRole.M
     takerUnits: 1000,
     makerCurrency: 'LTC',
     takerCurrency: 'BTC',
-    destination: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
-    peerPubKey: '021ea6d67c850a0811b01c78c8117dca044b224601791a4186bf5748f667f73517',
+    destination:
+      '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
+    peerPubKey:
+      '021ea6d67c850a0811b01c78c8117dca044b224601791a4186bf5748f667f73517',
     localId: '53bc8a30-81f0-11e9-9259-a5617f44d209',
     state: SwapState.Active,
     createTime: 1559120485138,

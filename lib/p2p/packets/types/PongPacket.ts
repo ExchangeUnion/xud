@@ -15,16 +15,16 @@ class PongPacket extends Packet<undefined> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): PongPacket | pb.PongPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): PongPacket | pb.PongPacket.AsObject => {
     const obj = pb.PongPacket.deserializeBinary(binary).toObject();
     return PongPacket.validate(obj) ? PongPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.PongPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.reqId
-    );
-  }
+    return !!(obj.id && obj.reqId);
+  };
 
   private static convert = (obj: pb.PongPacket.AsObject): PongPacket => {
     return new PongPacket({
@@ -33,7 +33,7 @@ class PongPacket extends Packet<undefined> {
         reqId: obj.reqId,
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.PongPacket();
@@ -41,7 +41,7 @@ class PongPacket extends Packet<undefined> {
     msg.setReqId(this.header.reqId!);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default PongPacket;

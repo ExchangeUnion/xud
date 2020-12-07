@@ -30,7 +30,12 @@ const errors = {
     message: 'a pending call is ongoing that conflicts with this call',
     code: errorCodes.PENDING_CALL_CONFLICT,
   },
-  OPEN_CHANNEL_FAILURE: (currency: string, amount: number, errorMessage: string, nodeIdentifier?: string) => {
+  OPEN_CHANNEL_FAILURE: (
+    currency: string,
+    amount: number,
+    errorMessage: string,
+    nodeIdentifier?: string
+  ) => {
     let message = `failed to open ${currency} channel for ${amount}`;
     if (nodeIdentifier) {
       message += ` with ${nodeIdentifier}`;

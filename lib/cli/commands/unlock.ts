@@ -12,10 +12,18 @@ export const builder = {};
 const formatOutput = (response: UnlockNodeResponse.AsObject) => {
   console.log('xud was unlocked successfully');
   if (response.unlockedLndsList.length) {
-    console.log(`The following wallets were unlocked: ${response.unlockedLndsList.join(', ')}`);
+    console.log(
+      `The following wallets were unlocked: ${response.unlockedLndsList.join(
+        ', '
+      )}`
+    );
   }
   if (response.lockedLndsList.length) {
-    console.log(`The following wallets could not be unlocked: ${response.lockedLndsList.join(', ')}`);
+    console.log(
+      `The following wallets could not be unlocked: ${response.lockedLndsList.join(
+        ', '
+      )}`
+    );
   }
 };
 
@@ -26,7 +34,7 @@ export const handler = (argv: Arguments) => {
   });
 
   process.stdout.write('Enter master xud password: ');
-  rl.question('', async (password) => {
+  rl.question('', async password => {
     process.stdout.write('\n');
     rl.close();
     const request = new UnlockNodeRequest();

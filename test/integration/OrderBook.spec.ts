@@ -32,7 +32,9 @@ const getMockSwaps = (sandbox: sinon.SinonSandbox) => {
   const swaps = sandbox.createStubInstance(Swaps) as any;
   const lndBTC = sandbox.createStubInstance(LndClient) as any;
   const lndLTC = sandbox.createStubInstance(LndClient) as any;
-  swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
+  swaps.swapClientManager = sandbox.createStubInstance(
+    SwapClientManager
+  ) as any;
   swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
   swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
   swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
@@ -106,21 +108,37 @@ describe('OrderBook', () => {
   };
 
   it('should have trading pairs loaded', () => {
-    orderBook.pairIds.forEach((pairId) => {
+    orderBook.pairIds.forEach(pairId => {
       expect(orderBook.tradingPairs).to.have.key(pairId);
     });
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: PAIR_ID, quantity: 500, price: 55, isBuy: true, hold: 0 };
-    const { remainingOrder } = await orderBook.placeLimitOrder({ order: { localId: uuidv1(), ...order } });
+    const order = {
+      pairId: PAIR_ID,
+      quantity: 500,
+      price: 55,
+      isBuy: true,
+      hold: 0,
+    };
+    const { remainingOrder } = await orderBook.placeLimitOrder({
+      order: { localId: uuidv1(), ...order },
+    });
     expect(remainingOrder).to.not.be.undefined;
-    expect(orderBook.getOwnOrder(remainingOrder!.id, PAIR_ID)).to.not.be.undefined;
+    expect(orderBook.getOwnOrder(remainingOrder!.id, PAIR_ID)).to.not.be
+      .undefined;
     await orderBook.placeLimitOrder({ order: { localId: uuidv1(), ...order } });
   });
 
   it('should fully match new ownOrder and remove matches', async () => {
-    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 600, price: 55, isBuy: false, hold: 0 };
+    const order = {
+      pairId: 'LTC/BTC',
+      localId: uuidv1(),
+      quantity: 600,
+      price: 55,
+      isBuy: false,
+      hold: 0,
+    };
     const matches = await orderBook.placeLimitOrder({ order });
     expect(matches.remainingOrder).to.be.undefined;
 
@@ -137,7 +155,13 @@ describe('OrderBook', () => {
   });
 
   it('should partially match new market order and discard remaining order', async () => {
-    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 1000, isBuy: false, hold: 0 };
+    const order = {
+      pairId: 'LTC/BTC',
+      localId: uuidv1(),
+      quantity: 1000,
+      isBuy: false,
+      hold: 0,
+    };
     const result = await orderBook.placeMarketOrder({ order });
     const match = result.internalMatches[0];
     expect(result.remainingOrder).to.be.undefined;
@@ -147,9 +171,16 @@ describe('OrderBook', () => {
   it('should create, partially match, and remove an order', async () => {
     const order: orders.OwnOrder = createOwnOrder(10, 1000, true);
     await orderBook.placeLimitOrder({ order });
-    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 500, isBuy: false };
+    const takerOrder: orders.OwnMarketOrder = {
+      pairId: 'LTC/BTC',
+      localId: uuidv1(),
+      quantity: 500,
+      isBuy: false,
+    };
     await orderBook.placeMarketOrder({ order: takerOrder });
-    expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
+    expect(() =>
+      orderBook.removeOwnOrderByLocalId(order.localId)
+    ).to.not.throw();
   });
 
   it('should not add a new own order with a duplicated localId', async () => {
@@ -159,7 +190,9 @@ describe('OrderBook', () => {
 
     await expect(orderBook.placeLimitOrder({ order })).to.be.rejected;
 
-    expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
+    expect(() =>
+      orderBook.removeOwnOrderByLocalId(order.localId)
+    ).to.not.throw();
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
 
@@ -169,7 +202,7 @@ describe('OrderBook', () => {
   });
 
   it('should place order with quantity higher than min quantity', async () => {
-    orderBook['thresholds'] = { minQuantity : 10000 };
+    orderBook['thresholds'] = { minQuantity: 10000 };
     const order: orders.OwnOrder = createOwnOrder(0.01, 1000000, false);
 
     await expect(orderBook.placeLimitOrder({ order })).to.be.fulfilled;
@@ -227,13 +260,23 @@ describe('nomatching OrderBook', () => {
   it('should accept but not match limit orders', async () => {
     const buyOrder = createOwnOrder(0.01, 100000, true);
     const buyOrderResult = await orderBook.placeLimitOrder({ order: buyOrder });
-    expect(buyOrderResult.remainingOrder!.localId).to.be.equal(buyOrder.localId);
-    expect(buyOrderResult.remainingOrder!.quantity).to.be.equal(buyOrder.quantity);
+    expect(buyOrderResult.remainingOrder!.localId).to.be.equal(
+      buyOrder.localId
+    );
+    expect(buyOrderResult.remainingOrder!.quantity).to.be.equal(
+      buyOrder.quantity
+    );
 
     const sellOrder = createOwnOrder(0.01, 100000, false);
-    const sellOrderResult = await orderBook.placeLimitOrder({ order: sellOrder });
-    expect(sellOrderResult.remainingOrder!.localId).to.be.equal(sellOrder.localId);
-    expect(sellOrderResult.remainingOrder!.quantity).to.be.equal(sellOrder.quantity);
+    const sellOrderResult = await orderBook.placeLimitOrder({
+      order: sellOrder,
+    });
+    expect(sellOrderResult.remainingOrder!.localId).to.be.equal(
+      sellOrder.localId
+    );
+    expect(sellOrderResult.remainingOrder!.quantity).to.be.equal(
+      sellOrder.quantity
+    );
   });
 
   it('should not place the same order twice', async () => {
@@ -245,7 +288,9 @@ describe('nomatching OrderBook', () => {
   it('should not remove the same order twice', async () => {
     const order = createOwnOrder(0.01, 100000, true);
     await expect(orderBook.placeLimitOrder({ order })).to.be.fulfilled;
-    expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
+    expect(() =>
+      orderBook.removeOwnOrderByLocalId(order.localId)
+    ).to.not.throw();
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
   });
 
@@ -264,11 +309,13 @@ describe('nomatching OrderBook', () => {
       quantityToRemove: 10000,
     });
 
-    expect(() => orderBook['removeOwnOrder']({
-      orderId: remainingOrder!.id,
-      pairId: order.pairId,
-      quantityToRemove: 10000,
-    })).to.throw;
+    expect(() =>
+      orderBook['removeOwnOrder']({
+        orderId: remainingOrder!.id,
+        pairId: order.pairId,
+        quantityToRemove: 10000,
+      })
+    ).to.throw;
   });
 
   it('should allow own order partial removal, but should not find the order id after it was fully removed', async () => {
@@ -286,11 +333,13 @@ describe('nomatching OrderBook', () => {
       quantityToRemove: 10000,
     });
 
-    expect(() => orderBook['removeOwnOrder']({
-      orderId: remainingOrder!.id,
-      pairId: order.pairId,
-      quantityToRemove: 10000,
-    })).to.throw;
+    expect(() =>
+      orderBook['removeOwnOrder']({
+        orderId: remainingOrder!.id,
+        pairId: order.pairId,
+        quantityToRemove: 10000,
+      })
+    ).to.throw;
   });
 
   describe('stampOwnOrder', () => {
@@ -329,8 +378,9 @@ describe('nomatching OrderBook', () => {
         id: ownOrderWithLocalId.localId,
         pairId: ownOrderWithLocalId.pairId,
       });
-      expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId))
-        .to.throw(`order with local id ${ownOrderWithLocalId.localId} already exists`);
+      expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId)).to.throw(
+        `order with local id ${ownOrderWithLocalId.localId} already exists`
+      );
     });
 
     it('does not throw an error when replacing an existing localId', async () => {
@@ -342,7 +392,10 @@ describe('nomatching OrderBook', () => {
         id: ownOrderWithLocalId.localId,
         pairId: ownOrderWithLocalId.pairId,
       });
-      const stampedOrder = orderBook['stampOwnOrder'](ownOrderWithLocalId, ownOrderWithLocalId.localId);
+      const stampedOrder = orderBook['stampOwnOrder'](
+        ownOrderWithLocalId,
+        ownOrderWithLocalId.localId
+      );
       expect(stampedOrder.localId).to.equal(ownOrderWithLocalId.localId);
     });
   });

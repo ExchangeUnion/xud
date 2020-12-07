@@ -1,14 +1,19 @@
 import { Models } from '../db/DB';
-import { NodeAttributes, NodeCreationAttributes, NodeInstance, ReputationEventAttributes, ReputationEventCreationAttributes,
-  ReputationEventInstance } from '../db/types';
+import {
+  NodeAttributes,
+  NodeCreationAttributes,
+  NodeInstance,
+  ReputationEventAttributes,
+  ReputationEventCreationAttributes,
+  ReputationEventInstance,
+} from '../db/types';
 
 class P2PRepository {
-
   constructor(private models: Models) {}
 
   public getNodes = async (): Promise<NodeInstance[]> => {
     return this.models.Node.findAll();
-  }
+  };
 
   public getNode = async (nodePubKey: string): Promise<NodeInstance | null> => {
     return this.models.Node.findOne({
@@ -16,16 +21,18 @@ class P2PRepository {
         nodePubKey,
       },
     });
-  }
+  };
 
-  public getReputationEvents = async (node: NodeInstance): Promise<ReputationEventInstance[]> => {
+  public getReputationEvents = async (
+    node: NodeInstance
+  ): Promise<ReputationEventInstance[]> => {
     return this.models.ReputationEvent.findAll({
       where: {
         nodeId: node.id,
       },
       order: [['createdAt', 'DESC']],
     });
-  }
+  };
 
   /**
    * Adds a node to the database if it doesn't already exist.
@@ -42,15 +49,17 @@ class P2PRepository {
         throw err;
       }
     }
-  }
+  };
 
-  public addReputationEvent = async (event: ReputationEventCreationAttributes) => {
+  public addReputationEvent = async (
+    event: ReputationEventCreationAttributes
+  ) => {
     return this.models.ReputationEvent.create(<ReputationEventAttributes>event);
-  }
+  };
 
   public addNodes = async (nodes: NodeCreationAttributes[]) => {
     return this.models.Node.bulkCreate(<NodeAttributes[]>nodes);
-  }
+  };
 }
 
 export default P2PRepository;

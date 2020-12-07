@@ -13,8 +13,7 @@ export const describe = 'restore an xud instance from seed';
 
 export const builder = {
   backup_directory: {
-    description:
-`The directory to which backups were written,
+    description: `The directory to which backups were written,
 uses the default directory if unspecified`,
     type: 'string',
   },
@@ -29,7 +28,9 @@ const formatOutput = (response: RestoreNodeResponse.AsObject) => {
   let walletRestoredMessage = 'The following wallets were restored: ';
 
   if (response.restoredLndsList.length) {
-    walletRestoredMessage += response.restoredLndsList.join(', ') + (response.restoredConnext ? ', ETH' : '');
+    walletRestoredMessage +=
+      response.restoredLndsList.join(', ') +
+      (response.restoredConnext ? ', ETH' : '');
   } else if (response.restoredConnext) {
     walletRestoredMessage += 'ETH';
   }
@@ -63,25 +64,27 @@ export const handler = async (argv: Arguments<any>) => {
 
     // we must load backup files from disk before sending the restore request
     const backupDirectory = await fs.readdir(backupDir);
-    backupDirectory.forEach((filename) => {
-      readDbBackupPromises.push(new Promise(async (resolve) => {
-        const fileContent = await fs.readFile(join(backupDir, filename));
+    backupDirectory.forEach(filename => {
+      readDbBackupPromises.push(
+        new Promise(async resolve => {
+          const fileContent = await fs.readFile(join(backupDir, filename));
 
-        if (filename.startsWith('lnd-')) {
-          request.getLndBackupsMap().set(filename.substr(4), fileContent);
+          if (filename.startsWith('lnd-')) {
+            request.getLndBackupsMap().set(filename.substr(4), fileContent);
+
+            resolve();
+            return;
+          }
+
+          switch (filename) {
+            case 'xud':
+              request.setXudDatabase(fileContent);
+              break;
+          }
 
           resolve();
-          return;
-        }
-
-        switch (filename) {
-          case 'xud':
-            request.setXudDatabase(fileContent);
-            break;
-        }
-
-        resolve();
-      }));
+        })
+      );
     });
   } catch (err) {
     if (err.code !== 'ENOENT') {
@@ -100,53 +103,58 @@ export const handler = async (argv: Arguments<any>) => {
 You are restoring an xud node key and underlying wallets. All will be secured by
 a single password provided below.
   `);
-  rl.question('Enter your 24 word mnemonic separated by spaces: ', (mnemonicStr) => {
-    rl.close();
-    const rlQuiet = readline.createInterface({
-      input: process.stdin,
-      terminal: true,
-    });
-    const mnemonic = mnemonicStr.split(' ');
-    if (mnemonic.length !== 24) {
-      exitWithError('Mnemonic must be exactly 24 words');
-      return;
-    }
-    process.stdout.write('Enter a password: ');
-    rlQuiet.question('', (password1) => {
-      process.stdout.write('\nRe-enter password: ');
-      rlQuiet.question('', async (password2) => {
-        process.stdout.write('\n\n');
-        rlQuiet.close();
-        if (password1 === password2) {
-          if (password1.length < 8) {
-            exitWithError('Password must be at least 8 characters');
-            return;
-          }
-
-          request.setPassword(password1);
-          request.setSeedMnemonicList(mnemonic);
-
-          // we must wait for any db backup files to have been read and set on the request
-          await Promise.all(readDbBackupPromises);
-
-          const certPath = argv.tlscertpath ? argv.tlscertpath : getDefaultCertPath();
-          try {
-            await waitForCert(certPath);
-          } catch (err) {
-            console.error(err);
-            process.exitCode = 1;
-            return;
-          }
-
-          const client = await loadXudInitClient(argv);
-          // wait up to 3 seconds for rpc server to listen before call in case xud was just started
-          client.waitForReady(Date.now() + 3000, () => {
-            client.restoreNode(request, callback(argv, formatOutput));
-          });
-        } else {
-          exitWithError('Passwords do not match, please try again');
-        }
+  rl.question(
+    'Enter your 24 word mnemonic separated by spaces: ',
+    mnemonicStr => {
+      rl.close();
+      const rlQuiet = readline.createInterface({
+        input: process.stdin,
+        terminal: true,
       });
-    });
-  });
+      const mnemonic = mnemonicStr.split(' ');
+      if (mnemonic.length !== 24) {
+        exitWithError('Mnemonic must be exactly 24 words');
+        return;
+      }
+      process.stdout.write('Enter a password: ');
+      rlQuiet.question('', password1 => {
+        process.stdout.write('\nRe-enter password: ');
+        rlQuiet.question('', async password2 => {
+          process.stdout.write('\n\n');
+          rlQuiet.close();
+          if (password1 === password2) {
+            if (password1.length < 8) {
+              exitWithError('Password must be at least 8 characters');
+              return;
+            }
+
+            request.setPassword(password1);
+            request.setSeedMnemonicList(mnemonic);
+
+            // we must wait for any db backup files to have been read and set on the request
+            await Promise.all(readDbBackupPromises);
+
+            const certPath = argv.tlscertpath
+              ? argv.tlscertpath
+              : getDefaultCertPath();
+            try {
+              await waitForCert(certPath);
+            } catch (err) {
+              console.error(err);
+              process.exitCode = 1;
+              return;
+            }
+
+            const client = await loadXudInitClient(argv);
+            // wait up to 3 seconds for rpc server to listen before call in case xud was just started
+            client.waitForReady(Date.now() + 3000, () => {
+              client.restoreNode(request, callback(argv, formatOutput));
+            });
+          } else {
+            exitWithError('Passwords do not match, please try again');
+          }
+        });
+      });
+    }
+  );
 };

@@ -28,7 +28,9 @@ const errors = {
     code: errorCodes.DUPLICATE_ORDER,
   }),
   ORDER_NOT_FOUND: (orderId: string, peerPubKey?: string) => ({
-    message: `order with id ${orderId}${peerPubKey ? ` for peer ${peerPubKey}` : ''} could not be found`,
+    message: `order with id ${orderId}${
+      peerPubKey ? ` for peer ${peerPubKey}` : ''
+    } could not be found`,
     code: errorCodes.ORDER_NOT_FOUND,
   }),
   CURRENCY_DOES_NOT_EXIST: (currency: string) => ({
@@ -59,7 +61,10 @@ const errors = {
     message: `order with local id ${localId} does not exist`,
     code: errorCodes.LOCAL_ID_DOES_NOT_EXIST,
   }),
-  QUANTITY_DOES_NOT_MATCH: (requestedQuantity: number, orderQuantity: number) => ({
+  QUANTITY_DOES_NOT_MATCH: (
+    requestedQuantity: number,
+    orderQuantity: number
+  ) => ({
     message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),

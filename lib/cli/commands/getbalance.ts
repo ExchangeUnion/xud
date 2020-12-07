@@ -14,7 +14,7 @@ const HEADERS = [
 
 const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   const formatted: any[] = [];
-  balances.balancesMap.forEach((balanceElement) => {
+  balances.balancesMap.forEach(balanceElement => {
     const currency = balanceElement[0];
     const balance = balanceElement[1];
     const row = [];
@@ -22,25 +22,43 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
       currency,
       satsToCoinsStr(balance.totalBalance),
       formatBalance(balance.walletBalance, balance.unconfirmedWalletBalance),
-      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
+      formatBalance(
+        balance.channelBalance,
+        balance.pendingChannelBalance,
+        balance.inactiveChannelBalance
+      )
     );
     formatted.push(row);
   });
   return formatted;
 };
 
-const formatBalance = (availableBalance: number, pendingBalance: number, inactiveBalance = 0) => {
+const formatBalance = (
+  availableBalance: number,
+  pendingBalance: number,
+  inactiveBalance = 0
+) => {
   const availableBalanceStr = satsToCoinsStr(availableBalance);
-  const unconfirmedBalanceStr = pendingBalance > 0 ? `${satsToCoinsStr(pendingBalance)} pending` : undefined;
-  const inactiveBalanceStr = inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
+  const unconfirmedBalanceStr =
+    pendingBalance > 0
+      ? `${satsToCoinsStr(pendingBalance)} pending`
+      : undefined;
+  const inactiveBalanceStr =
+    inactiveBalance > 0
+      ? `${satsToCoinsStr(inactiveBalance)} inactive`
+      : undefined;
   if (unconfirmedBalanceStr || inactiveBalanceStr) {
     let str = availableBalanceStr;
     let paranthetical = '';
     if (unconfirmedBalanceStr) {
-      paranthetical += paranthetical ? ` | ${unconfirmedBalanceStr}` : unconfirmedBalanceStr;
+      paranthetical += paranthetical
+        ? ` | ${unconfirmedBalanceStr}`
+        : unconfirmedBalanceStr;
     }
     if (inactiveBalanceStr) {
-      paranthetical += paranthetical ? ` | ${inactiveBalanceStr}` : inactiveBalanceStr;
+      paranthetical += paranthetical
+        ? ` | ${inactiveBalanceStr}`
+        : inactiveBalanceStr;
     }
     str += ` (${paranthetical})`;
     return str;
@@ -67,18 +85,22 @@ export const command = 'getbalance [currency]';
 
 export const describe = 'get total balance for a given currency';
 
-export const builder = (argv: Argv) => argv
-  .option('currency', {
-    describe: 'the currency to query for',
-    type: 'string',
-  })
-  .example('$0 getbalance', 'get balance for all currencies')
-  .example('$0 getbalance BTC', 'get BTC balance');
+export const builder = (argv: Argv) =>
+  argv
+    .option('currency', {
+      describe: 'the currency to query for',
+      type: 'string',
+    })
+    .example('$0 getbalance', 'get balance for all currencies')
+    .example('$0 getbalance BTC', 'get BTC balance');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new GetBalanceRequest();
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());
   }
-  (await loadXudClient(argv)).getBalance(request, callback(argv, displayBalances));
+  (await loadXudClient(argv)).getBalance(
+    request,
+    callback(argv, displayBalances)
+  );
 };

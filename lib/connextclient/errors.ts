@@ -46,7 +46,9 @@ const errors = {
     code: errorCodes.SERVER_ERROR,
   }),
   UNEXPECTED: (statusCode: number, statusMessage?: string) => ({
-    message: `unexpected status from connext request ${statusCode}: ${statusMessage ?? ''}`,
+    message: `unexpected status from connext request ${statusCode}: ${
+      statusMessage ?? ''
+    }`,
     code: errorCodes.UNEXPECTED,
   }),
   NOT_FOUND: {
@@ -78,7 +80,8 @@ const errors = {
     code: errorCodes.MISSING_SEED,
   },
   INSUFFICIENT_COLLATERAL: {
-    message: 'channel collateralization in progress, please try again in ~1 minute',
+    message:
+      'channel collateralization in progress, please try again in ~1 minute',
     code: errorCodes.INSUFFICIENT_COLLATERAL,
   },
 };

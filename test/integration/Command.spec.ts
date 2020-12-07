@@ -32,5 +32,4 @@ describe('Command.callback', () => {
     callback(withJsonArgv, displayTable)(null, mockGrpcResponse);
     expect(called).to.equal(false);
   });
-
 });

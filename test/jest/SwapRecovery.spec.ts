@@ -1,4 +1,10 @@
-import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../../lib/constants/enums';
+import {
+  SwapClientType,
+  SwapFailureReason,
+  SwapPhase,
+  SwapRole,
+  SwapState,
+} from '../../lib/constants/enums';
 import LndClient from '../../lib/lndclient/LndClient';
 import Logger from '../../lib/Logger';
 import Peer from '../../lib/p2p/Peer';
@@ -7,13 +13,15 @@ import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import SwapRecovery from '../../lib/swaps/SwapRecovery';
 
 jest.mock('../../lib/Logger');
-const mockedLogger = <jest.Mock<Logger>><any>Logger;
+const mockedLogger = <jest.Mock<Logger>>(<any>Logger);
 jest.mock('../../lib/swaps/SwapClientManager');
-const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
+const mockedSwapClientManager = <jest.Mock<SwapClientManager>>(
+  (<any>SwapClientManager)
+);
 jest.mock('../../lib/p2p/Peer');
-const mockedPeer = <jest.Mock<Peer>><any>Peer;
+const mockedPeer = <jest.Mock<Peer>>(<any>Peer);
 jest.mock('../../lib/lndclient/LndClient');
-const mockedLnd = <jest.Mock<LndClient>><any>LndClient;
+const mockedLnd = <jest.Mock<LndClient>>(<any>LndClient);
 const getMockedLnd = (lockBuffer: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
@@ -35,7 +43,8 @@ const swapDealInstance = {
   makerCurrency,
   state: SwapState.Active,
   role: SwapRole.Maker,
-  peerPubKey: '02a9a503beb4f291c77cbea972c0fe2410f3bb0d62178896dcfae958edc8541b3c',
+  peerPubKey:
+    '02a9a503beb4f291c77cbea972c0fe2410f3bb0d62178896dcfae958edc8541b3c',
   orderId: '4e6926b0-c25a-11e9-ac60-17a7cbc02f5c',
   localId: '4e6926b0-c25a-11e9-ac60-17a7cbc02f5c',
   proposedQuantity: 1000,
@@ -60,7 +69,7 @@ describe('SwapRecovery', () => {
     logger.error = jest.fn();
     logger.info = jest.fn();
     swapClientManager = new mockedSwapClientManager();
-    swapClientManager.get = jest.fn().mockImplementation((currency) => {
+    swapClientManager.get = jest.fn().mockImplementation(currency => {
       if (currency === 'BTC') {
         return lndBtc;
       }
@@ -88,7 +97,9 @@ describe('SwapRecovery', () => {
     expect(deal.state).toEqual(SwapState.Error);
     expect(deal.failureReason).toEqual(SwapFailureReason.Crash);
     expect(swapRecovery['pendingSwaps'].delete).toHaveBeenCalledTimes(1);
-    expect(swapRecovery['pendingSwaps'].delete).toHaveBeenCalledWith(deal.rHash);
+    expect(swapRecovery['pendingSwaps'].delete).toHaveBeenCalledWith(
+      deal.rHash
+    );
     expect(save).toHaveBeenCalledTimes(1);
   });
 
@@ -130,7 +141,9 @@ describe('SwapRecovery', () => {
     deal.phase = SwapPhase.SendingPayment;
     swapRecovery = new SwapRecovery(swapClientManager, logger);
     const preimage = 'preimage';
-    lndLtc.lookupPayment = jest.fn().mockReturnValue({ preimage, state: PaymentState.Succeeded });
+    lndLtc.lookupPayment = jest
+      .fn()
+      .mockReturnValue({ preimage, state: PaymentState.Succeeded });
     const claimPaymentSpy = jest.spyOn(swapRecovery as any, 'claimPayment');
     const recoveredEventCallback = jest.fn();
     swapRecovery.on('recovered', recoveredEventCallback);
@@ -140,9 +153,16 @@ describe('SwapRecovery', () => {
     expect(recoveredEventCallback).toHaveBeenCalledTimes(1);
     expect(recoveredEventCallback).toHaveBeenCalledWith(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
-    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
+    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(
+      deal.rHash,
+      deal.takerCurrency
+    );
     expect(lndBtc.settleInvoice).toHaveBeenCalledTimes(1);
-    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage, deal.makerCurrency);
+    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(
+      deal.rHash,
+      preimage,
+      deal.makerCurrency
+    );
     expect(deal.state).toEqual(SwapState.Recovered);
     expect(deal.rPreimage).toEqual(preimage);
     expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeFalsy();
@@ -155,7 +175,9 @@ describe('SwapRecovery', () => {
     deal.phase = SwapPhase.PreimageResolved;
     swapRecovery = new SwapRecovery(swapClientManager, logger);
     const preimage = 'preimage';
-    lndLtc.lookupPayment = jest.fn().mockReturnValue({ preimage, state: PaymentState.Succeeded });
+    lndLtc.lookupPayment = jest
+      .fn()
+      .mockReturnValue({ preimage, state: PaymentState.Succeeded });
     const claimPaymentSpy = jest.spyOn(swapRecovery as any, 'claimPayment');
     const recoveredEventCallback = jest.fn();
     swapRecovery.on('recovered', recoveredEventCallback);
@@ -165,7 +187,11 @@ describe('SwapRecovery', () => {
     expect(recoveredEventCallback).toHaveBeenCalledTimes(1);
     expect(recoveredEventCallback).toHaveBeenCalledWith(deal);
     expect(lndBtc.settleInvoice).toHaveBeenCalledTimes(1);
-    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage, deal.makerCurrency);
+    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(
+      deal.rHash,
+      preimage,
+      deal.makerCurrency
+    );
     expect(deal.state).toEqual(SwapState.Recovered);
     expect(deal.rPreimage).toEqual(preimage);
     expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeFalsy();
@@ -177,13 +203,18 @@ describe('SwapRecovery', () => {
     const deal: any = { ...swapDealInstance };
     deal.phase = SwapPhase.SendingPayment;
     swapRecovery = new SwapRecovery(swapClientManager, logger);
-    lndLtc.lookupPayment = jest.fn().mockReturnValue({ state: PaymentState.Failed });
+    lndLtc.lookupPayment = jest
+      .fn()
+      .mockReturnValue({ state: PaymentState.Failed });
 
     swapRecovery['failDeal'] = jest.fn();
 
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
-    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
+    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(
+      deal.rHash,
+      deal.takerCurrency
+    );
     expect(swapRecovery['failDeal']).toHaveBeenCalledTimes(1);
     expect(swapRecovery['failDeal']).toHaveBeenCalledWith(deal, lndBtc);
   });
@@ -192,12 +223,16 @@ describe('SwapRecovery', () => {
     const deal: any = { ...swapDealInstance };
     deal.phase = SwapPhase.SendingPayment;
     swapRecovery = new SwapRecovery(swapClientManager, logger);
-    lndLtc.lookupPayment = jest.fn().mockReturnValue({ state: PaymentState.Pending });
+    lndLtc.lookupPayment = jest
+      .fn()
+      .mockReturnValue({ state: PaymentState.Pending });
 
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
-    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
+    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(
+      deal.rHash,
+      deal.takerCurrency
+    );
     expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeTruthy();
   });
-
 });

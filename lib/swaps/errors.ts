@@ -49,7 +49,9 @@ const errors = {
     code: errorCodes.SWAP_CLIENT_WALLET_NOT_CREATED,
   }),
   SWAP_CLIENT_MISCONFIGURED: (clientLabels: string[]) => ({
-    message: `the following swap clients are misconfigured: ${clientLabels.join(', ')}`,
+    message: `the following swap clients are misconfigured: ${clientLabels.join(
+      ', '
+    )}`,
     code: errorCodes.SWAP_CLIENT_MISCONFIGURED,
   }),
   /**
@@ -72,12 +74,26 @@ const errors = {
     message: 'swap failed due to insufficient channel balance',
     code: errorCodes.INSUFFICIENT_BALANCE,
   },
-  INSUFFICIENT_OUTBOUND_CAPACITY: (currency: string, amount: number, capacity: number) => ({
-    message: `${currency} outbound capacity of ${Math.max(0, capacity)} is not sufficient for order amount of ${amount}`,
+  INSUFFICIENT_OUTBOUND_CAPACITY: (
+    currency: string,
+    amount: number,
+    capacity: number
+  ) => ({
+    message: `${currency} outbound capacity of ${Math.max(
+      0,
+      capacity
+    )} is not sufficient for order amount of ${amount}`,
     code: errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
   }),
-  INSUFFICIENT_INBOUND_CAPACITY: (currency: string, amount: number, capacity: number) => ({
-    message: `${currency} inbound capacity of ${Math.max(0, capacity)} is not sufficient for order amount of ${amount}`,
+  INSUFFICIENT_INBOUND_CAPACITY: (
+    currency: string,
+    amount: number,
+    capacity: number
+  ) => ({
+    message: `${currency} inbound capacity of ${Math.max(
+      0,
+      capacity
+    )} is not sufficient for order amount of ${amount}`,
     code: errorCodes.INSUFFICIENT_INBOUND_CAPACITY,
   }),
 };

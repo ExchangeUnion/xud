@@ -8,4 +8,5 @@ export const describe = 'place a sell order';
 
 export const builder = (argv: Argv) => placeOrderBuilder(argv, OrderSide.SELL);
 
-export const handler = async (argv: Arguments) => placeOrderHandler(argv, OrderSide.SELL);
+export const handler = async (argv: Arguments) =>
+  placeOrderHandler(argv, OrderSide.SELL);

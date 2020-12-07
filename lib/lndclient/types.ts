@@ -23,16 +23,21 @@ export type LndInfo = {
 };
 
 export type ChannelCount = {
-  active: number,
-  inactive?: number,
-  pending: number,
-  closed: number,
+  active: number;
+  inactive?: number;
+  pending: number;
+  closed: number;
 };
 
 export type Chain = {
-  network: string,
-  chain: string,
+  network: string;
+  chain: string;
 };
 
-export type ClientMethods = 'close' | 'waitForReady' | 'makeClientStreamRequest' | 'makeBidiStreamRequest'
-  | 'makeServerStreamRequest' | 'makeUnaryRequest';
+export type ClientMethods =
+  | 'close'
+  | 'waitForReady'
+  | 'makeClientStreamRequest'
+  | 'makeBidiStreamRequest'
+  | 'makeServerStreamRequest'
+  | 'makeUnaryRequest';

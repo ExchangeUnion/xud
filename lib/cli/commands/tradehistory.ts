@@ -1,7 +1,13 @@
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { Arguments, Argv } from 'yargs';
-import { Role, Trade, TradeHistoryRequest, TradeHistoryResponse, OrderSide } from '../../proto/xudrpc_pb';
+import {
+  Role,
+  Trade,
+  TradeHistoryRequest,
+  TradeHistoryResponse,
+  OrderSide,
+} from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { satsToCoinsStr, trim } from '../utils';
 
@@ -65,7 +71,7 @@ const displayTrades = (trades: TradeHistoryResponse.AsObject) => {
 
     table.push(details);
   });
-  console.log(colors.underline(colors.bold('\Trades:')));
+  console.log(colors.underline(colors.bold('Trades:')));
   console.log(table.toString());
 };
 
@@ -73,19 +79,20 @@ export const command = 'tradehistory [limit]';
 
 export const describe = 'list completed trades';
 
-export const builder = (argv: Argv) => argv
-  .option('limit', {
-    description: 'the maximum number of trades to display',
-    type: 'number',
-    default: 15,
-  })
-  .option('all', {
-    description: 'whether to display the complete trade history',
-    type: 'boolean',
-    default: false,
-  })
-  .example('$0 tradehistory', 'list most recent trades')
-  .example('$0 tradehistory 50', 'list the 50 most recent trades');
+export const builder = (argv: Argv) =>
+  argv
+    .option('limit', {
+      description: 'the maximum number of trades to display',
+      type: 'number',
+      default: 15,
+    })
+    .option('all', {
+      description: 'whether to display the complete trade history',
+      type: 'boolean',
+      default: false,
+    })
+    .example('$0 tradehistory', 'list most recent trades')
+    .example('$0 tradehistory 50', 'list the 50 most recent trades');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new TradeHistoryRequest();
@@ -93,5 +100,8 @@ export const handler = async (argv: Arguments<any>) => {
     // don't set a limit if the --all flag is specified
     request.setLimit(argv.limit);
   }
-  (await loadXudClient(argv)).tradeHistory(request, callback(argv, displayTrades));
+  (await loadXudClient(argv)).tradeHistory(
+    request,
+    callback(argv, displayTrades)
+  );
 };

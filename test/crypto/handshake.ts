@@ -1,6 +1,12 @@
 import { expect } from 'chai';
 import secp256k1 from 'secp256k1';
-import { createECDH, randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
+import {
+  createECDH,
+  randomBytes,
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+} from 'crypto';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
 describe('key exchange and symmetric encryption', () => {
@@ -31,8 +37,15 @@ describe('key exchange and symmetric encryption', () => {
     const cipher = createCipheriv('aes-256-cbc', secretKey, iv);
     const encrypted = Buffer.concat([iv, cipher.update(msg), cipher.final()]);
 
-    const decipher = createDecipheriv('aes-256-cbc', secretKey, encrypted.slice(0, 16));
-    const decrypted = Buffer.concat([decipher.update(encrypted.slice(16)), decipher.final()]);
+    const decipher = createDecipheriv(
+      'aes-256-cbc',
+      secretKey,
+      encrypted.slice(0, 16)
+    );
+    const decrypted = Buffer.concat([
+      decipher.update(encrypted.slice(16)),
+      decipher.final(),
+    ]);
 
     expect(msg.toString('hex')).to.be.equal(decrypted.toString('hex'));
   });
@@ -52,15 +65,17 @@ describe('authentication', () => {
       ephemeralPubKey: aliceEphemeralPubKey,
     };
 
-    const msgHash = createHash('sha256')
-      .update(JSON.stringify(msg))
-      .digest();
+    const msgHash = createHash('sha256').update(JSON.stringify(msg)).digest();
 
     // alice signs the hash of its handshake request data and send it to bob
     const { signature } = secp256k1.sign(msgHash, aliceNodePrivKey);
 
     // bob verifies the signature on the handshake request data hash using alice's public key
-    const verified = secp256k1.verify(msgHash, signature, Buffer.from(msg.nodePubKey, 'hex'));
+    const verified = secp256k1.verify(
+      msgHash,
+      signature,
+      Buffer.from(msg.nodePubKey, 'hex')
+    );
 
     expect(verified).to.be.true;
   });

@@ -22,18 +22,22 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {
     const obj = pb.DisconnectingPacket.deserializeBinary(binary).toObject();
-    return DisconnectingPacket.validate(obj) ? DisconnectingPacket.convert(obj) : obj;
-  }
+    return DisconnectingPacket.validate(obj)
+      ? DisconnectingPacket.convert(obj)
+      : obj;
+  };
 
   private static validate = (msg: pb.DisconnectingPacket.AsObject): boolean => {
-    return !!(msg.id
-      && msg.reason
-    );
-  }
+    return !!(msg.id && msg.reason);
+  };
 
-  private static convert = (obj: pb.DisconnectingPacket.AsObject): DisconnectingPacket => {
+  private static convert = (
+    obj: pb.DisconnectingPacket.AsObject
+  ): DisconnectingPacket => {
     return new DisconnectingPacket({
       header: {
         id: obj.id,
@@ -43,7 +47,7 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
         payload: obj.payload || undefined,
       }),
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.DisconnectingPacket();
@@ -52,7 +56,7 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     msg.setPayload(this.body!.payload!);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default DisconnectingPacket;

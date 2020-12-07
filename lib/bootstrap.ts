@@ -5,7 +5,7 @@ export default () => {
   dotenv.config();
 
   /** Rethrow unhandled promise rejection, to crash process of an unwrapped instance */
-  process.on('unhandledRejection', (err) => {
+  process.on('unhandledRejection', err => {
     console.error(err);
     throw err;
   });
