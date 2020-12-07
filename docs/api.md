@@ -106,11 +106,9 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
-  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 
