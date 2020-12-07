@@ -42,6 +42,7 @@ import {
   ConnextBlockNumberResponse,
   ConnextChannelDetails,
   GetBlockByNumberResponse,
+  EthproviderGasPriceResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 import {
@@ -900,6 +901,21 @@ class ConnextClient extends SwapClient {
     return parseInt(blockNumberResponse.result, 16);
   }
 
+  private getGasPrice = async () => {
+    const res = await this.sendRequest(
+      `/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`,
+      'POST',
+      {
+        method: 'eth_gasPrice',
+        params: [],
+      },
+    );
+    const gasPriceresponse = await parseResponseBody<EthproviderGasPriceResponse>(res);
+    const weiGasPrice = parseInt(gasPriceresponse.result, 16);
+    const gweiGasPrice = (weiGasPrice / 10 ** 9).toLocaleString('fullwide', { useGrouping: false });
+    return gweiGasPrice;
+  }
+
   private getBalanceForAddress = async (assetId: string) => {
     const res = await this.sendRequest(
       `/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`,
@@ -1135,13 +1151,14 @@ class ConnextClient extends SwapClient {
       return []; // there is nothing to withdraw and no tx to return
     }
 
+    const gasPriceGwei = await this.getGasPrice();
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       publicIdentifier: this.publicIdentifier,
       channelAddress: this.channelAddress,
       amount: amount.toLocaleString('fullwide', { useGrouping: false }),
       assetId: this.tokenAddresses.get(currency),
       recipient: destination,
-      fee: '120', // TODO: estimate fee
+      fee: gasPriceGwei,
     });
 
     const { transferId } = await parseResponseBody<ConnextWithdrawResponse>(
