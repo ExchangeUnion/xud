@@ -8,8 +8,6 @@ const errorCodes = {
   INVALID: codesPrefix.concat('.4'),
   SERVER_ERROR: codesPrefix.concat('.5'),
   UNEXPECTED: codesPrefix.concat('.6'),
-  TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
-  PAYMENT_NOT_FOUND: codesPrefix.concat('.8'),
   INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.9'),
   CONNEXT_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.11'),
   CONNEXT_CLIENT_NOT_INITIALIZED: codesPrefix.concat('.12'),
@@ -18,6 +16,8 @@ const errorCodes = {
   EXPIRY_MISSING: codesPrefix.concat('.15'),
   MISSING_SEED: codesPrefix.concat('.16'),
   INSUFFICIENT_COLLATERAL: codesPrefix.concat('.17'),
+  NOT_FOUND: codesPrefix.concat('.18'),
+  WITHDRAW_ADDRESS_MISSING: codesPrefix.concat('.19'),
 };
 
 const errors = {
@@ -49,13 +49,13 @@ const errors = {
     message: `unexpected status from connext request ${statusCode}: ${statusMessage ?? ''}`,
     code: errorCodes.UNEXPECTED,
   }),
-  TOKEN_ADDRESS_NOT_FOUND: {
-    message: 'connext token address not found',
-    code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,
+  NOT_FOUND: {
+    message: 'connext returned not found response',
+    code: errorCodes.NOT_FOUND,
   },
-  PAYMENT_NOT_FOUND: {
-    message: 'connext payment not found',
-    code: errorCodes.PAYMENT_NOT_FOUND,
+  WITHDRAW_ADDRESS_MISSING: {
+    message: 'destination account for the withdrawal is missing',
+    code: errorCodes.WITHDRAW_ADDRESS_MISSING,
   },
   INVALID_TOKEN_PAYMENT_RESPONSE: {
     message: 'connext TokenPaymentResponse is invalid',

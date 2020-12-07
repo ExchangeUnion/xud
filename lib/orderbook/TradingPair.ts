@@ -262,6 +262,8 @@ class TradingPair extends EventEmitter {
     if (isOwnOrder(order)) {
       assert(order.hold === 0, 'cannot remove an order with a hold');
     }
+    const startingQuantity = order.quantity;
+    order.quantity = 0;
     const map = order.isBuy ? maps.buyMap : maps.sellMap;
     map.delete(order.id);
 
@@ -271,7 +273,7 @@ class TradingPair extends EventEmitter {
     }
 
     this.logger.trace(`order removed: ${orderId}`);
-    return { order: order as T, fullyRemoved: true };
+    return { order: { ...order, quantity: startingQuantity } as T, fullyRemoved: true };
   }
 
   private getOrderMap = (order: Order): OrderMap<Order> | undefined => {

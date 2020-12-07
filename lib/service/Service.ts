@@ -237,7 +237,13 @@ class Service extends EventEmitter {
 
   public walletDeposit = async (args: { currency: string }) => {
     const { currency } = args;
-    const address = await this.swapClientManager.deposit(currency);
+    const address = await this.swapClientManager.walletDeposit(currency.toUpperCase());
+    return address;
+  }
+
+  public deposit = async (args: { currency: string }) => {
+    const { currency } = args;
+    const address = await this.swapClientManager.deposit(currency.toUpperCase());
     return address;
   }
 

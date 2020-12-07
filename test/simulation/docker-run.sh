@@ -2,11 +2,11 @@
 
 # create the temp directories with the current user so it is the owner for permissions
 mkdir -p $PWD/temp/logs
-mkdir -p $PWD/temp/indra
+# mkdir -p $PWD/temp/indra
 
-pushd temp/indra
-make start
-popd
+# pushd temp/indra
+# make start
+# popd
 
 export DOCKER_CLIENT_TIMEOUT=120
 export COMPOSE_HTTP_TIMEOUT=120
@@ -27,8 +27,8 @@ if [[ $testRetCode != 0 ]]; then
     done
 fi
 
-pushd temp/indra
-make reset
-popd
+# pushd temp/indra
+# make reset
+# popd
 
 exit $testRetCode
