@@ -21,7 +21,6 @@ const createTable = () => {
 const formatPairList = (pairs: string[]) => {
   let pairString = '';
   pairs.forEach((pair) => {
-    /* eslint disable-next-line */
     pairString = `${pairString}${pairString ? '\n' : ''}${pair}`;
   });
   return pairString;
@@ -30,7 +29,6 @@ const formatPairList = (pairs: string[]) => {
 const formatLndPubKeys = (lndKeys: string[][]) => {
   let str = '';
   lndKeys.forEach((client) => {
-    /* eslint disable-next-line */
     str = `${str}${str ? '\n' : ''}${client[0]} lnd key: ${shorten(client[1])}`;
   });
   return str;
