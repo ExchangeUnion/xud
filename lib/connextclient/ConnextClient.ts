@@ -901,6 +901,10 @@ class ConnextClient extends SwapClient {
     return parseInt(blockNumberResponse.result, 16);
   }
 
+  /*
+   * Returns the current price per gas in gwei.
+   * This is a median based on the value used in recent blocks.
+  */
   private getGasPrice = async () => {
     const res = await this.sendRequest(
       `/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`,
