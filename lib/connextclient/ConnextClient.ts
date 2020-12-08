@@ -400,13 +400,16 @@ class ConnextClient extends SwapClient {
     }
     const ethBalance$ = interval(30000).pipe(
       mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!))),
+      // only emit new ETH balance events when the balance changes
       distinctUntilChanged(),
     );
     this._reconcileDepositSubscriber = ethBalance$
+      // when ETH balance changes
       .pipe(
         mergeMap(() => {
           if (this.status === ClientStatus.ConnectionVerified) {
             return defer(() => {
+              // create new commitment transaction
               return from(
                 this.sendRequest('/deposit', 'POST', {
                   channelAddress: this.channelAddress,
