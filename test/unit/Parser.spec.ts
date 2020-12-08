@@ -1,11 +1,7 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { randomBytes } from 'crypto';
-import {
-  DisconnectionReason,
-  SwapFailureReason,
-  XuNetwork,
-} from '../../lib/constants/enums';
+import { DisconnectionReason, SwapFailureReason, XuNetwork } from '../../lib/constants/enums';
 import { errorCodes } from '../../lib/p2p/errors';
 import Framer from '../../lib/p2p/Framer';
 import Network from '../../lib/p2p/Network';
@@ -29,8 +25,7 @@ describe('Parser', () => {
   const network = new Network(XuNetwork.SimNet);
   const framer = new Framer(network);
   const encryptionKey = randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
-  const rHash =
-    '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
+  const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
   let parser: Parser;
 
   beforeEach(() => {
@@ -54,7 +49,7 @@ describe('Parser', () => {
   function verify(packets: Packet[]): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
       waitForPackets(packets.length)
-        .then(parsedPackets => {
+        .then((parsedPackets) => {
           for (let i = 0; i < packets.length; i += 1) {
             expect(stringify(packets[i])).to.equal(stringify(parsedPackets[i]));
             expect(packets[i].type).to.equal(parsedPackets[i].type);
@@ -66,15 +61,13 @@ describe('Parser', () => {
   }
 
   function testValidPacket(packet: Packet) {
-    it(`should parse a valid ${PacketType[packet.type]} packet`, done => {
+    it(`should parse a valid ${PacketType[packet.type]} packet`, (done) => {
       verify([packet]).then(done).catch(done);
 
       framer.frame(packet).then(parser.feed).catch(done);
     });
 
-    it(`should parse an encrypted valid ${
-      PacketType[packet.type]
-    } packet`, done => {
+    it(`should parse an encrypted valid ${PacketType[packet.type]} packet`, (done) => {
       verify([packet]).then(done).catch(done);
 
       parser.setEncryptionKey(encryptionKey);
@@ -84,9 +77,7 @@ describe('Parser', () => {
   }
 
   function testInvalidPacket(packet: Packet) {
-    it(`should not parse an invalid ${
-      PacketType[packet.type]
-    } packet`, done => {
+    it(`should not parse an invalid ${PacketType[packet.type]} packet`, (done) => {
       verify([packet])
         .then(() => done('err: packet is valid'))
         .catch(() => done());
@@ -96,12 +87,12 @@ describe('Parser', () => {
   }
 
   function testSplitPacket(packet: Packet) {
-    it(`should parse ${PacketType[packet.type]} packet split`, done => {
+    it(`should parse ${PacketType[packet.type]} packet split`, (done) => {
       verify([packet]).then(done).catch(done);
 
       framer
         .frame(packet)
-        .then(data => {
+        .then((data) => {
           const middleIndex = data.length >> 1;
           parser.feed(data.slice(0, middleIndex));
           parser.feed(data.slice(middleIndex));
@@ -109,16 +100,14 @@ describe('Parser', () => {
         .catch(done);
     });
 
-    it(`should parse encrypted ${
-      PacketType[packet.type]
-    } packet split`, done => {
+    it(`should parse encrypted ${PacketType[packet.type]} packet split`, (done) => {
       verify([packet]).then(done).catch(done);
 
       parser.setEncryptionKey(encryptionKey);
 
       framer
         .frame(packet, encryptionKey)
-        .then(data => {
+        .then((data) => {
           const middleIndex = data.length >> 1;
           parser.feed(data.slice(0, middleIndex));
           parser.feed(data.slice(middleIndex));
@@ -129,34 +118,34 @@ describe('Parser', () => {
 
   function testConcatenatedPackets(packets: Packet[]) {
     it(`should parse ${packets
-      .map(packet => PacketType[packet.type])
-      .join(' ')} concatenated`, done => {
+      .map((packet) => PacketType[packet.type])
+      .join(' ')} concatenated`, (done) => {
       verify(packets).then(done).catch(done);
 
       Promise.all(
-        packets.map(packet => {
+        packets.map((packet) => {
           return framer.frame(packet);
-        })
+        }),
       )
-        .then(buffers => {
+        .then((buffers) => {
           parser.feed(Buffer.concat(buffers));
         })
         .catch(done);
     });
 
     it(`should parse encrypted ${packets
-      .map(packet => PacketType[packet.type])
-      .join(' ')} concatenated`, done => {
+      .map((packet) => PacketType[packet.type])
+      .join(' ')} concatenated`, (done) => {
       verify(packets).then(done).catch(done);
 
       parser.setEncryptionKey(encryptionKey);
 
       Promise.all(
-        packets.map(packet => {
+        packets.map((packet) => {
           return framer.frame(packet, encryptionKey);
-        })
+        }),
       )
-        .then(buffers => {
+        .then((buffers) => {
           parser.feed(Buffer.concat(buffers));
         })
         .catch(done);
@@ -164,20 +153,20 @@ describe('Parser', () => {
   }
 
   function testConcatenatedAndSplit(packets: Packet[], splitByte: number) {
-    const packetsStr = packets.map(packet => PacketType[packet.type]).join(' ');
-    it(`should parse ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, done => {
+    const packetsStr = packets.map((packet) => PacketType[packet.type]).join(' ');
+    it(`should parse ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
       verify(packets).catch(done);
 
       let remaining = Buffer.alloc(0);
       const framerPromises: Promise<void>[] = [];
-      packets.forEach(packet => {
+      packets.forEach((packet) => {
         framerPromises.push(
-          framer.frame(packet).then(buffer => {
+          framer.frame(packet).then((buffer) => {
             const concatBuffer = Buffer.concat([remaining, buffer]);
             const chunk = concatBuffer.slice(0, splitByte); // split on a specific byte
             remaining = concatBuffer.slice(splitByte); // keep the remaining for the next chunk
             parser.feed(chunk);
-          })
+          }),
         );
       });
       Promise.all(framerPromises)
@@ -188,21 +177,21 @@ describe('Parser', () => {
         .catch(done);
     });
 
-    it(`should parse encrypted ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, done => {
+    it(`should parse encrypted ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
       verify(packets).then(done).catch(done);
 
       parser.setEncryptionKey(encryptionKey);
 
       let remaining = Buffer.alloc(0);
       const framerPromises: Promise<void>[] = [];
-      packets.forEach(packet => {
+      packets.forEach((packet) => {
         framerPromises.push(
-          framer.frame(packet, encryptionKey).then(buffer => {
+          framer.frame(packet, encryptionKey).then((buffer) => {
             const concatBuffer = Buffer.concat([remaining, buffer]);
             const chunk = concatBuffer.slice(0, splitByte); // split on a specific byte
             remaining = concatBuffer.slice(splitByte); // keep the remaining for the next chunk
             parser.feed(chunk);
-          })
+          }),
         );
       });
       Promise.all(framerPromises)
@@ -248,13 +237,13 @@ describe('Parser', () => {
       new packets.SessionInitPacket({
         ...sessionInitPacketBody,
         nodeState: { ...nodeState, pairs: [] },
-      })
+      }),
     );
     testValidPacket(
       new packets.SessionInitPacket({
         ...sessionInitPacketBody,
         nodeState: { ...nodeState, addresses: [] },
-      })
+      }),
     );
     testValidPacket(
       new packets.SessionInitPacket({
@@ -263,7 +252,7 @@ describe('Parser', () => {
           ...nodeState,
           lndPubKeys: { ...nodeState.lndPubKeys, BTC: undefined },
         }),
-      })
+      }),
     );
     testValidPacket(
       new packets.SessionInitPacket({
@@ -272,7 +261,7 @@ describe('Parser', () => {
           ...nodeState,
           lndPubKeys: { ...nodeState.lndPubKeys, LTC: undefined },
         }),
-      })
+      }),
     );
     testValidPacket(
       new packets.SessionInitPacket({
@@ -281,37 +270,35 @@ describe('Parser', () => {
           ...nodeState,
           tokenIdentifiers: { ...nodeState.tokenIdentifiers, BTC: undefined },
         }),
-      })
+      }),
     );
-    testInvalidPacket(
-      new packets.SessionInitPacket(sessionInitPacketBody, uuid())
-    );
+    testInvalidPacket(new packets.SessionInitPacket(sessionInitPacketBody, uuid()));
     testInvalidPacket(
       new packets.SessionInitPacket(
-        removeUndefinedProps({ ...sessionInitPacketBody, sign: undefined })
-      )
+        removeUndefinedProps({ ...sessionInitPacketBody, sign: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.SessionInitPacket(
         removeUndefinedProps({
           ...sessionInitPacketBody,
           ephemeralPubKey: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SessionInitPacket(
         removeUndefinedProps({
           ...sessionInitPacketBody,
           peerPubKey: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SessionInitPacket({
         ...sessionInitPacketBody,
         nodeState: { ...nodeState, addresses: [{} as Address] },
-      })
+      }),
     );
 
     const sessionAckPacketBody = {
@@ -325,47 +312,43 @@ describe('Parser', () => {
           ...sessionAckPacketBody,
           ephemeralPubKey: undefined,
         }),
-        uuid()
-      )
+        uuid(),
+      ),
     );
 
     testValidPacket(new packets.NodeStateUpdatePacket(nodeState));
-    testValidPacket(
-      new packets.NodeStateUpdatePacket({ ...nodeState, pairs: [] })
-    );
-    testValidPacket(
-      new packets.NodeStateUpdatePacket({ ...nodeState, addresses: [] })
-    );
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeState, pairs: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeState, addresses: [] }));
     testValidPacket(
       new packets.NodeStateUpdatePacket(
         removeUndefinedProps({
           ...nodeState,
           lndPubKeys: { ...nodeState.lndPubKeys, BTC: undefined },
-        })
-      )
+        }),
+      ),
     );
     testValidPacket(
       new packets.NodeStateUpdatePacket(
         removeUndefinedProps({
           ...nodeState,
           lndPubKeys: { ...nodeState.lndPubKeys, LTC: undefined },
-        })
-      )
+        }),
+      ),
     );
     testValidPacket(
       new packets.NodeStateUpdatePacket(
         removeUndefinedProps({
           ...nodeState,
           tokenIdentifiers: { ...nodeState.tokenIdentifiers, LTC: undefined },
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(new packets.NodeStateUpdatePacket(nodeState, uuid()));
     testInvalidPacket(
       new packets.NodeStateUpdatePacket({
         ...nodeState,
         addresses: [{} as Address],
-      })
+      }),
     );
 
     const disconnectingPacketBody = {
@@ -375,16 +358,14 @@ describe('Parser', () => {
     testValidPacket(new packets.DisconnectingPacket(disconnectingPacketBody));
     testValidPacket(
       new packets.DisconnectingPacket(
-        removeUndefinedProps({ ...disconnectingPacketBody, payload: undefined })
-      )
+        removeUndefinedProps({ ...disconnectingPacketBody, payload: undefined }),
+      ),
     );
-    testInvalidPacket(
-      new packets.DisconnectingPacket(disconnectingPacketBody, uuid())
-    );
+    testInvalidPacket(new packets.DisconnectingPacket(disconnectingPacketBody, uuid()));
     testInvalidPacket(
       new packets.DisconnectingPacket(
-        removeUndefinedProps({ ...disconnectingPacketBody, reason: undefined })
-      )
+        removeUndefinedProps({ ...disconnectingPacketBody, reason: undefined }),
+      ),
     );
 
     testValidPacket(new packets.GetNodesPacket());
@@ -400,14 +381,9 @@ describe('Parser', () => {
     testValidPacket(new packets.NodesPacket([node], uuid()));
     testInvalidPacket(new packets.NodesPacket([node]));
     testInvalidPacket(
-      new packets.NodesPacket(
-        [removeUndefinedProps({ ...node, nodePubKey: undefined })],
-        uuid()
-      )
+      new packets.NodesPacket([removeUndefinedProps({ ...node, nodePubKey: undefined })], uuid()),
     );
-    testInvalidPacket(
-      new packets.NodesPacket([{ ...node, addresses: [] }], uuid())
-    );
+    testInvalidPacket(new packets.NodesPacket([{ ...node, addresses: [] }], uuid()));
 
     const orderPacketBody = {
       id: uuid(),
@@ -417,42 +393,26 @@ describe('Parser', () => {
       isBuy: false,
     };
     testValidPacket(new packets.OrderPacket(orderPacketBody));
-    testValidPacket(
-      new packets.OrderPacket({ ...orderPacketBody, isBuy: true })
-    );
-    testValidPacket(
-      new packets.OrderPacket({ ...orderPacketBody, replaceOrderId: uuid() })
-    );
+    testValidPacket(new packets.OrderPacket({ ...orderPacketBody, isBuy: true }));
+    testValidPacket(new packets.OrderPacket({ ...orderPacketBody, replaceOrderId: uuid() }));
     testInvalidPacket(new packets.OrderPacket(orderPacketBody, uuid()));
     testInvalidPacket(
-      new packets.OrderPacket(
-        removeUndefinedProps({ ...orderPacketBody, id: undefined })
-      )
+      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })),
     );
     testInvalidPacket(
-      new packets.OrderPacket(
-        removeUndefinedProps({ ...orderPacketBody, pairId: undefined })
-      )
+      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })),
     );
     testInvalidPacket(
-      new packets.OrderPacket(
-        removeUndefinedProps({ ...orderPacketBody, price: undefined })
-      )
+      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: undefined })),
     );
     testInvalidPacket(
-      new packets.OrderPacket(
-        removeUndefinedProps({ ...orderPacketBody, price: 0 })
-      )
+      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: 0 })),
     );
     testInvalidPacket(
-      new packets.OrderPacket(
-        removeUndefinedProps({ ...orderPacketBody, quantity: undefined })
-      )
+      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: undefined })),
     );
     testInvalidPacket(
-      new packets.OrderPacket(
-        removeUndefinedProps({ ...orderPacketBody, quantity: 0 })
-      )
+      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })),
     );
 
     const orderInvalidationPacketBody = {
@@ -460,31 +420,27 @@ describe('Parser', () => {
       pairId: uuid(),
       quantity: 10,
     };
-    testValidPacket(
-      new packets.OrderInvalidationPacket(orderInvalidationPacketBody)
-    );
+    testValidPacket(new packets.OrderInvalidationPacket(orderInvalidationPacketBody));
+    testInvalidPacket(new packets.OrderInvalidationPacket(orderInvalidationPacketBody, uuid()));
     testInvalidPacket(
-      new packets.OrderInvalidationPacket(orderInvalidationPacketBody, uuid())
+      new packets.OrderInvalidationPacket(
+        removeUndefinedProps({ ...orderPacketBody, id: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, id: undefined })
-      )
+        removeUndefinedProps({ ...orderPacketBody, pairId: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, pairId: undefined })
-      )
+        removeUndefinedProps({ ...orderPacketBody, quantity: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, quantity: undefined })
-      )
-    );
-    testInvalidPacket(
-      new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, quantity: 0 })
-      )
+        removeUndefinedProps({ ...orderPacketBody, quantity: 0 }),
+      ),
     );
 
     const getOrdersPacketBody = {
@@ -494,13 +450,11 @@ describe('Parser', () => {
     testInvalidPacket(new packets.GetOrdersPacket(getOrdersPacketBody, uuid()));
     testInvalidPacket(
       new packets.GetOrdersPacket(
-        removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined })
-      )
+        removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined }),
+      ),
     );
     testInvalidPacket(
-      new packets.GetOrdersPacket(
-        removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })
-      )
+      new packets.GetOrdersPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })),
     );
 
     const ordersPacketBody = [orderPacketBody];
@@ -513,21 +467,19 @@ describe('Parser', () => {
       currency: 'BTC',
     };
     testValidPacket(new packets.SanitySwapInitPacket(sanitySwapInitPacketBody));
-    testInvalidPacket(
-      new packets.SanitySwapInitPacket(sanitySwapInitPacketBody, uuid())
-    );
+    testInvalidPacket(new packets.SanitySwapInitPacket(sanitySwapInitPacketBody, uuid()));
     testInvalidPacket(
       new packets.SanitySwapInitPacket(
         removeUndefinedProps({
           ...sanitySwapInitPacketBody,
           currency: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SanitySwapInitPacket(
-        removeUndefinedProps({ ...sanitySwapInitPacketBody, rHash: undefined })
-      )
+        removeUndefinedProps({ ...sanitySwapInitPacketBody, rHash: undefined }),
+      ),
     );
 
     const swapRequestPacketBody = {
@@ -538,44 +490,42 @@ describe('Parser', () => {
       takerCltvDelta: 10,
     };
     testValidPacket(new packets.SwapRequestPacket(swapRequestPacketBody));
-    testInvalidPacket(
-      new packets.SwapRequestPacket(swapRequestPacketBody, uuid())
-    );
+    testInvalidPacket(new packets.SwapRequestPacket(swapRequestPacketBody, uuid()));
     testInvalidPacket(
       new packets.SwapRequestPacket(
         removeUndefinedProps({
           ...swapRequestPacketBody,
           proposedQuantity: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, proposedQuantity: 0 })
-      )
+        removeUndefinedProps({ ...swapRequestPacketBody, proposedQuantity: 0 }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, orderId: undefined })
-      )
+        removeUndefinedProps({ ...swapRequestPacketBody, orderId: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, rHash: undefined })
-      )
+        removeUndefinedProps({ ...swapRequestPacketBody, rHash: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapRequestPacket(
         removeUndefinedProps({
           ...swapRequestPacketBody,
           takerCltvDelta: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, takerCltvDelta: 0 })
-      )
+        removeUndefinedProps({ ...swapRequestPacketBody, takerCltvDelta: 0 }),
+      ),
     );
 
     const swapAcceptedPacketBody = {
@@ -583,37 +533,35 @@ describe('Parser', () => {
       quantity: 10,
       makerCltvDelta: 10,
     };
-    testValidPacket(
-      new packets.SwapAcceptedPacket(swapAcceptedPacketBody, uuid())
-    );
+    testValidPacket(new packets.SwapAcceptedPacket(swapAcceptedPacketBody, uuid()));
     testInvalidPacket(new packets.SwapAcceptedPacket(swapAcceptedPacketBody));
     testInvalidPacket(
       new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, rHash: undefined })
-      )
+        removeUndefinedProps({ ...swapAcceptedPacketBody, rHash: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: undefined })
-      )
+        removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: 0 })
-      )
+        removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: 0 }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapAcceptedPacket(
         removeUndefinedProps({
           ...swapAcceptedPacketBody,
           makerCltvDelta: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: 0 })
-      )
+        removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: 0 }),
+      ),
     );
 
     const swapFailedPacketBody = {
@@ -628,43 +576,38 @@ describe('Parser', () => {
         removeUndefinedProps({
           ...swapFailedPacketBody,
           errorMessage: undefined,
-        })
-      )
+        }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapFailedPacket(
-        removeUndefinedProps({ ...swapFailedPacketBody, rHash: undefined })
-      )
+        removeUndefinedProps({ ...swapFailedPacketBody, rHash: undefined }),
+      ),
     );
     testInvalidPacket(
       new packets.SwapFailedPacket(
         removeUndefinedProps({
           ...swapFailedPacketBody,
           failureReason: undefined,
-        })
-      )
+        }),
+      ),
     );
   });
   describe('test TCP segmentation/concatenation support', () => {
     const pingPacket = new packets.PingPacket();
-    const sessionInitPacket = new packets.SessionInitPacket(
-      sessionInitPacketBody
-    );
+    const sessionInitPacket = new packets.SessionInitPacket(sessionInitPacketBody);
 
     testSplitPacket(pingPacket);
     testSplitPacket(sessionInitPacket);
     testConcatenatedPackets([pingPacket, sessionInitPacket, pingPacket]);
     testConcatenatedAndSplit(
       [pingPacket, sessionInitPacket, pingPacket],
-      Framer.MSG_HEADER_LENGTH - 1
+      Framer.MSG_HEADER_LENGTH - 1,
     );
+    testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH);
     testConcatenatedAndSplit(
       [pingPacket, sessionInitPacket, pingPacket],
-      Framer.MSG_HEADER_LENGTH
-    );
-    testConcatenatedAndSplit(
-      [pingPacket, sessionInitPacket, pingPacket],
-      Framer.MSG_HEADER_LENGTH + 1
+      Framer.MSG_HEADER_LENGTH + 1,
     );
   });
 
@@ -674,10 +617,10 @@ describe('Parser', () => {
       parser.feed(Buffer.alloc(0));
     });
 
-    it('should not try parse just the header as a packet', done => {
+    it('should not try parse just the header as a packet', (done) => {
       waitForPackets()
         .then(() => done('err: packet should not be parsed'))
-        .catch(err => {
+        .catch((err) => {
           if (err === timeoutError) {
             done();
           } else {
@@ -685,24 +628,22 @@ describe('Parser', () => {
           }
         });
 
-      const sessionInitPacket = new packets.SessionInitPacket(
-        sessionInitPacketBody
-      );
+      const sessionInitPacket = new packets.SessionInitPacket(sessionInitPacketBody);
       framer
         .frame(sessionInitPacket)
-        .then(data => {
+        .then((data) => {
           const header = data.slice(0, Framer.MSG_HEADER_LENGTH);
           parser.feed(header);
         })
         .catch(done);
     });
 
-    it('should buffer a max buffer length', done => {
+    it('should buffer a max buffer length', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       waitForPackets()
         .then(() => done('err: packet should not be parsed'))
-        .catch(err => {
+        .catch((err) => {
           if (err === timeoutError) {
             done();
           } else {
@@ -713,12 +654,12 @@ describe('Parser', () => {
       parser.feed(Buffer.allocUnsafe(10));
     });
 
-    it('should not buffer when max buffer size exceeds', done => {
+    it('should not buffer when max buffer size exceeds', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       waitForPackets()
         .then(() => done('err: packet should not be parsed'))
-        .catch(err => {
+        .catch((err) => {
           if (err && err.code === errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED) {
             done();
           } else {

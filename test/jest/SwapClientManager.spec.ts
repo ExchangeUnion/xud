@@ -118,12 +118,7 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('it initializes lnd-ltc and lnd-btc', async () => {
-    swapClientManager = new SwapClientManager(
-      config,
-      loggers,
-      unitConverter,
-      db.models
-    );
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     await swapClientManager.init();
 
     expect(swapClientManager['swapClients'].size).toEqual(2);
@@ -140,12 +135,7 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('it initializes lnd-ltc and lnd-btc', async () => {
-    swapClientManager = new SwapClientManager(
-      config,
-      loggers,
-      unitConverter,
-      db.models
-    );
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     await swapClientManager.init();
 
     expect(swapClientManager['swapClients'].size).toEqual(2);
@@ -158,12 +148,7 @@ describe('Swaps.SwapClientManager', () => {
 
   test('it initializes lnd-btc', async () => {
     config.lnd.LTC!.disable = true;
-    swapClientManager = new SwapClientManager(
-      config,
-      loggers,
-      unitConverter,
-      db.models
-    );
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     await swapClientManager.init();
 
     expect(swapClientManager['swapClients'].size).toEqual(1);
@@ -176,12 +161,7 @@ describe('Swaps.SwapClientManager', () => {
   test('it initializes nothing', async () => {
     config.lnd.BTC!.disable = true;
     config.lnd.LTC!.disable = true;
-    swapClientManager = new SwapClientManager(
-      config,
-      loggers,
-      unitConverter,
-      db.models
-    );
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     await swapClientManager.init();
 
     expect(swapClientManager['swapClients'].size).toEqual(0);
@@ -193,12 +173,7 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   test('closes lnd-btc and lnd-ltc', async () => {
-    swapClientManager = new SwapClientManager(
-      config,
-      loggers,
-      unitConverter,
-      db.models
-    );
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     await swapClientManager.init();
 
     expect(swapClientManager['swapClients'].size).toEqual(2);
@@ -212,15 +187,10 @@ describe('Swaps.SwapClientManager', () => {
     const setReservedInboundBtcAmount = jest.fn();
 
     beforeEach(async () => {
-      swapClientManager = new SwapClientManager(
-        config,
-        loggers,
-        unitConverter,
-        db.models
-      );
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
       await swapClientManager.init();
       swapClientManager.swapClients.get(
-        currency
+        currency,
       )!.setReservedInboundAmount = setReservedInboundBtcAmount;
     });
 
@@ -229,69 +199,38 @@ describe('Swaps.SwapClientManager', () => {
     });
 
     test('it adds outbound reserved amounts', () => {
-      expect(
-        swapClientManager.getOutboundReservedAmount(currency)
-      ).toBeUndefined();
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
       swapClientManager.addOutboundReservedAmount(currency, amount);
-      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(
-        amount
-      );
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
       swapClientManager.addOutboundReservedAmount(currency, amount);
-      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(
-        amount * 2
-      );
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount * 2);
     });
 
     test('it subtracts outbound reserved amounts', () => {
-      expect(
-        swapClientManager.getOutboundReservedAmount(currency)
-      ).toBeUndefined();
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
       swapClientManager.addOutboundReservedAmount(currency, amount);
-      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(
-        amount
-      );
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
       swapClientManager.subtractOutboundReservedAmount(currency, amount);
       expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(0);
     });
 
     test('it adds inbound reserved amounts and sets amount on swap client', () => {
-      expect(
-        swapClientManager['inboundReservedAmounts'].get(currency)
-      ).toBeUndefined();
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
       swapClientManager.addInboundReservedAmount(currency, amount);
-      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(
-        amount
-      );
-      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(
-        amount,
-        currency
-      );
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
       swapClientManager.addInboundReservedAmount(currency, amount);
-      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(
-        amount * 2
-      );
-      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(
-        amount * 2,
-        currency
-      );
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount * 2);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount * 2, currency);
     });
 
     test('it subtracts inbound reserved amounts', () => {
-      expect(
-        swapClientManager['inboundReservedAmounts'].get(currency)
-      ).toBeUndefined();
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
       swapClientManager.addInboundReservedAmount(currency, amount);
-      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(
-        amount
-      );
-      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(
-        amount,
-        currency
-      );
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
       swapClientManager.subtractInboundReservedAmount(currency, amount);
-      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(
-        0
-      );
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(0);
     });
   });
 
@@ -299,14 +238,8 @@ describe('Swaps.SwapClientManager', () => {
     let remoteIdentifier: string;
 
     beforeEach(async () => {
-      remoteIdentifier =
-        '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
-      swapClientManager = new SwapClientManager(
-        config,
-        loggers,
-        unitConverter,
-        db.models
-      );
+      remoteIdentifier = '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
       await swapClientManager.init();
     });
 
@@ -358,7 +291,7 @@ describe('Swaps.SwapClientManager', () => {
           remoteIdentifier,
           units: amount,
           uris: lndListeningUris,
-        })
+        }),
       );
     });
   });
@@ -407,11 +340,9 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(
-        swapClientManager.checkSwapCapacities(order)
-      ).rejects.toHaveProperty(
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
         'code',
-        errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY
+        errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
       );
     });
 
@@ -424,11 +355,9 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(
-        swapClientManager.checkSwapCapacities(order)
-      ).rejects.toHaveProperty(
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
         'code',
-        errorCodes.INSUFFICIENT_INBOUND_CAPACITY
+        errorCodes.INSUFFICIENT_INBOUND_CAPACITY,
       );
     });
 
@@ -443,11 +372,9 @@ describe('Swaps.SwapClientManager', () => {
 
       swapClientManager['outboundReservedAmounts'].set('LTC', 200000);
 
-      await expect(
-        swapClientManager.checkSwapCapacities(order)
-      ).rejects.toHaveProperty(
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
         'code',
-        errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY
+        errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
       );
     });
 
@@ -462,11 +389,9 @@ describe('Swaps.SwapClientManager', () => {
 
       swapClientManager['inboundReservedAmounts'].set('BTC', 200000);
 
-      await expect(
-        swapClientManager.checkSwapCapacities(order)
-      ).rejects.toHaveProperty(
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
         'code',
-        errorCodes.INSUFFICIENT_INBOUND_CAPACITY
+        errorCodes.INSUFFICIENT_INBOUND_CAPACITY,
       );
     });
 
@@ -486,9 +411,10 @@ describe('Swaps.SwapClientManager', () => {
     });
 
     test('throws when swap client is not found', async () => {
-      await expect(
-        swapClientManager.tradingLimits('BBB')
-      ).rejects.toHaveProperty('code', errorCodes.SWAP_CLIENT_NOT_FOUND);
+      await expect(swapClientManager.tradingLimits('BBB')).rejects.toHaveProperty(
+        'code',
+        errorCodes.SWAP_CLIENT_NOT_FOUND,
+      );
 
       const order: OwnLimitOrder = {
         price: 0.01,
@@ -498,9 +424,10 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(
-        swapClientManager.checkSwapCapacities(order)
-      ).rejects.toHaveProperty('code', errorCodes.SWAP_CLIENT_NOT_FOUND);
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
+        'code',
+        errorCodes.SWAP_CLIENT_NOT_FOUND,
+      );
     });
   });
 });

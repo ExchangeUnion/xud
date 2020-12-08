@@ -24,12 +24,10 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): SwapRequestPacket | pb.SwapRequestPacket.AsObject => {
     const obj = pb.SwapRequestPacket.deserializeBinary(binary).toObject();
-    return SwapRequestPacket.validate(obj)
-      ? SwapRequestPacket.convert(obj)
-      : obj;
+    return SwapRequestPacket.validate(obj) ? SwapRequestPacket.convert(obj) : obj;
   };
 
   private static validate = (obj: pb.SwapRequestPacket.AsObject): boolean => {
@@ -43,9 +41,7 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
     );
   };
 
-  private static convert = (
-    obj: pb.SwapRequestPacket.AsObject
-  ): SwapRequestPacket => {
+  private static convert = (obj: pb.SwapRequestPacket.AsObject): SwapRequestPacket => {
     return new SwapRequestPacket({
       header: {
         id: obj.id,

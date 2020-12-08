@@ -18,8 +18,7 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
 
   if (response.initializedLndsList.length) {
     walletInitializedMessage +=
-      response.initializedLndsList.join(', ') +
-      (response.initializedConnext ? ', ETH' : '');
+      response.initializedLndsList.join(', ') + (response.initializedConnext ? ', ETH' : '');
   } else if (response.initializedConnext) {
     walletInitializedMessage += 'ETH';
   }
@@ -38,18 +37,16 @@ You are creating an xud node key and underlying wallets. All will be secured by 
 a single password provided below.
 `);
   process.stdout.write('Enter a password: ');
-  rl.question('', password1 => {
+  rl.question('', (password1) => {
     process.stdout.write('\nRe-enter password: ');
-    rl.question('', async password2 => {
+    rl.question('', async (password2) => {
       process.stdout.write('\n\n');
       rl.close();
       if (password1 === password2) {
         const request = new CreateNodeRequest();
         request.setPassword(password1);
 
-        const certPath = argv.tlscertpath
-          ? argv.tlscertpath
-          : getDefaultCertPath();
+        const certPath = argv.tlscertpath ? argv.tlscertpath : getDefaultCertPath();
         try {
           await waitForCert(certPath);
         } catch (err) {

@@ -18,21 +18,17 @@ class SanitySwapAckPacket extends Packet<SanitySwapAckPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): SanitySwapAckPacket | pb.SanitySwapAckPacket.AsObject => {
     const obj = pb.SanitySwapAckPacket.deserializeBinary(binary).toObject();
-    return SanitySwapAckPacket.validate(obj)
-      ? SanitySwapAckPacket.convert(obj)
-      : obj;
+    return SanitySwapAckPacket.validate(obj) ? SanitySwapAckPacket.convert(obj) : obj;
   };
 
   private static validate = (obj: pb.SanitySwapAckPacket.AsObject): boolean => {
     return !!(obj.id && obj.reqId);
   };
 
-  private static convert = (
-    obj: pb.SanitySwapAckPacket.AsObject
-  ): SanitySwapAckPacket => {
+  private static convert = (obj: pb.SanitySwapAckPacket.AsObject): SanitySwapAckPacket => {
     return new SanitySwapAckPacket({
       header: {
         id: obj.id,

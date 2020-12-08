@@ -99,9 +99,7 @@ const createSwapFailure = (swapFailure: SwapFailure) => {
   grpcSwapFailure.setPairId(swapFailure.pairId);
   grpcSwapFailure.setPeerPubKey(swapFailure.peerPubKey);
   grpcSwapFailure.setQuantity(swapFailure.quantity);
-  grpcSwapFailure.setFailureReason(
-    SwapFailureReason[swapFailure.failureReason]
-  );
+  grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
   return grpcSwapFailure;
 };
 
@@ -130,19 +128,13 @@ const createSwapAccepted = (swapAccepted: SwapAccepted) => {
 const createPlaceOrderResponse = (result: PlaceOrderResult) => {
   const response = new xudrpc.PlaceOrderResponse();
 
-  const internalMatches = result.internalMatches.map(match =>
-    createOrder(match)
-  );
+  const internalMatches = result.internalMatches.map((match) => createOrder(match));
   response.setInternalMatchesList(internalMatches);
 
-  const swapSuccesses = result.swapSuccesses.map(swapSuccess =>
-    createSwapSuccess(swapSuccess)
-  );
+  const swapSuccesses = result.swapSuccesses.map((swapSuccess) => createSwapSuccess(swapSuccess));
   response.setSwapSuccessesList(swapSuccesses);
 
-  const swapFailures = result.swapFailures.map(swapFailure =>
-    createSwapFailure(swapFailure)
-  );
+  const swapFailures = result.swapFailures.map((swapFailure) => createSwapFailure(swapFailure));
   response.setSwapFailuresList(swapFailures);
 
   if (result.remainingOrder) {
@@ -197,7 +189,7 @@ class GrpcService {
 
   /** Closes and removes all active streaming calls. */
   public closeStreams = () => {
-    this.streams.forEach(stream => {
+    this.streams.forEach((stream) => {
       stream.end();
     });
     this.streams.clear();
@@ -218,7 +210,7 @@ class GrpcService {
    */
   private isReady = (
     service: Service | undefined,
-    callbackOrCall: grpc.sendUnaryData<any> | grpc.ServerWriteableStream<any>
+    callbackOrCall: grpc.sendUnaryData<any> | grpc.ServerWriteableStream<any>,
   ): service is Service => {
     if (!service) {
       const err = this.locked
@@ -247,10 +239,10 @@ class GrpcService {
   /**
    * See [[Service.addCurrency]]
    */
-  public addCurrency: grpc.handleUnaryCall<
-    xudrpc.Currency,
-    xudrpc.AddCurrencyResponse
-  > = async (call, callback) => {
+  public addCurrency: grpc.handleUnaryCall<xudrpc.Currency, xudrpc.AddCurrencyResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -267,10 +259,10 @@ class GrpcService {
   /**
    * See [[Service.addPair]]
    */
-  public addPair: grpc.handleUnaryCall<
-    xudrpc.AddPairRequest,
-    xudrpc.AddPairResponse
-  > = async (call, callback) => {
+  public addPair: grpc.handleUnaryCall<xudrpc.AddPairRequest, xudrpc.AddPairResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -344,10 +336,7 @@ class GrpcService {
       return;
     }
     try {
-      const {
-        removedOrderLocalIds,
-        onHoldOrderLocalIds,
-      } = await this.service.removeAllOrders();
+      const { removedOrderLocalIds, onHoldOrderLocalIds } = await this.service.removeAllOrders();
 
       const response = new xudrpc.RemoveAllOrdersResponse();
       response.setRemovedOrderIdsList(removedOrderLocalIds);
@@ -370,9 +359,7 @@ class GrpcService {
       return;
     }
     try {
-      const balanceResponse = await this.service.getBalance(
-        call.request.toObject()
-      );
+      const balanceResponse = await this.service.getBalance(call.request.toObject());
       const response = new xudrpc.GetBalanceResponse();
       const balancesMap = response.getBalancesMap();
       balanceResponse.forEach((balanceObj, currency) => {
@@ -382,9 +369,7 @@ class GrpcService {
         balance.setPendingChannelBalance(balanceObj.pendingChannelBalance);
         balance.setInactiveChannelBalance(balanceObj.inactiveChannelBalance);
         balance.setWalletBalance(balanceObj.walletBalance);
-        balance.setUnconfirmedWalletBalance(
-          balanceObj.unconfirmedWalletBalance
-        );
+        balance.setUnconfirmedWalletBalance(balanceObj.unconfirmedWalletBalance);
         balancesMap.set(currency, balance);
       });
       callback(null, response);
@@ -404,9 +389,7 @@ class GrpcService {
       return;
     }
     try {
-      const tradingLimitsResponse = await this.service.tradingLimits(
-        call.request.toObject()
-      );
+      const tradingLimitsResponse = await this.service.tradingLimits(call.request.toObject());
       const response = new xudrpc.TradingLimitsResponse();
       const limitsMap = response.getLimitsMap();
       tradingLimitsResponse.forEach((tradingLimitsObj, currency) => {
@@ -447,10 +430,10 @@ class GrpcService {
   /**
    * See [[Service.connect]]
    */
-  public connect: grpc.handleUnaryCall<
-    xudrpc.ConnectRequest,
-    xudrpc.ConnectResponse
-  > = async (call, callback) => {
+  public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -487,10 +470,10 @@ class GrpcService {
   /**
    * See [[Service.deposit]]
    */
-  public deposit: grpc.handleUnaryCall<
-    xudrpc.DepositRequest,
-    xudrpc.DepositResponse
-  > = async (call, callback) => {
+  public deposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -527,10 +510,10 @@ class GrpcService {
   /**
    * See [[Service.ban]]
    */
-  public ban: grpc.handleUnaryCall<
-    xudrpc.BanRequest,
-    xudrpc.BanResponse
-  > = async (call, callback) => {
+  public ban: grpc.handleUnaryCall<xudrpc.BanRequest, xudrpc.BanResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -546,10 +529,10 @@ class GrpcService {
   /**
    * See [[Service.unban]]
    */
-  public unban: grpc.handleUnaryCall<
-    xudrpc.UnbanRequest,
-    xudrpc.UnbanResponse
-  > = async (call, callback) => {
+  public unban: grpc.handleUnaryCall<xudrpc.UnbanRequest, xudrpc.UnbanResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -565,17 +548,15 @@ class GrpcService {
   /**
    * See [[Service.executeSwap]]
    */
-  public executeSwap: grpc.handleUnaryCall<
-    xudrpc.ExecuteSwapRequest,
-    xudrpc.SwapSuccess
-  > = async (call, callback) => {
+  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      const swapSuccess = await this.service.executeSwap(
-        call.request.toObject()
-      );
+      const swapSuccess = await this.service.executeSwap(call.request.toObject());
       callback(null, createSwapSuccess(swapSuccess));
     } catch (err) {
       if (typeof err === 'number') {
@@ -619,10 +600,10 @@ class GrpcService {
   /**
    * See [[Service.getInfo]]
    */
-  public getInfo: grpc.handleUnaryCall<
-    xudrpc.GetInfoRequest,
-    xudrpc.GetInfoResponse
-  > = async (_, callback) => {
+  public getInfo: grpc.handleUnaryCall<xudrpc.GetInfoRequest, xudrpc.GetInfoResponse> = async (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -641,7 +622,7 @@ class GrpcService {
         const lnd = new xudrpc.LndInfo();
         if (lndInfo.blockheight) lnd.setBlockheight(lndInfo.blockheight);
         if (lndInfo.chains) {
-          const chains: xudrpc.Chain[] = lndInfo.chains.map(chain => {
+          const chains: xudrpc.Chain[] = lndInfo.chains.map((chain) => {
             const xudChain = new xudrpc.Chain();
             xudChain.setChain(chain.chain);
             xudChain.setNetwork(chain.network);
@@ -654,8 +635,7 @@ class GrpcService {
           channels.setActive(lndInfo.channels.active);
           channels.setPending(lndInfo.channels.pending);
           channels.setClosed(lndInfo.channels.closed);
-          if (lndInfo.channels.inactive)
-            channels.setInactive(lndInfo.channels.inactive);
+          if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
         lnd.setStatus(lndInfo.status);
@@ -672,12 +652,9 @@ class GrpcService {
       if (getInfoResponse.connext) {
         const connext = new xudrpc.ConnextInfo();
         connext.setStatus(getInfoResponse.connext.status);
-        if (getInfoResponse.connext.address)
-          connext.setAddress(getInfoResponse.connext.address);
-        if (getInfoResponse.connext.version)
-          connext.setVersion(getInfoResponse.connext.version);
-        if (getInfoResponse.connext.chain)
-          connext.setChain(getInfoResponse.connext.chain);
+        if (getInfoResponse.connext.address) connext.setAddress(getInfoResponse.connext.address);
+        if (getInfoResponse.connext.version) connext.setVersion(getInfoResponse.connext.version);
+        if (getInfoResponse.connext.chain) connext.setChain(getInfoResponse.connext.chain);
         response.setConnext(connext);
       }
 
@@ -723,9 +700,7 @@ class GrpcService {
       return;
     }
     try {
-      const { banned, reputationScore } = await this.service.getNodeInfo(
-        call.request.toObject()
-      );
+      const { banned, reputationScore } = await this.service.getNodeInfo(call.request.toObject());
       const response = new xudrpc.GetNodeInfoResponse();
       if (banned) {
         response.setBanned(banned);
@@ -740,22 +715,20 @@ class GrpcService {
   /**
    * See [[Service.listOrders]]
    */
-  public listOrders: grpc.handleUnaryCall<
-    xudrpc.ListOrdersRequest,
-    xudrpc.ListOrdersResponse
-  > = (call, callback) => {
+  public listOrders: grpc.handleUnaryCall<xudrpc.ListOrdersRequest, xudrpc.ListOrdersResponse> = (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      const listOrdersResponse = this.service.listOrders(
-        call.request.toObject()
-      );
+      const listOrdersResponse = this.service.listOrders(call.request.toObject());
       const response = new xudrpc.ListOrdersResponse();
 
       const listOrdersList = <T extends ServiceOrder>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
-        orders.forEach(order => ordersList.push(createServiceOrder(order)));
+        orders.forEach((order) => ordersList.push(createServiceOrder(order)));
         return ordersList;
       };
 
@@ -788,7 +761,7 @@ class GrpcService {
       const currencies = this.service.listCurrencies();
       const response = new xudrpc.ListCurrenciesResponse();
 
-      currencies.forEach(currency => {
+      currencies.forEach((currency) => {
         const resultCurrency = new xudrpc.Currency();
         resultCurrency.setDecimalPlaces(currency.decimalPlaces);
         resultCurrency.setCurrency(currency.id);
@@ -808,10 +781,10 @@ class GrpcService {
   /**
    * See [[Service.listPairs]]
    */
-  public listPairs: grpc.handleUnaryCall<
-    xudrpc.ListPairsRequest,
-    xudrpc.ListPairsResponse
-  > = (_, callback) => {
+  public listPairs: grpc.handleUnaryCall<xudrpc.ListPairsRequest, xudrpc.ListPairsResponse> = (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -839,7 +812,7 @@ class GrpcService {
     try {
       const trades = await this.service.tradeHistory(call.request.toObject());
       const response = new xudrpc.TradeHistoryResponse();
-      const tradesList: xudrpc.Trade[] = trades.map(trade => {
+      const tradesList: xudrpc.Trade[] = trades.map((trade) => {
         const grpcTrade = new xudrpc.Trade();
         grpcTrade.setMakerOrder(createServiceOrder(trade.makerOrder));
         if (trade.takerOrder) {
@@ -876,10 +849,10 @@ class GrpcService {
   /**
    * See [[Service.listPeers]]
    */
-  public listPeers: grpc.handleUnaryCall<
-    xudrpc.ListPeersRequest,
-    xudrpc.ListPeersResponse
-  > = (_, callback) => {
+  public listPeers: grpc.handleUnaryCall<xudrpc.ListPeersRequest, xudrpc.ListPeersResponse> = (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -887,7 +860,7 @@ class GrpcService {
       const listPeersResponse = this.service.listPeers();
       const response = new xudrpc.ListPeersResponse();
       const peers: xudrpc.Peer[] = [];
-      listPeersResponse.forEach(peer => {
+      listPeersResponse.forEach((peer) => {
         const grpcPeer = new xudrpc.Peer();
         grpcPeer.setAddress(peer.address);
         grpcPeer.setInbound(peer.inbound);
@@ -917,7 +890,7 @@ class GrpcService {
   public placeOrder: grpc.handleServerStreamingCall<
     xudrpc.PlaceOrderRequest,
     xudrpc.PlaceOrderResponse
-  > = async call => {
+  > = async (call) => {
     if (!this.service) {
       call.emit('error', {
         code: status.UNAVAILABLE,
@@ -927,12 +900,9 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.placeOrder(
-        call.request.toObject(),
-        (result: ServicePlaceOrderEvent) => {
-          call.write(createPlaceOrderEvent(result));
-        }
-      );
+      await this.service.placeOrder(call.request.toObject(), (result: ServicePlaceOrderEvent) => {
+        call.write(createPlaceOrderEvent(result));
+      });
 
       call.end();
     } catch (err) {
@@ -1009,9 +979,7 @@ class GrpcService {
       return;
     }
     try {
-      const numNodes = await this.service.discoverNodes(
-        call.request.toObject()
-      );
+      const numNodes = await this.service.discoverNodes(call.request.toObject());
 
       const response = new xudrpc.DiscoverNodesResponse();
       response.setNumNodes(numNodes);
@@ -1056,10 +1024,10 @@ class GrpcService {
     }
   };
 
-  public shutdown: grpc.handleUnaryCall<
-    xudrpc.ShutdownRequest,
-    xudrpc.ShutdownResponse
-  > = (_, callback) => {
+  public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -1078,7 +1046,7 @@ class GrpcService {
   public subscribeOrders: grpc.handleServerStreamingCall<
     xudrpc.SubscribeOrdersRequest,
     xudrpc.OrderUpdate
-  > = call => {
+  > = (call) => {
     if (!this.isReady(this.service, call)) {
       return;
     }
@@ -1102,7 +1070,7 @@ class GrpcService {
         }
         call.write(orderUpdate);
       },
-      cancelled$
+      cancelled$,
     );
   };
 
@@ -1112,7 +1080,7 @@ class GrpcService {
   public subscribeSwapFailures: grpc.handleServerStreamingCall<
     xudrpc.SubscribeSwapsRequest,
     xudrpc.SwapFailure
-  > = call => {
+  > = (call) => {
     if (!this.isReady(this.service, call)) {
       return;
     }
@@ -1123,7 +1091,7 @@ class GrpcService {
       (result: SwapFailure) => {
         call.write(createSwapFailure(result));
       },
-      cancelled$
+      cancelled$,
     );
     this.addStream(call);
   };
@@ -1134,7 +1102,7 @@ class GrpcService {
   public subscribeSwaps: grpc.handleServerStreamingCall<
     xudrpc.SubscribeSwapsRequest,
     xudrpc.SwapSuccess
-  > = call => {
+  > = (call) => {
     if (!this.isReady(this.service, call)) {
       return;
     }
@@ -1145,7 +1113,7 @@ class GrpcService {
       (result: SwapSuccess) => {
         call.write(createSwapSuccess(result));
       },
-      cancelled$
+      cancelled$,
     );
     this.addStream(call);
   };
@@ -1156,7 +1124,7 @@ class GrpcService {
   public subscribeSwapsAccepted: grpc.handleServerStreamingCall<
     xudrpc.SubscribeSwapsAcceptedRequest,
     xudrpc.SwapAccepted
-  > = call => {
+  > = (call) => {
     if (!this.isReady(this.service, call)) {
       return;
     }
@@ -1167,7 +1135,7 @@ class GrpcService {
       (result: SwapAccepted) => {
         call.write(createSwapAccepted(result));
       },
-      cancelled$
+      cancelled$,
     );
     this.addStream(call);
   };

@@ -23,8 +23,5 @@ export const command = 'getmnemonic';
 export const describe = 'show the master xud seed mnemonic';
 
 export const handler = async (argv: Arguments) => {
-  (await loadXudClient(argv)).getMnemonic(
-    new GetMnemonicRequest(),
-    callback(argv, formatOutput)
-  );
+  (await loadXudClient(argv)).getMnemonic(new GetMnemonicRequest(), callback(argv, formatOutput));
 };

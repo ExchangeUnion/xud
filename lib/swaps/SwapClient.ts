@@ -2,13 +2,7 @@ import { EventEmitter } from 'events';
 import { SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
-import {
-  CloseChannelParams,
-  OpenChannelParams,
-  Route,
-  SwapCapacities,
-  SwapDeal,
-} from './types';
+import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
 
 enum ClientStatus {
   /** The starting status before a client has initialized. */
@@ -76,10 +70,7 @@ export type WithdrawArguments = {
 };
 
 interface SwapClient {
-  on(
-    event: 'connectionVerified',
-    listener: (swapClientInfo: SwapClientInfo) => void
-  ): this;
+  on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
@@ -135,10 +126,7 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
-  public abstract setReservedInboundAmount(
-    reservedInboundAmount: number,
-    currency?: string
-  ): void;
+  public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {
@@ -148,7 +136,7 @@ abstract class SwapClient extends EventEmitter {
       const verifyTimeout = setTimeout(() => {
         // we could not verify the connection within the allotted time
         this.logger.info(
-          `could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`
+          `could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`,
         );
         this.setStatus(ClientStatus.Disconnected);
         resolve();
@@ -189,10 +177,7 @@ abstract class SwapClient extends EventEmitter {
 
   protected abstract async initSpecific(): Promise<void>;
 
-  protected setConnected = async (
-    newIdentifier?: string,
-    newUris?: string[]
-  ) => {
+  protected setConnected = async (newIdentifier?: string, newUris?: string[]) => {
     // we wait briefly to update the capacities for this swap client then proceed to set status to connected
     await Promise.race([
       this.updateCapacity(),
@@ -241,9 +226,7 @@ abstract class SwapClient extends EventEmitter {
       this.status = newStatus;
     } else {
       this.logger.error(
-        `cannot set status to ${ClientStatus[newStatus]} from ${
-          ClientStatus[this.status]
-        }`
+        `cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`,
       );
     }
   };
@@ -276,13 +259,13 @@ abstract class SwapClient extends EventEmitter {
     if (!this.updateCapacityTimer) {
       this.updateCapacityTimer = setInterval(
         this.updateCapacityTimerCallback,
-        SwapClient.CAPACITY_REFRESH_INTERVAL
+        SwapClient.CAPACITY_REFRESH_INTERVAL,
       );
     }
     if (!this.reconnectionTimer) {
       this.reconnectionTimer = setTimeout(
         this.reconnectionTimerCallback,
-        SwapClient.RECONNECT_INTERVAL
+        SwapClient.RECONNECT_INTERVAL,
       );
     }
   };
@@ -307,7 +290,7 @@ abstract class SwapClient extends EventEmitter {
   public abstract async sendSmallestAmount(
     rHash: string,
     destination: string,
-    currency: string
+    currency: string,
   ): Promise<string>;
 
   /**
@@ -320,7 +303,7 @@ abstract class SwapClient extends EventEmitter {
     units: number,
     destination: string,
     currency: string,
-    finalCltvDelta?: number
+    finalCltvDelta?: number,
   ): Promise<Route | undefined>;
 
   /**
@@ -328,10 +311,7 @@ abstract class SwapClient extends EventEmitter {
    * that a payment can be routed successfully, only whether it is possible to do so currently
    * given the state of the network and graph - without creating new channels or edges.
    */
-  public abstract async canRouteToNode(
-    destination: string,
-    currency?: string
-  ): Promise<boolean>;
+  public abstract async canRouteToNode(destination: string, currency?: string): Promise<boolean>;
 
   /**
    * Notifies that swap client to expect a payment.
@@ -355,7 +335,7 @@ abstract class SwapClient extends EventEmitter {
   public abstract async settleInvoice(
     rHash: string,
     rPreimage: string,
-    currency?: string
+    currency?: string,
   ): Promise<void>;
 
   public abstract async removeInvoice(rHash: string): Promise<void>;
@@ -367,7 +347,7 @@ abstract class SwapClient extends EventEmitter {
   public abstract async lookupPayment(
     rHash: string,
     currency?: string,
-    destination?: string
+    destination?: string,
   ): Promise<PaymentStatus>;
 
   /**
@@ -421,9 +401,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return (
-      !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized()
-    );
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;

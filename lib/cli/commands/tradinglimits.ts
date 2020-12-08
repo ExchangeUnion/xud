@@ -1,10 +1,7 @@
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { Arguments, Argv } from 'yargs';
-import {
-  TradingLimitsRequest,
-  TradingLimitsResponse,
-} from '../../proto/xudrpc_pb';
+import { TradingLimitsRequest, TradingLimitsResponse } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { satsToCoinsStr } from '../utils';
 
@@ -18,7 +15,7 @@ const HEADERS = [
 
 const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
   const formatted: any[] = [];
-  tradingLimits.limitsMap.forEach(tradingLimitElement => {
+  tradingLimits.limitsMap.forEach((tradingLimitElement) => {
     const currency = tradingLimitElement[0];
     const tradingLimit = tradingLimitElement[1];
     const row = [];
@@ -27,7 +24,7 @@ const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
       `${satsToCoinsStr(tradingLimit.maxBuy)}`,
       `${satsToCoinsStr(tradingLimit.maxSell)}`,
       `${satsToCoinsStr(tradingLimit.reservedBuy)}`,
-      `${satsToCoinsStr(tradingLimit.reservedSell)}`
+      `${satsToCoinsStr(tradingLimit.reservedSell)}`,
     );
     formatted.push(row);
   });
@@ -44,7 +41,7 @@ const createTable = () => {
 export const displayLimits = (limits: TradingLimitsResponse.AsObject) => {
   const table = createTable();
   const formatted = formatTradingLimits(limits);
-  formatted.forEach(limits => table.push(limits));
+  formatted.forEach((limits) => table.push(limits));
   console.log(colors.underline(colors.bold('\nTrading Limits:')));
   console.log(table.toString());
 };
@@ -68,8 +65,5 @@ export const handler = async (argv: Arguments<any>) => {
     request.setCurrency(argv.currency.toUpperCase());
   }
 
-  (await loadXudClient(argv)).tradingLimits(
-    request,
-    callback(argv, displayLimits)
-  );
+  (await loadXudClient(argv)).tradingLimits(request, callback(argv, displayLimits));
 };

@@ -21,8 +21,7 @@ function getCipherKey(password: string) {
  * @returns an encrypted Buffer
  */
 export async function encrypt(payload: Buffer | string, password: string) {
-  const buf =
-    typeof payload === 'string' ? Buffer.from(payload, 'utf8') : payload;
+  const buf = typeof payload === 'string' ? Buffer.from(payload, 'utf8') : payload;
 
   const iv = await randomBytes(ENCRYPTION_IV_LENGTH);
   const key = getCipherKey(password);
@@ -36,8 +35,7 @@ export async function encrypt(payload: Buffer | string, password: string) {
  * @returns a decrypted Buffer
  */
 export function decrypt(payload: Buffer | string, password: string) {
-  const buf =
-    typeof payload === 'string' ? Buffer.from(payload, 'base64') : payload;
+  const buf = typeof payload === 'string' ? Buffer.from(payload, 'base64') : payload;
 
   // the first 16 bytes contain the initialization vector
   const iv = buf.slice(0, ENCRYPTION_IV_LENGTH);

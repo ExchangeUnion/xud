@@ -12,8 +12,7 @@ export const pubKeyToAlias = (pubkey: string): string => {
     if (!isNaN(asNumber)) {
       const length = wordlist.length;
       const index = asNumber % (length * length);
-      const alias =
-        wordlist[Math.floor(index / length)] + wordlist[index % length];
+      const alias = wordlist[Math.floor(index / length)] + wordlist[index % length];
       return alias;
     }
     return undefined;

@@ -8,10 +8,7 @@ const displayNodeInfo = (node: GetNodeInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
   const bannedTitle = colors.blue('Banned');
   const reputationScore = colors.blue('Reputation Score');
-  table.push(
-    { [bannedTitle]: node.banned },
-    { [reputationScore]: node.reputationscore }
-  );
+  table.push({ [bannedTitle]: node.banned }, { [reputationScore]: node.reputationscore });
   console.log(colors.underline(colors.bold('\nNode info:')));
   console.log(table.toString());
 };
@@ -28,15 +25,12 @@ export const builder = (argv: Argv) =>
     })
     .example(
       '$0 getnodeinfo 028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0b',
-      'get info about a node by node key'
+      'get info about a node by node key',
     )
     .example('$0 getnodeinfo CheeseMonkey', 'get info about a node by alias');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new GetNodeInfoRequest();
   request.setNodeIdentifier(argv.node_identifier);
-  (await loadXudClient(argv)).getNodeInfo(
-    request,
-    callback(argv, displayNodeInfo)
-  );
+  (await loadXudClient(argv)).getNodeInfo(request, callback(argv, displayNodeInfo));
 };

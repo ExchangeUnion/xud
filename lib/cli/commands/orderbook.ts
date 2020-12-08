@@ -2,11 +2,7 @@ import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { Arguments, Argv } from 'yargs';
 import { Owner } from '../../constants/enums';
-import {
-  ListOrdersRequest,
-  ListOrdersResponse,
-  Order,
-} from '../../proto/xudrpc_pb';
+import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { satsToCoinsStr } from '../utils';
 
@@ -52,12 +48,9 @@ const addSide = (buckets: Bucket[], isBuy = false): string[] => {
   }
 };
 
-export const createOrderbook = (
-  orders: ListOrdersResponse.AsObject,
-  precision: number
-) => {
+export const createOrderbook = (orders: ListOrdersResponse.AsObject, precision: number) => {
   const formattedOrderbooks: FormattedOrderbook[] = [];
-  orders.ordersMap.forEach(tradingPair => {
+  orders.ordersMap.forEach((tradingPair) => {
     const buy = createOrderbookSide(tradingPair[1].buyOrdersList, precision);
     const sell = createOrderbookSide(tradingPair[1].sellOrdersList, precision);
     const totalRows = buy.length < sell.length ? sell.length : buy.length;
@@ -83,29 +76,24 @@ const createTable = () => {
 
 const displayOrderbook = (orderbook: FormattedOrderbook) => {
   const table = createTable();
-  orderbook.rows.forEach(row => table.push(row));
-  console.log(
-    colors.underline(colors.bold(`\nTrading pair: ${orderbook.pairId}`))
-  );
+  orderbook.rows.forEach((row) => table.push(row));
+  console.log(colors.underline(colors.bold(`\nTrading pair: ${orderbook.pairId}`)));
   console.log(table.toString());
 };
 
-const displayTables = (
-  orders: ListOrdersResponse.AsObject,
-  argv: Arguments<any>
-) => {
+const displayTables = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   createOrderbook(orders, argv.precision).forEach(displayOrderbook);
 };
 
 const getPriceBuckets = (orders: Order.AsObject[], count = 8): number[] => {
-  const uniquePrices = [...new Set(orders.map(order => order.price))];
+  const uniquePrices = [...new Set(orders.map((order) => order.price))];
   return uniquePrices.splice(0, count);
 };
 
 const getQuantityForBuckets = (
   orders: Order.AsObject[],
   priceBuckets: number[],
-  filledBuckets: Bucket[] = []
+  filledBuckets: Bucket[] = [],
 ): Bucket[] => {
   // go through all the available price buckets
   const price = priceBuckets.shift();
@@ -116,7 +104,7 @@ const getQuantityForBuckets = (
   let filteredOrders = orders;
   // filter to specific bucket when the next one exists
   if (priceBuckets.length !== 0) {
-    filteredOrders = orders.filter(order => order.price === price);
+    filteredOrders = orders.filter((order) => order.price === price);
   }
   // calculate quantity of the bucket
   const quantity = filteredOrders.reduce((total, order) => {
@@ -124,16 +112,13 @@ const getQuantityForBuckets = (
   }, 0);
   filledBuckets.push({ price, quantity });
   // filter orders for the next cycle
-  const restOfOrders = orders.filter(order => order.price !== price);
+  const restOfOrders = orders.filter((order) => order.price !== price);
   return getQuantityForBuckets(restOfOrders, priceBuckets, filledBuckets);
 };
 
-export const createOrderbookSide = (
-  orders: Order.AsObject[],
-  precision = 5
-) => {
+export const createOrderbookSide = (orders: Order.AsObject[], precision = 5) => {
   // round prices down to the desired precision
-  orders.forEach(order => {
+  orders.forEach((order) => {
     order.price = parseFloat(order.price.toFixed(precision));
   });
   // get price buckets in which to divide orders to
@@ -144,8 +129,7 @@ export const createOrderbookSide = (
 
 export const command = 'orderbook [pair_id] [precision]';
 
-export const describe =
-  'display the order book, with orders aggregated per price point';
+export const describe = 'display the order book, with orders aggregated per price point';
 
 export const builder = (argv: Argv) =>
   argv
@@ -160,33 +144,21 @@ export const builder = (argv: Argv) =>
     })
     .example('$0 orderbook', 'display the order books for all trading pairs')
     .example('$0 orderbook LTC/BTC', 'display the LTC/BTC order book')
-    .example(
-      '$0 orderbook LTC/BTC 2',
-      'display the LTC/BTC order book with 2 decimal precision'
-    )
+    .example('$0 orderbook LTC/BTC 2', 'display the LTC/BTC order book with 2 decimal precision')
     .example(
       '$0 orderbook --precision 2',
-      'display the order books for all trading pairs with 2 decimal precision'
+      'display the order books for all trading pairs with 2 decimal precision',
     );
 
-const displayJson = (
-  orders: ListOrdersResponse.AsObject,
-  argv: Arguments<any>
-) => {
+const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   const jsonOrderbooks: OrderbookJson[] = [];
   const quantityInSatoshisPerCoin = (bucket: Bucket) => {
     bucket.quantity = parseFloat(satsToCoinsStr(bucket.quantity));
   };
-  orders.ordersMap.forEach(tradingPair => {
-    const buy = createOrderbookSide(
-      tradingPair[1].buyOrdersList,
-      argv.precision
-    );
+  orders.ordersMap.forEach((tradingPair) => {
+    const buy = createOrderbookSide(tradingPair[1].buyOrdersList, argv.precision);
     buy.forEach(quantityInSatoshisPerCoin);
-    const sell = createOrderbookSide(
-      tradingPair[1].sellOrdersList,
-      argv.precision
-    );
+    const sell = createOrderbookSide(tradingPair[1].sellOrdersList, argv.precision);
     sell.forEach(quantityInSatoshisPerCoin);
     jsonOrderbooks.push({
       sell,
@@ -202,8 +174,5 @@ export const handler = async (argv: Arguments<any>) => {
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setOwner(Number(Owner.Both));
-  (await loadXudClient(argv)).listOrders(
-    request,
-    callback(argv, displayTables, displayJson)
-  );
+  (await loadXudClient(argv)).listOrders(request, callback(argv, displayTables, displayJson));
 };

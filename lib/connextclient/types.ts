@@ -248,7 +248,7 @@ export type ConnextPreimageRequest = {
           recipient: string;
           recipientChainId: number;
           recipientAssetId: string;
-        }
+        },
       ];
     };
     transferResolver: {

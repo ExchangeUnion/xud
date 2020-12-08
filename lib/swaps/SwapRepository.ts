@@ -10,9 +10,7 @@ class SwapRepository {
     });
   };
 
-  public getSwapDeal = async (
-    rHash: string
-  ): Promise<db.SwapDealInstance | null> => {
+  public getSwapDeal = async (rHash: string): Promise<db.SwapDealInstance | null> => {
     return this.models.SwapDeal.findOne({
       where: {
         rHash,
@@ -23,7 +21,7 @@ class SwapRepository {
 
   public saveSwapDeal = async (
     swapDeal: db.SwapDealCreationAttributes,
-    swapOrder?: db.OrderCreationAttributes
+    swapOrder?: db.OrderCreationAttributes,
   ) => {
     if (swapOrder) {
       await this.models.Order.upsert(swapOrder);

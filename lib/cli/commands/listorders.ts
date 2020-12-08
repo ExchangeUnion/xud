@@ -2,11 +2,7 @@ import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { Arguments, Argv } from 'yargs';
 import { Owner } from '../../constants/enums';
-import {
-  ListOrdersRequest,
-  ListOrdersResponse,
-  Order,
-} from '../../proto/xudrpc_pb';
+import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { satsToCoinsStr } from '../utils';
 
@@ -37,7 +33,7 @@ const addOrderToSide = (orderSide: Order.AsObject[]): string[] => {
       satsToCoinsStr(order.quantity),
       order.price.toString(),
       order.nodeIdentifier!.alias,
-    ].map(i => (order.isOwnOrder ? colors.cyan(i) : i));
+    ].map((i) => (order.isOwnOrder ? colors.cyan(i) : i));
   } else {
     return Array.from(Array(COLUMNS_IN_ORDER_SIDE)).map(() => '');
   }
@@ -71,10 +67,8 @@ const createTable = () => {
 
 const displayOrdersTable = (tradingPair: FormattedTradingPairOrders) => {
   const table = createTable();
-  tradingPair.orders.forEach(order => table.push(order));
-  console.log(
-    colors.underline(colors.bold(`\nTrading pair: ${tradingPair.pairId}`))
-  );
+  tradingPair.orders.forEach((order) => table.push(order));
+  console.log(colors.underline(colors.bold(`\nTrading pair: ${tradingPair.pairId}`)));
   console.log(table.toString());
 };
 
@@ -109,15 +103,9 @@ export const builder = (argv: Argv) =>
     .example('$0 listorders', 'list all known orders')
     .example('$0 listorders LTC/BTC', 'list all LTC/BTC orders')
     .example('$0 listorders LTC/BTC Peer', 'list all LTC/BTC orders from peers')
-    .example(
-      '$0 listorders LTC/BTC Peer 10',
-      'list the 10 best LTC/BTC orders from peers'
-    )
+    .example('$0 listorders LTC/BTC Peer 10', 'list the 10 best LTC/BTC orders from peers')
     .example('$0 listorders --owner Own', 'list all local orders')
-    .example(
-      '$0 listorders --limit 10',
-      'list the 10 best orders for all trading pairs'
-    );
+    .example('$0 listorders --limit 10', 'list the 10 best orders for all trading pairs');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
@@ -128,8 +116,5 @@ export const handler = async (argv: Arguments<any>) => {
     request.setLimit(argv.limit);
   }
   request.setIncludeAliases(true);
-  (await loadXudClient(argv)).listOrders(
-    request,
-    callback(argv, displayTables)
-  );
+  (await loadXudClient(argv)).listOrders(request, callback(argv, displayTables));
 };

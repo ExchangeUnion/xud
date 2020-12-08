@@ -8,10 +8,7 @@ import * as packetTypes from './packets/types';
 
 interface Parser {
   on(event: 'packet', packet: (order: Packet) => void): this;
-  on(
-    event: 'error',
-    err: (order: { message: string; code: string }) => void
-  ): this;
+  on(event: 'error', err: (order: { message: string; code: string }) => void): this;
   emit(event: 'packet', packet: Packet): boolean;
   emit(event: 'error', err: { message: string; code: string }): boolean;
 }
@@ -27,7 +24,7 @@ class Parser extends EventEmitter {
   constructor(
     private framer: Framer,
     private msgHeaderLength: number = Framer.MSG_HEADER_LENGTH,
-    private maxBufferSize: number = Parser.MAX_BUFFER_SIZE
+    private maxBufferSize: number = Parser.MAX_BUFFER_SIZE,
   ) {
     super();
   }
@@ -100,7 +97,7 @@ class Parser extends EventEmitter {
 
   private getTotalSize = (chunk: Buffer): number => {
     const current = this.pending
-      .map(buffer => buffer.length)
+      .map((buffer) => buffer.length)
       .reduce((acc, curr) => acc + curr, 0);
 
     return current + chunk.length;
@@ -132,10 +129,7 @@ class Parser extends EventEmitter {
     }
   };
 
-  private parsePacket = (
-    header: WireMsgHeader,
-    payload: Uint8Array
-  ): Packet => {
+  private parsePacket = (header: WireMsgHeader, payload: Uint8Array): Packet => {
     let packetOrPbObj;
     switch (header.type) {
       case PacketType.SessionInit:
@@ -160,9 +154,7 @@ class Parser extends EventEmitter {
         packetOrPbObj = packetTypes.OrderPacket.deserialize(payload);
         break;
       case PacketType.OrderInvalidation:
-        packetOrPbObj = packetTypes.OrderInvalidationPacket.deserialize(
-          payload
-        );
+        packetOrPbObj = packetTypes.OrderInvalidationPacket.deserialize(payload);
         break;
       case PacketType.GetOrders:
         packetOrPbObj = packetTypes.GetOrdersPacket.deserialize(payload);
@@ -197,14 +189,14 @@ class Parser extends EventEmitter {
 
     if (!isPacket(packetOrPbObj)) {
       throw errors.PARSER_INVALID_PACKET(
-        `${PacketType[header.type]} ${JSON.stringify(packetOrPbObj)}`
+        `${PacketType[header.type]} ${JSON.stringify(packetOrPbObj)}`,
       );
     }
 
     const packet = packetOrPbObj;
     if (header.checksum && header.checksum !== packet.checksum()) {
       throw errors.PARSER_DATA_INTEGRITY_ERR(
-        `${PacketType[header.type]} ${JSON.stringify(packet)}`
+        `${PacketType[header.type]} ${JSON.stringify(packet)}`,
       );
     }
 

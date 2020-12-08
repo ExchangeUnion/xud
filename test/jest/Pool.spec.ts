@@ -35,10 +35,7 @@ describe('P2P Pool', () => {
           clearTimeout(timeout);
           resolve();
         });
-        const timeout = setTimeout(
-          () => reject('timed out waiting for inbound peer'),
-          500
-        );
+        const timeout = setTimeout(() => reject('timed out waiting for inbound peer'), 500);
       } else {
         resolve();
       }
@@ -132,8 +129,8 @@ describe('P2P Pool', () => {
           },
           '',
           false,
-          false
-        )
+          false,
+        ),
       ).rejects.toEqual(errors.ATTEMPTED_CONNECTION_TO_SELF);
     }
   });
@@ -159,11 +156,8 @@ describe('P2P Pool', () => {
         expectedNodePubKey,
         ownVersion: version,
         torport: 0,
-      })
-    ).rejects.toHaveProperty(
-      'message',
-      expect.stringContaining('AuthFailureInvalidTarget')
-    );
+      }),
+    ).rejects.toHaveProperty('message', expect.stringContaining('AuthFailureInvalidTarget'));
   });
 
   test('it responds to inbound peer by beginning the handshake', async () => {
@@ -198,7 +192,7 @@ describe('P2P Pool', () => {
     await awaitInboundPeer(pool2);
 
     await expect(
-      pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false)
+      pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false),
     ).rejects.toHaveProperty('code', errorCodes.NODE_ALREADY_CONNECTED);
     expect(pool.peerCount).toEqual(1);
     expect(pool2.peerCount).toEqual(1);
@@ -208,18 +202,8 @@ describe('P2P Pool', () => {
     expect(pool.peerCount).toEqual(0);
     expect(pool2.peerCount).toEqual(0);
 
-    const pool1Promise = pool.addOutbound(
-      pool2address,
-      pool2nodeKey.pubKey,
-      true,
-      false
-    );
-    const pool2Promise = pool2.addOutbound(
-      pool1address,
-      pool1nodeKey.pubKey,
-      true,
-      false
-    );
+    const pool1Promise = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+    const pool2Promise = pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false);
 
     try {
       await pool1Promise;
@@ -227,8 +211,7 @@ describe('P2P Pool', () => {
     } catch (err) {
       // if an addOutbound call errors, it should be due to AlreadyConnected
       expect(
-        err.code === errorCodes.NODE_ALREADY_CONNECTED ||
-          err.message.includes('AlreadyConnected')
+        err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'),
       );
     }
 
@@ -237,8 +220,7 @@ describe('P2P Pool', () => {
     } catch (err) {
       // if an addOutbound call errors, it should be due to AlreadyConnected
       expect(
-        err.code === errorCodes.NODE_ALREADY_CONNECTED ||
-          err.message.includes('AlreadyConnected')
+        err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'),
       );
     }
 
@@ -255,22 +237,12 @@ describe('P2P Pool', () => {
   test('it rejects multiple outbound connections to same peer', async () => {
     expect(pool.peerCount).toEqual(0);
     expect(pool2.peerCount).toEqual(0);
-    const firstOutboundAttempt = pool.addOutbound(
-      pool2address,
-      pool2nodeKey.pubKey,
-      true,
-      false
-    );
-    const secondOutboundAttempt = pool.addOutbound(
-      pool2address,
-      pool2nodeKey.pubKey,
-      true,
-      false
-    );
+    const firstOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+    const secondOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
 
     await expect(secondOutboundAttempt).rejects.toHaveProperty(
       'code',
-      errorCodes.ALREADY_CONNECTING
+      errorCodes.ALREADY_CONNECTING,
     );
     await firstOutboundAttempt;
 

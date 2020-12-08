@@ -1,9 +1,5 @@
 import * as pb from '../../proto/xudp2p_pb';
-import {
-  removeUndefinedProps,
-  convertKvpArrayToKvps,
-  setObjectToMap,
-} from '../../utils/utils';
+import { removeUndefinedProps, convertKvpArrayToKvps, setObjectToMap } from '../../utils/utils';
 import { NodeState } from '../types';
 
 export const validateNodeState = (nodeState?: pb.NodeState.AsObject) => {
@@ -14,7 +10,7 @@ export const validateNodeState = (nodeState?: pb.NodeState.AsObject) => {
     nodeState.lndPubKeysMap &&
     nodeState.tokenIdentifiersMap &&
     nodeState.lndUrisMap &&
-    nodeState.addressesList.every(addr => !!addr.host)
+    nodeState.addressesList.every((addr) => !!addr.host)
   );
 };
 
@@ -29,21 +25,16 @@ export const convertNodeState = (nodeState: pb.NodeState.AsObject) => {
   });
 };
 
-const convertLndUris = (
-  kvpArray: [string, pb.LndUris.AsObject][]
-): { [key: string]: string[] } => {
+const convertLndUris = (kvpArray: [string, pb.LndUris.AsObject][]): { [key: string]: string[] } => {
   const kvps: { [key: string]: string[] } = {};
-  kvpArray.forEach(kvp => {
+  kvpArray.forEach((kvp) => {
     kvps[kvp[0]] = kvp[1].lndUriList;
   });
 
   return kvps;
 };
 
-const setLndUrisMap = (
-  obj: any,
-  map: { set: (key: string, value: any) => any }
-) => {
+const setLndUrisMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
   for (const key in obj) {
     if (obj[key] !== undefined) {
       const lndUris = new pb.LndUris();
@@ -57,12 +48,12 @@ export const serializeNodeState = (nodeState: NodeState): pb.NodeState => {
   const pbNodeState = new pb.NodeState();
   pbNodeState.setPairsList(nodeState.pairs);
   pbNodeState.setAddressesList(
-    nodeState.addresses.map(addr => {
+    nodeState.addresses.map((addr) => {
       const pbAddr = new pb.Address();
       pbAddr.setHost(addr.host);
       pbAddr.setPort(addr.port);
       return pbAddr;
-    })
+    }),
   );
   pbNodeState.setConnextIdentifier(nodeState.connextIdentifier);
   if (nodeState.lndPubKeys) {
@@ -72,10 +63,7 @@ export const serializeNodeState = (nodeState: NodeState): pb.NodeState => {
     setLndUrisMap(nodeState.lndUris, pbNodeState.getLndUrisMap());
   }
   if (nodeState.tokenIdentifiers) {
-    setObjectToMap(
-      nodeState.tokenIdentifiers,
-      pbNodeState.getTokenIdentifiersMap()
-    );
+    setObjectToMap(nodeState.tokenIdentifiers, pbNodeState.getTokenIdentifiersMap());
   }
   return pbNodeState;
 };

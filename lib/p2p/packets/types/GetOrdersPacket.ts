@@ -20,7 +20,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): GetOrdersPacket | pb.GetOrdersPacket.AsObject => {
     const obj = pb.GetOrdersPacket.deserializeBinary(binary).toObject();
     return GetOrdersPacket.validate(obj) ? GetOrdersPacket.convert(obj) : obj;
@@ -30,9 +30,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
     return !!(obj.id && obj.pairIdsList.length > 0);
   };
 
-  private static convert = (
-    obj: pb.GetOrdersPacket.AsObject
-  ): GetOrdersPacket => {
+  private static convert = (obj: pb.GetOrdersPacket.AsObject): GetOrdersPacket => {
     return new GetOrdersPacket({
       header: {
         id: obj.id,

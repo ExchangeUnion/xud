@@ -34,12 +34,9 @@ const pairs: { [network: string]: db.PairAttributes[] | undefined } = {
   [XuNetwork.SimNet]: simnetPairs,
 };
 
-const defaultNodes = (xuNetwork: XuNetwork): db.NodeAttributes[] | undefined =>
-  nodes[xuNetwork];
-const defaultCurrencies = (
-  xuNetwork: XuNetwork
-): db.CurrencyAttributes[] | undefined => currencies[xuNetwork];
-const defaultPairs = (xuNetwork: XuNetwork): db.PairAttributes[] | undefined =>
-  pairs[xuNetwork];
+const defaultNodes = (xuNetwork: XuNetwork): db.NodeAttributes[] | undefined => nodes[xuNetwork];
+const defaultCurrencies = (xuNetwork: XuNetwork): db.CurrencyAttributes[] | undefined =>
+  currencies[xuNetwork];
+const defaultPairs = (xuNetwork: XuNetwork): db.PairAttributes[] | undefined => pairs[xuNetwork];
 
 export { defaultNodes, defaultCurrencies, defaultPairs };

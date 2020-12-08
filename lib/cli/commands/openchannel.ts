@@ -3,8 +3,7 @@ import { OpenChannelRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { coinsToSats } from '../utils';
 
-export const command =
-  'openchannel <currency> <amount> [node_identifier] [push_amount] [fee]';
+export const command = 'openchannel <currency> <amount> [node_identifier] [push_amount] [fee]';
 
 export const describe = 'open a payment channel with a peer';
 
@@ -19,8 +18,7 @@ export const builder = (argv: Argv) =>
       description: 'the amount to be deposited into the channel',
     })
     .option('node_identifier', {
-      description:
-        'the node key or alias of the connected peer to open the channel with',
+      description: 'the node key or alias of the connected peer to open the channel with',
       type: 'string',
     })
     .option('push_amount', {
@@ -36,23 +34,20 @@ export const builder = (argv: Argv) =>
     })
     .example(
       '$0 openchannel BTC 0.1 028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0b',
-      'open an 0.1 BTC channel by node key'
+      'open an 0.1 BTC channel by node key',
     )
-    .example(
-      '$0 openchannel BTC 0.1 CheeseMonkey',
-      'open an 0.1 BTC channel by alias'
-    )
+    .example('$0 openchannel BTC 0.1 CheeseMonkey', 'open an 0.1 BTC channel by alias')
     .example(
       '$0 openchannel BTC 0.1 CheeseMonkey 0.05',
-      'open an 0.1 BTC channel by alias and push 0.05 to remote side'
+      'open an 0.1 BTC channel by alias and push 0.05 to remote side',
     )
     .example(
       '$0 openchannel BTC 0.1 CheeseMonkey 0.05 1',
-      'open an 0.1 BTC channel by alias, push 0.05 to remote side with 1 sat per byte'
+      'open an 0.1 BTC channel by alias, push 0.05 to remote side with 1 sat per byte',
     )
     .example(
       '$0 openchannel ETH 0.5',
-      'deposit 0.5 into an ETH Connext channel without specifying a remote node'
+      'deposit 0.5 into an ETH Connext channel without specifying a remote node',
     );
 
 export const handler = async (argv: Arguments<any>) => {

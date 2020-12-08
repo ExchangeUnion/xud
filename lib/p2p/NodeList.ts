@@ -25,15 +25,8 @@ export const reputationEventWeight = {
 // TODO: remove reputation events after certain amount of time
 
 interface NodeList {
-  on(
-    event: 'node.ban',
-    listener: (nodePubKey: string, events: ReputationEvent[]) => void
-  ): this;
-  emit(
-    event: 'node.ban',
-    nodePubKey: string,
-    events: ReputationEvent[]
-  ): boolean;
+  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEvent[]) => void): this;
+  emit(event: 'node.ban', nodePubKey: string, events: ReputationEvent[]): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -58,10 +51,7 @@ class NodeList extends EventEmitter {
     super();
   }
 
-  private static updateReputationScore = (
-    node: NodeInstance,
-    event: ReputationEvent
-  ) => {
+  private static updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
     if (event === ReputationEvent.ManualUnban) {
       node.reputationScore = reputationEventWeight[event];
     } else {
@@ -69,10 +59,7 @@ class NodeList extends EventEmitter {
       // reputationScore to negative infinity and result in a ban
       node.reputationScore += reputationEventWeight[event];
       // reputation score for a node cannot exceed the maximum
-      node.reputationScore = Math.min(
-        node.reputationScore,
-        NodeList.MAX_REPUTATION_SCORE
-      );
+      node.reputationScore = Math.min(node.reputationScore, NodeList.MAX_REPUTATION_SCORE);
     }
   };
 
@@ -133,10 +120,7 @@ class NodeList extends EventEmitter {
    * @returns true if ban was removed, false otherwise
    */
   public unBan = async (nodePubKey: string): Promise<boolean> => {
-    return await this.addReputationEvent(
-      nodePubKey,
-      ReputationEvent.ManualUnban
-    );
+    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
   };
 
   public isBanned = (nodePubKey: string): boolean => {
@@ -150,16 +134,14 @@ class NodeList extends EventEmitter {
     const nodes = await this.repository.getNodes();
 
     const reputationLoadPromises: Promise<void>[] = [];
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       this.addNode(node);
-      const reputationLoadPromise = this.repository
-        .getReputationEvents(node)
-        .then(events => {
-          node.reputationScore = 0;
-          events.forEach(({ event }) => {
-            NodeList.updateReputationScore(node, event);
-          });
+      const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
+        node.reputationScore = 0;
+        events.forEach(({ event }) => {
+          NodeList.updateReputationScore(node, event);
         });
+      });
       reputationLoadPromises.push(reputationLoadPromise);
     });
     await Promise.all(reputationLoadPromises);
@@ -168,12 +150,8 @@ class NodeList extends EventEmitter {
   /**
    * Persists a node to the database and adds it to the node list.
    */
-  public createNode = async (
-    nodeCreationAttributes: NodeCreationAttributes
-  ) => {
-    const node = await this.repository.addNodeIfNotExists(
-      nodeCreationAttributes
-    );
+  public createNode = async (nodeCreationAttributes: NodeCreationAttributes) => {
+    const node = await this.repository.addNodeIfNotExists(nodeCreationAttributes);
     if (node) {
       node.reputationScore = 0;
       this.addNode(node);
@@ -187,14 +165,14 @@ class NodeList extends EventEmitter {
   public updateAddresses = async (
     nodePubKey: string,
     addresses: Address[] = [],
-    lastAddress?: Address
+    lastAddress?: Address,
   ): Promise<boolean> => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
-      node.addresses = addresses.map(newAddress => {
-        const oldAddress = node.addresses.find(address =>
-          addressUtils.areEqual(address, newAddress)
+      node.addresses = addresses.map((newAddress) => {
+        const oldAddress = node.addresses.find((address) =>
+          addressUtils.areEqual(address, newAddress),
         );
         if (oldAddress && !newAddress.lastConnected) {
           return oldAddress;
@@ -220,15 +198,12 @@ class NodeList extends EventEmitter {
    * @param node the node for which to retrieve events
    * @param newEvent a reputation event that hasn't been added to the repository yet
    */
-  private getNegativeReputationEvents = async (
-    node: NodeInstance,
-    newEvent?: ReputationEvent
-  ) => {
+  private getNegativeReputationEvents = async (node: NodeInstance, newEvent?: ReputationEvent) => {
     const reputationEvents = await this.repository.getReputationEvents(node);
     const negativeReputationEvents = reputationEvents
-      .filter(e => reputationEventWeight[e.event] < 0)
+      .filter((e) => reputationEventWeight[e.event] < 0)
       .slice(0, 9)
-      .map(e => e.event);
+      .map((e) => e.event);
 
     if (newEvent) {
       negativeReputationEvents.unshift(newEvent);
@@ -242,7 +217,7 @@ class NodeList extends EventEmitter {
    */
   public addReputationEvent = async (
     nodePubKey: string,
-    event: ReputationEvent
+    event: ReputationEvent,
   ): Promise<boolean> => {
     const node = this.nodes.get(nodePubKey);
 
@@ -254,22 +229,15 @@ class NodeList extends EventEmitter {
       if (node.reputationScore < NodeList.BAN_THRESHOLD && !node.banned) {
         promises.push(this.setBanStatus(node, true));
 
-        const negativeReputationEvents = await this.getNegativeReputationEvents(
-          node
-        );
+        const negativeReputationEvents = await this.getNegativeReputationEvents(node);
         this.emit('node.ban', nodePubKey, negativeReputationEvents);
-      } else if (
-        node.reputationScore >= NodeList.BAN_THRESHOLD &&
-        node.banned
-      ) {
+      } else if (node.reputationScore >= NodeList.BAN_THRESHOLD && node.banned) {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));
       }
 
-      promises.push(
-        this.repository.addReputationEvent({ event, nodeId: node.id })
-      );
+      promises.push(this.repository.addReputationEvent({ event, nodeId: node.id }));
 
       await Promise.all(promises);
 
@@ -282,23 +250,17 @@ class NodeList extends EventEmitter {
   public removeAddress = async (nodePubKey: string, address: Address) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
-      const index = node.addresses.findIndex(existingAddress =>
-        addressUtils.areEqual(address, existingAddress)
+      const index = node.addresses.findIndex((existingAddress) =>
+        addressUtils.areEqual(address, existingAddress),
       );
       if (index > -1) {
-        node.addresses = [
-          ...node.addresses.slice(0, index),
-          ...node.addresses.slice(index + 1),
-        ];
+        node.addresses = [...node.addresses.slice(0, index), ...node.addresses.slice(index + 1)];
         await node.save();
         return true;
       }
 
       // if the lastAddress is removed, then re-assigning lastAddress with the latest connected advertised address
-      if (
-        node.lastAddress &&
-        addressUtils.areEqual(address, node.lastAddress)
-      ) {
+      if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) {
         node.lastAddress = addressUtils.sortByLastConnected(node.addresses)[0];
       }
     }

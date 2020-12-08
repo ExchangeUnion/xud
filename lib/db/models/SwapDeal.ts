@@ -38,10 +38,6 @@ export default function ReputationEvent(sequelize: Sequelize) {
     timestamps: false,
   };
 
-  const SwapDeal = sequelize.define<SwapDealInstance>(
-    'SwapDeal',
-    attributes,
-    options
-  );
+  const SwapDeal = sequelize.define<SwapDealInstance>('SwapDeal', attributes, options);
   return SwapDeal;
 }

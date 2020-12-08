@@ -17,9 +17,7 @@ import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
 import { TradingLimits } from './types';
 
-export function isConnextClient(
-  swapClient: SwapClient
-): swapClient is ConnextClient {
+export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
   return swapClient.type === SwapClientType.Connext;
 }
 
@@ -38,29 +36,20 @@ interface SwapClientManager {
   on(event: 'lndUpdate', listener: (lndUpdate: LndUpdate) => void): this;
   on(
     event: 'connextUpdate',
-    listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void
+    listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void,
   ): this;
   on(
     event: 'htlcAccepted',
-    listener: (
-      swapClient: SwapClient,
-      rHash: string,
-      amount: number,
-      currency: string
-    ) => void
+    listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void,
   ): this;
   emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
-  emit(
-    event: 'connextUpdate',
-    tokenAddresses: Map<string, string>,
-    pubKey?: string
-  ): boolean;
+  emit(event: 'connextUpdate', tokenAddresses: Map<string, string>, pubKey?: string): boolean;
   emit(
     event: 'htlcAccepted',
     swapClient: SwapClient,
     rHash: string,
     amount: number,
-    currency: string
+    currency: string,
   ): boolean;
 }
 
@@ -79,7 +68,7 @@ class SwapClientManager extends EventEmitter {
     private config: Config,
     private loggers: Loggers,
     private unitConverter: UnitConverter,
-    private models: Models
+    private models: Models,
   ) {
     super();
   }
@@ -190,7 +179,7 @@ class SwapClientManager extends EventEmitter {
           } else {
             resolve();
           }
-        })
+        }),
       );
     }
 
@@ -209,24 +198,18 @@ class SwapClientManager extends EventEmitter {
       const reservedInbound = this.inboundReservedAmounts.get(currency) ?? 0;
       const availableOutboundCapacity = Math.max(
         0,
-        swapCapacities.totalOutboundCapacity - reservedOutbound
+        swapCapacities.totalOutboundCapacity - reservedOutbound,
       );
       const availableInboundCapacity = Math.max(
         0,
-        swapCapacities.totalInboundCapacity - reservedInbound
+        swapCapacities.totalInboundCapacity - reservedInbound,
       );
 
       return {
         reservedSell: reservedOutbound,
         reservedBuy: reservedInbound,
-        maxSell: Math.min(
-          swapCapacities.maxOutboundChannelCapacity,
-          availableOutboundCapacity
-        ),
-        maxBuy: Math.min(
-          swapCapacities.maxInboundChannelCapacity,
-          availableInboundCapacity
-        ),
+        maxSell: Math.min(swapCapacities.maxOutboundChannelCapacity, availableOutboundCapacity),
+        maxBuy: Math.min(swapCapacities.maxInboundChannelCapacity, availableInboundCapacity),
       };
     } else {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -238,23 +221,13 @@ class SwapClientManager extends EventEmitter {
    * capacities when taking into consideration reserved amounts for standing
    * orders, throws an exception if so and returns otherwise.
    */
-  public checkSwapCapacities = async ({
-    quantity,
-    price,
-    isBuy,
-    pairId,
-  }: OwnLimitOrder) => {
+  public checkSwapCapacities = async ({ quantity, price, isBuy, pairId }: OwnLimitOrder) => {
     const {
       outboundCurrency,
       inboundCurrency,
       outboundAmount,
       inboundAmount,
-    } = UnitConverter.calculateInboundOutboundAmounts(
-      quantity,
-      price,
-      isBuy,
-      pairId
-    );
+    } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
 
     // check if clients exists
     const outboundSwapClient = this.get(outboundCurrency);
@@ -266,20 +239,16 @@ class SwapClientManager extends EventEmitter {
       throw errors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
     }
 
-    const outboundCapacities = await outboundSwapClient.swapCapacities(
-      outboundCurrency
-    );
+    const outboundCapacities = await outboundSwapClient.swapCapacities(outboundCurrency);
 
     // check if sufficient outbound channel capacity exists
-    const reservedOutbound =
-      this.outboundReservedAmounts.get(outboundCurrency) ?? 0;
-    const availableOutboundCapacity =
-      outboundCapacities.totalOutboundCapacity - reservedOutbound;
+    const reservedOutbound = this.outboundReservedAmounts.get(outboundCurrency) ?? 0;
+    const availableOutboundCapacity = outboundCapacities.totalOutboundCapacity - reservedOutbound;
     if (outboundAmount > availableOutboundCapacity) {
       throw errors.INSUFFICIENT_OUTBOUND_CAPACITY(
         outboundCurrency,
         outboundAmount,
-        availableOutboundCapacity
+        availableOutboundCapacity,
       );
     }
 
@@ -291,18 +260,14 @@ class SwapClientManager extends EventEmitter {
       // exceed our inbound capacity
       inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
     } else {
-      const inboundCapacities = await inboundSwapClient.swapCapacities(
-        inboundCurrency
-      );
-      const reservedInbound =
-        this.inboundReservedAmounts.get(inboundCurrency) ?? 0;
-      const availableInboundCapacity =
-        inboundCapacities.totalInboundCapacity - reservedInbound;
+      const inboundCapacities = await inboundSwapClient.swapCapacities(inboundCurrency);
+      const reservedInbound = this.inboundReservedAmounts.get(inboundCurrency) ?? 0;
+      const availableInboundCapacity = inboundCapacities.totalInboundCapacity - reservedInbound;
       if (inboundAmount > availableInboundCapacity) {
         throw errors.INSUFFICIENT_INBOUND_CAPACITY(
           inboundCurrency,
           inboundAmount,
-          availableInboundCapacity
+          availableInboundCapacity,
         );
       }
     }
@@ -327,15 +292,10 @@ class SwapClientManager extends EventEmitter {
     const newInboundReservedAmount = (inboundReservedAmount ?? 0) + amount;
     this.inboundReservedAmounts.set(currency, newInboundReservedAmount);
 
-    this.swapClients
-      .get(currency)
-      ?.setReservedInboundAmount(newInboundReservedAmount, currency);
+    this.swapClients.get(currency)?.setReservedInboundAmount(newInboundReservedAmount, currency);
   };
 
-  public subtractOutboundReservedAmount = (
-    currency: string,
-    amount: number
-  ) => {
+  public subtractOutboundReservedAmount = (currency: string, amount: number) => {
     const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
     assert(outboundReservedAmount && outboundReservedAmount >= amount);
     this.outboundReservedAmounts.set(currency, outboundReservedAmount - amount);
@@ -382,23 +342,18 @@ class SwapClientManager extends EventEmitter {
               walletPassword,
               seedMnemonic,
               restore,
-              lndBackups ? lndBackups.get(swapClient.currency) : undefined
+              lndBackups ? lndBackups.get(swapClient.currency) : undefined,
             )
             .then(() => {
               initializedLndWallets.push(swapClient.currency);
             })
-            .catch(err => {
-              swapClient.logger.error(
-                'could not initialize lnd wallet',
-                err.message
-              );
+            .catch((err) => {
+              swapClient.logger.error('could not initialize lnd wallet', err.message);
             });
           initWalletPromises.push(initWalletPromise);
         }
       } else if (isConnextClient(swapClient)) {
-        initializedConnext = await this.initConnext(
-          nodeKey.childSeed(SwapClientType.Connext)
-        );
+        initializedConnext = await this.initConnext(nodeKey.childSeed(SwapClientType.Connext));
       }
     }
 
@@ -433,19 +388,14 @@ class SwapClientManager extends EventEmitter {
       if (isLndClient(swapClient)) {
         if (swapClient.isWaitingUnlock()) {
           // first we check whether this lnd is using an old wallet password
-          const oldEncryptedPassword = oldEncryptedPasswords.find(
-            oldEncryptedPassword => {
-              return (
-                oldEncryptedPassword.swapClient === SwapClientType.Lnd &&
-                oldEncryptedPassword.currency === swapClient.currency
-              );
-            }
-          );
+          const oldEncryptedPassword = oldEncryptedPasswords.find((oldEncryptedPassword) => {
+            return (
+              oldEncryptedPassword.swapClient === SwapClientType.Lnd &&
+              oldEncryptedPassword.currency === swapClient.currency
+            );
+          });
           const oldPassword = oldEncryptedPassword
-            ? decrypt(
-                oldEncryptedPassword.encryptedPassword,
-                walletPassword
-              ).toString()
+            ? decrypt(oldEncryptedPassword.encryptedPassword, walletPassword).toString()
             : undefined;
 
           if (oldPassword) {
@@ -457,11 +407,8 @@ class SwapClientManager extends EventEmitter {
                 unlockedLndClients.push(swapClient.currency);
                 return oldEncryptedPassword?.destroy(); // we can remove the old password from the database
               })
-              .catch(async err => {
-                this.loggers.lnd.error(
-                  `could not change password for ${swapClient.currency}`,
-                  err
-                );
+              .catch(async (err) => {
+                this.loggers.lnd.error(`could not change password for ${swapClient.currency}`, err);
                 lockedLndClients.push(swapClient.currency);
               });
 
@@ -472,30 +419,22 @@ class SwapClientManager extends EventEmitter {
               .then(() => {
                 unlockedLndClients.push(swapClient.currency);
               })
-              .catch(async err => {
+              .catch(async (err) => {
                 let walletCreated = false;
                 if (err.details === 'wallet not found') {
                   // this wallet hasn't been initialized, so we will try to initialize it now
                   const seedMnemonic = await nodeKey.getMnemonic();
                   try {
-                    await swapClient.initWallet(
-                      walletPassword ?? '',
-                      seedMnemonic
-                    );
+                    await swapClient.initWallet(walletPassword ?? '', seedMnemonic);
                     walletCreated = true;
                   } catch (err) {
-                    swapClient.logger.error(
-                      'could not initialize lnd wallet',
-                      err
-                    );
+                    swapClient.logger.error('could not initialize lnd wallet', err);
                   }
                 }
 
                 if (!walletCreated) {
                   lockedLndClients.push(swapClient.currency);
-                  swapClient.logger.debug(
-                    `could not unlock wallet: ${err.message}`
-                  );
+                  swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
                 }
               });
             unlockWalletPromises.push(unlockWalletPromise);
@@ -525,10 +464,7 @@ class SwapClientManager extends EventEmitter {
    * current wallet password so that xud will try to automatically change it the next
    * time it is unlocked.
    */
-  public changeLndPasswords = async (
-    oldPassword: string,
-    newPassword: string
-  ) => {
+  public changeLndPasswords = async (oldPassword: string, newPassword: string) => {
     const lndClients = this.getLndClientsMap().values();
     const promises: Promise<any>[] = [];
     for (const lndClient of lndClients) {
@@ -536,15 +472,13 @@ class SwapClientManager extends EventEmitter {
         // we can change the password and unlock right now
         promises.push(lndClient.changePassword(oldPassword, newPassword));
       } else if (lndClient.isOperational()) {
-        const encryptedPassword = (
-          await encrypt(oldPassword, newPassword)
-        ).toString('base64');
+        const encryptedPassword = (await encrypt(oldPassword, newPassword)).toString('base64');
         promises.push(
           this.models.Password.create({
             encryptedPassword,
             swapClient: SwapClientType.Lnd,
             currency: lndClient.currency,
-          })
+          }),
         );
       }
     }
@@ -594,10 +528,7 @@ class SwapClientManager extends EventEmitter {
           throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
         }
         this.swapClients.set(currency.id, this.connextClient);
-        this.connextClient.tokenAddresses.set(
-          currency.id,
-          currency.tokenAddress
-        );
+        this.connextClient.tokenAddresses.set(currency.id, currency.tokenAddress);
         this.emit('connextUpdate', this.connextClient.tokenAddresses);
       }
     } else if (currency.swapClient === SwapClientType.Lnd) {
@@ -652,9 +583,9 @@ class SwapClientManager extends EventEmitter {
     for (const [currency, swapClient] of this.swapClients.entries()) {
       if (isLndClient(swapClient) && !swapClient.isDisabled()) {
         getInfoPromises.push(
-          swapClient.getLndInfo().then(lndInfo => {
+          swapClient.getLndInfo().then((lndInfo) => {
             lndInfos.set(currency, lndInfo);
-          })
+          }),
         );
       }
     }
@@ -683,11 +614,7 @@ class SwapClientManager extends EventEmitter {
 
     // we make sure to close connext client because it
     // might not be associated with any currency
-    if (
-      this.connextClient &&
-      !this.connextClient.isDisabled() &&
-      !connextClosed
-    ) {
+    if (this.connextClient && !this.connextClient.isDisabled() && !connextClosed) {
       this.connextClient.close();
     }
   };
@@ -871,9 +798,7 @@ class SwapClientManager extends EventEmitter {
         });
         swapClient.on('locked', () => {
           if (isLndClient(swapClient) && swapClient.walletPassword) {
-            swapClient
-              .unlockWallet(swapClient.walletPassword)
-              .catch(swapClient.logger.error);
+            swapClient.unlockWallet(swapClient.walletPassword).catch(swapClient.logger.error);
           }
           // TODO(connext): unlock ConnextClient when it's implemented
         });
@@ -890,14 +815,10 @@ class SwapClientManager extends EventEmitter {
       this.connextClient.on('htlcAccepted', (rHash, amount, currency) => {
         this.emit('htlcAccepted', this.connextClient!, rHash, amount, currency);
       });
-      this.connextClient.on('connectionVerified', swapClientInfo => {
+      this.connextClient.on('connectionVerified', (swapClientInfo) => {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
-          this.emit(
-            'connextUpdate',
-            this.connextClient!.tokenAddresses,
-            newIdentifier
-          );
+          this.emit('connextUpdate', this.connextClient!.tokenAddresses, newIdentifier);
         }
       });
     }

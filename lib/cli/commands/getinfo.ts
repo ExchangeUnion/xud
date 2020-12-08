@@ -2,12 +2,7 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import {
-  GetInfoRequest,
-  GetInfoResponse,
-  LndInfo,
-  ConnextInfo,
-} from '../../proto/xudrpc_pb';
+import { GetInfoRequest, GetInfoResponse, LndInfo, ConnextInfo } from '../../proto/xudrpc_pb';
 
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
@@ -19,13 +14,9 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
     : '';
 
   const pendingChannelText =
-    info.channels && info.channels['pending'] > 0
-      ? ` | Pending: ${info.channels['pending']}`
-      : '';
+    info.channels && info.channels['pending'] > 0 ? ` | Pending: ${info.channels['pending']}` : '';
   const closedChannelText =
-    info.channels && info.channels['closed'] > 0
-      ? ` | Closed: ${info.channels['closed']}`
-      : '';
+    info.channels && info.channels['closed'] > 0 ? ` | Closed: ${info.channels['closed']}` : '';
   const inactiveChannelText =
     info.channels && info.channels['inactive'] > 0
       ? ` | Inactive: ${info.channels['inactive']}`
@@ -45,17 +36,14 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
         info.chainsList && info.chainsList.length > 0
           ? `${info.chainsList[0].chain} ${info.chainsList[0].network}`
           : '',
-    }
+    },
   );
 
   console.log(colors.underline(colors.bold(`\nLND-${asset} Info:`)));
   console.log(basicInfotable.toString(), '\n');
 };
 
-const determineXudStatus = (
-  numPeers: number,
-  lndMap: [string, LndInfo.AsObject][]
-) => {
+const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject][]) => {
   let status = '';
 
   if (numPeers === 0) {
@@ -63,7 +51,7 @@ const determineXudStatus = (
     status += '\n';
   }
 
-  lndMap.forEach(asset => {
+  lndMap.forEach((asset) => {
     if (asset[1].status !== 'Ready') {
       status += `LND-${asset[0]}: ${asset[1].status}`;
       status += '\n';
@@ -95,7 +83,7 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
       [colors.blue('Pending swaps')]: info.pendingSwapHashesList
         ? JSON.stringify(info.pendingSwapHashesList, undefined, 1)
         : '',
-    }
+    },
   );
   console.log(colors.underline(colors.bold('\nGeneral XUD Info')));
   console.log(table.toString(), '\n');
@@ -108,7 +96,7 @@ const displayConnext = (info: ConnextInfo.AsObject) => {
     { [colors.blue('Status')]: info.status },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Address')]: info.address },
-    { [colors.blue('Network')]: info.chain }
+    { [colors.blue('Network')]: info.chain },
   );
 
   console.log(colors.underline(colors.bold('\nConnext info:')));
@@ -121,7 +109,7 @@ const displayGetInfo = (response: GetInfoResponse.AsObject) => {
     displayConnext(response.connext);
   }
 
-  response.lndMap.forEach(asset => displayLndInfo(asset[0], asset[1]));
+  response.lndMap.forEach((asset) => displayLndInfo(asset[0], asset[1]));
 };
 
 export const command = 'getinfo';
@@ -129,8 +117,5 @@ export const command = 'getinfo';
 export const describe = 'get general info from the local xud node';
 
 export const handler = async (argv: Arguments) => {
-  (await loadXudClient(argv)).getInfo(
-    new GetInfoRequest(),
-    callback(argv, displayGetInfo)
-  );
+  (await loadXudClient(argv)).getInfo(new GetInfoRequest(), callback(argv, displayGetInfo));
 };

@@ -20,7 +20,7 @@ class NodeKey {
   constructor(
     public readonly privKey: Buffer,
     public readonly pubKey: string,
-    private readonly path: string
+    private readonly path: string,
   ) {}
 
   /**
@@ -61,10 +61,7 @@ class NodeKey {
    * @param password an optional password to decrypt the file
    * @returns a NodeKey if a file containing a valid ECDSA private key exists at the given path
    */
-  public static fromFile = async (
-    path: string,
-    password?: string
-  ): Promise<NodeKey> => {
+  public static fromFile = async (path: string, password?: string): Promise<NodeKey> => {
     let privKey: Buffer;
     const fileBuffer = await fs.readFile(path);
 
@@ -84,9 +81,7 @@ class NodeKey {
   };
 
   public static getPath = (xudir: string, instanceId = 0) => {
-    return instanceId > 0
-      ? `${xudir}/nodekey_${instanceId}.dat`
-      : `${xudir}/nodekey.dat`;
+    return instanceId > 0 ? `${xudir}/nodekey_${instanceId}.dat` : `${xudir}/nodekey.dat`;
   };
 
   /**
@@ -121,9 +116,7 @@ class NodeKey {
    */
   public childSeed = (swapClient: SwapClientType) => {
     const privKeyHex = this.privKey.toString('hex');
-    const childSeedEntropy = createHash('sha256')
-      .update(`${privKeyHex}-${swapClient}`)
-      .digest();
+    const childSeedEntropy = createHash('sha256').update(`${privKeyHex}-${swapClient}`).digest();
     return entropyToMnemonic(childSeedEntropy);
   };
 

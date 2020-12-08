@@ -85,7 +85,7 @@ class Xud extends EventEmitter {
       this.config.loglevel,
       this.config.logpath,
       this.config.instanceid,
-      this.config.logdateformat
+      this.config.logdateformat,
     );
     this.logger = loggers.global;
     if (configFileLoaded) {
@@ -101,7 +101,7 @@ class Xud extends EventEmitter {
           this.config.rpc.port,
           this.config.rpc.host,
           path.join(this.config.xudir, 'tls.cert'),
-          path.join(this.config.xudir, 'tls.key')
+          path.join(this.config.xudir, 'tls.key'),
         );
 
         if (!this.config.webproxy.disable) {
@@ -110,7 +110,7 @@ class Xud extends EventEmitter {
             this.config.webproxy.port,
             this.config.rpc.port,
             this.config.rpc.host,
-            path.join(this.config.xudir, 'tls.cert')
+            path.join(this.config.xudir, 'tls.cert'),
           );
         }
       }
@@ -121,10 +121,7 @@ class Xud extends EventEmitter {
       this.unitConverter = new UnitConverter();
       this.unitConverter.init();
 
-      const nodeKeyPath = NodeKey.getPath(
-        this.config.xudir,
-        this.config.instanceid
-      );
+      const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
       const nodeKeyExists = await fs
         .access(nodeKeyPath)
         .then(() => true)
@@ -134,7 +131,7 @@ class Xud extends EventEmitter {
         this.config,
         loggers,
         this.unitConverter,
-        this.db.models
+        this.db.models,
       );
       await this.swapClientManager.init();
 
@@ -149,23 +146,21 @@ class Xud extends EventEmitter {
 
         // we need to initialize connext every time xud starts, even in noencrypt mode
         // the call below is in lieu of the UnlockNode/CreateNode call flow
-        await this.swapClientManager.initConnext(
-          nodeKey.childSeed(SwapClientType.Connext)
-        );
+        await this.swapClientManager.initConnext(nodeKey.childSeed(SwapClientType.Connext));
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
         const initService = new InitService(
           this.swapClientManager,
           nodeKeyPath,
           nodeKeyExists,
-          this.config.dbpath
+          this.config.dbpath,
         );
 
         this.rpcServer.grpcInitService.setInitService(initService);
         this.logger.info(
-          "Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'"
+          "Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'",
         );
-        nodeKey = await new Promise<NodeKey | undefined>(resolve => {
+        nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
           initService.once('nodekey', resolve);
           this.on('shutdown', () => {
             // in case we shutdown before unlocking xud
@@ -237,19 +232,16 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
-      this.service.on('logLevel', level => {
+      this.service.on('logLevel', (level) => {
         this.swapClientManager?.setLogLevel(level);
-        Object.values(loggers).forEach(logger => {
+        Object.values(loggers).forEach((logger) => {
           logger.setLogLevel(level);
         });
       });
 
       if (this.swapClientManager.connextClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
-        await this.httpServer.listen(
-          this.config.http.port,
-          this.config.http.host
-        );
+        await this.httpServer.listen(this.config.http.port, this.config.http.host);
       }
 
       // if we're running in simnet mode and Connext is enabled we'll
@@ -271,19 +263,15 @@ class Xud extends EventEmitter {
           ],
           retryInterval: 10000,
         }).subscribe({
-          next: currency => {
-            this.logger.info(
-              `Connext wallet funded and channel opened for ${currency}`
-            );
+          next: (currency) => {
+            this.logger.info(`Connext wallet funded and channel opened for ${currency}`);
           },
-          error: e => {
-            this.logger.error(
-              `Failed to fund Connext wallet and open a channel: ${e}`
-            );
+          error: (e) => {
+            this.logger.error(`Failed to fund Connext wallet and open a channel: ${e}`);
           },
           complete: () => {
             this.logger.info(
-              'Stopped monitoring Connext balances for automatic funding and channel creation'
+              'Stopped monitoring Connext balances for automatic funding and channel creation',
             );
           },
         });
@@ -296,10 +284,7 @@ class Xud extends EventEmitter {
         this.logger.info('RPC server is disabled.');
       }
     } catch (err) {
-      this.logger.error(
-        'Unexpected error during initialization, shutting down...',
-        err
-      );
+      this.logger.error('Unexpected error during initialization, shutting down...', err);
       await this.shutdown();
     }
   };

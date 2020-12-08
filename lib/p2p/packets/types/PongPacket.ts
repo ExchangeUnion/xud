@@ -15,9 +15,7 @@ class PongPacket extends Packet<undefined> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array
-  ): PongPacket | pb.PongPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): PongPacket | pb.PongPacket.AsObject => {
     const obj = pb.PongPacket.deserializeBinary(binary).toObject();
     return PongPacket.validate(obj) ? PongPacket.convert(obj) : obj;
   };

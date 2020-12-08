@@ -1,10 +1,7 @@
 import { EventEmitter } from 'events';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import {
-  ProvidePreimageEvent,
-  TransferReceivedEvent,
-} from '../connextclient/types';
+import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger, { Level, LevelPriority } from '../Logger';
@@ -55,65 +52,46 @@ const argChecks = {
     if (host === '') throw errors.INVALID_ARGUMENT('host must be specified');
   },
   HAS_ORDER_ID: ({ orderId }: { orderId: string }) => {
-    if (orderId === '')
-      throw errors.INVALID_ARGUMENT('orderId must be specified');
+    if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified');
   },
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
-    if (nodePubKey === '')
-      throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
+    if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_NODE_IDENTIFIER: ({ nodeIdentifier }: { nodeIdentifier: string }) => {
     if (nodeIdentifier === '')
       throw errors.INVALID_ARGUMENT('peerPubKey or alias must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => {
-    if (pairId === '')
-      throw errors.INVALID_ARGUMENT('pairId must be specified');
+    if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified');
   },
   HAS_RHASH: ({ rHash }: { rHash: string }) => {
     if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified');
   },
   POSITIVE_AMOUNT: ({ amount }: { amount: number }) => {
-    if (amount <= 0)
-      throw errors.INVALID_ARGUMENT('amount must be greater than 0');
+    if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0');
   },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => {
     if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative');
   },
   PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
     if (checkDecimalPlaces(price))
-      throw errors.INVALID_ARGUMENT(
-        'price cannot have more than 12 decimal places'
-      );
+      throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
   },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
-    if (
-      currency.length < 2 ||
-      currency.length > 5 ||
-      !currency.match(/^[A-Z0-9]+$/)
-    ) {
+    if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/)) {
       throw errors.INVALID_ARGUMENT(
-        'currency must consist of 2 to 5 upper case English letters or numbers'
+        'currency must consist of 2 to 5 upper case English letters or numbers',
       );
     }
   },
   VALID_PORT: ({ port }: { port: number }) => {
     if (port < 1024 || port > 65535 || !Number.isInteger(port))
-      throw errors.INVALID_ARGUMENT(
-        'port must be an integer between 1024 and 65535'
-      );
+      throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
-    if (!SwapClientType[swapClient])
-      throw errors.INVALID_ARGUMENT('swap client is not recognized');
+    if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
-  VALID_FEE: ({
-    swapClient,
-    fee,
-  }: {
-    swapClient?: SwapClientType;
-    fee?: number;
-  }) => {
+  VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType; fee?: number }) => {
     if (swapClient === SwapClientType.Connext && fee)
       throw errors.INVALID_ARGUMENT('fee is not valid for connext');
   },
@@ -177,10 +155,7 @@ class Service extends EventEmitter {
   };
 
   /** Adds a trading pair. */
-  public addPair = async (args: {
-    baseCurrency: string;
-    quoteCurrency: string;
-  }) => {
+  public addPair = async (args: { baseCurrency: string; quoteCurrency: string }) => {
     await this.orderBook.addPair(args);
   };
 
@@ -231,18 +206,18 @@ class Service extends EventEmitter {
           balancePromises.push(
             swapClient
               .channelBalance(currency)
-              .then(channelBalance => {
+              .then((channelBalance) => {
                 channelBalances.set(currency, channelBalance);
               })
-              .catch(this.logger.error)
+              .catch(this.logger.error),
           );
           balancePromises.push(
             swapClient
               .walletBalance(currency)
-              .then(walletBalance => {
+              .then((walletBalance) => {
                 walletBalances.set(currency, walletBalance);
               })
-              .catch(this.logger.error)
+              .catch(this.logger.error),
           );
         }
       });
@@ -292,9 +267,7 @@ class Service extends EventEmitter {
     if (currency) {
       argChecks.VALID_CURRENCY(args);
 
-      const tradingLimits = await this.swapClientManager.tradingLimits(
-        currency.toUpperCase()
-      );
+      const tradingLimits = await this.swapClientManager.tradingLimits(currency.toUpperCase());
       tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
@@ -303,10 +276,10 @@ class Service extends EventEmitter {
           promises.push(
             this.swapClientManager
               .tradingLimits(currency)
-              .then(tradingLimits => {
+              .then((tradingLimits) => {
                 tradingLimitsMap.set(currency, tradingLimits);
               })
-              .catch(this.logger.error)
+              .catch(this.logger.error),
           );
         }
       });
@@ -319,10 +292,7 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given node uri.
    */
-  public connect = async (args: {
-    nodeUri: string;
-    retryConnecting: boolean;
-  }) => {
+  public connect = async (args: { nodeUri: string; retryConnecting: boolean }) => {
     const { nodeUri, retryConnecting } = args;
 
     let uriParts: UriParts;
@@ -336,27 +306,18 @@ class Service extends EventEmitter {
     argChecks.HAS_HOST({ host });
     argChecks.VALID_PORT({ port });
 
-    await this.pool.addOutbound(
-      { host, port },
-      nodePubKey,
-      retryConnecting,
-      true
-    );
+    await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
   };
 
   public walletDeposit = async (args: { currency: string }) => {
     const { currency } = args;
-    const address = await this.swapClientManager.walletDeposit(
-      currency.toUpperCase()
-    );
+    const address = await this.swapClientManager.walletDeposit(currency.toUpperCase());
     return address;
   };
 
   public deposit = async (args: { currency: string }) => {
     const { currency } = args;
-    const address = await this.swapClientManager.deposit(
-      currency.toUpperCase()
-    );
+    const address = await this.swapClientManager.deposit(currency.toUpperCase());
     return address;
   };
 
@@ -464,12 +425,7 @@ class Service extends EventEmitter {
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
-      throw errors.OPEN_CHANNEL_FAILURE(
-        currency,
-        amount,
-        errorMessage,
-        nodeIdentifier
-      );
+      throw errors.OPEN_CHANNEL_FAILURE(currency, amount, errorMessage, nodeIdentifier);
     }
   };
 
@@ -487,10 +443,7 @@ class Service extends EventEmitter {
   /*
    * Remove ban from XU node manually and connenct to it.
    */
-  public unban = async (args: {
-    nodeIdentifier: string;
-    reconnect: boolean;
-  }) => {
+  public unban = async (args: { nodeIdentifier: string; reconnect: boolean }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
     const nodePubKey = isNodePubKey(args.nodeIdentifier)
       ? args.nodeIdentifier
@@ -511,12 +464,7 @@ class Service extends EventEmitter {
     const { orderId, pairId, peerPubKey } = args;
     const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
 
-    const maker = this.orderBook.removePeerOrder(
-      orderId,
-      pairId,
-      peerPubKey,
-      quantity
-    ).order;
+    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
     const taker = this.orderBook.stampOwnOrder({
       pairId,
       localId: '',
@@ -559,10 +507,8 @@ class Service extends EventEmitter {
     const uris: string[] = [];
 
     if (addresses && addresses.length > 0) {
-      addresses.forEach(address => {
-        uris.push(
-          toUri({ nodePubKey, host: address.host, port: address.port })
-        );
+      addresses.forEach((address) => {
+        uris.push(toUri({ nodePubKey, host: address.host, port: address.port }));
       });
     }
 
@@ -576,20 +522,16 @@ class Service extends EventEmitter {
       const ownOrders = this.orderBook.getOwnOrders(pairId);
 
       peerOrdersCount +=
-        Object.keys(peerOrders.buyArray).length +
-        Object.keys(peerOrders.sellArray).length;
+        Object.keys(peerOrders.buyArray).length + Object.keys(peerOrders.sellArray).length;
       ownOrdersCount +=
-        Object.keys(ownOrders.buyArray).length +
-        Object.keys(ownOrders.sellArray).length;
+        Object.keys(ownOrders.buyArray).length + Object.keys(ownOrders.sellArray).length;
       numPairs += 1;
     }
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
     const connext = await this.swapClientManager.connextClient?.getInfo();
     if (connext) {
-      connext.chain = `${
-        connext.chain ? connext.chain : ''
-      }connext ${this.pool.getNetwork()}`;
+      connext.chain = `${connext.chain ? connext.chain : ''}connext ${this.pool.getNetwork()}`;
     }
 
     return {
@@ -615,10 +557,7 @@ class Service extends EventEmitter {
     this.emit('logLevel', level);
   };
 
-  private toServiceOrder = (
-    order: Order,
-    includeAliases = false
-  ): ServiceOrder => {
+  private toServiceOrder = (order: Order, includeAliases = false): ServiceOrder => {
     const { id, createdAt, pairId, price, quantity } = order;
     let serviceOrder: ServiceOrder;
     if (isOwnOrder(order)) {
@@ -648,9 +587,7 @@ class Service extends EventEmitter {
         isOwnOrder: false,
         nodeIdentifier: {
           nodePubKey: order.peerPubKey,
-          alias: includeAliases
-            ? this.pool.getPeer(order.peerPubKey)?.alias
-            : undefined,
+          alias: includeAliases ? this.pool.getPeer(order.peerPubKey)?.alias : undefined,
         },
       };
     }
@@ -700,19 +637,15 @@ class Service extends EventEmitter {
       }
 
       return {
-        buyArray: buyArray.map(order =>
-          this.toServiceOrder(order, includeAliases)
-        ),
-        sellArray: sellArray.map(order =>
-          this.toServiceOrder(order, includeAliases)
-        ),
+        buyArray: buyArray.map((order) => this.toServiceOrder(order, includeAliases)),
+        sellArray: sellArray.map((order) => this.toServiceOrder(order, includeAliases)),
       };
     };
 
     if (pairId) {
       result.set(pairId, listOrderTypes(pairId));
     } else {
-      this.orderBook.pairIds.forEach(pairId => {
+      this.orderBook.pairIds.forEach((pairId) => {
         result.set(pairId, listOrderTypes(pairId));
       });
     }
@@ -747,15 +680,13 @@ class Service extends EventEmitter {
   /**
    * Gets trading history.
    */
-  public tradeHistory = async (args: {
-    limit: number;
-  }): Promise<ServiceTrade[]> => {
+  public tradeHistory = async (args: { limit: number }): Promise<ServiceTrade[]> => {
     const { limit } = args;
     const trades = await this.orderBook.getTrades(limit || undefined);
 
     const orderInstanceToServiceOrder = (
       order: OrderAttributes,
-      quantity: number
+      quantity: number,
     ): ServiceOrder => {
       const isOwnOrder = !!order.localId;
       let nodeIdentifier: NodeIdentifier;
@@ -790,10 +721,7 @@ class Service extends EventEmitter {
       const takerOrder = trade.takerOrder
         ? orderInstanceToServiceOrder(trade.takerOrder, trade.quantity)
         : undefined;
-      const makerOrder = orderInstanceToServiceOrder(
-        trade.makerOrder!,
-        trade.quantity
-      );
+      const makerOrder = orderInstanceToServiceOrder(trade.makerOrder!, trade.quantity);
       let role: SwapRole;
       let side: OrderSide;
       let counterparty: NodeIdentifier | undefined;
@@ -851,20 +779,12 @@ class Service extends EventEmitter {
       replaceOrderId: string;
       immediateOrCancel: boolean;
     },
-    callback?: (e: ServicePlaceOrderEvent) => void
+    callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
-    const {
-      pairId,
-      price,
-      quantity,
-      orderId,
-      side,
-      replaceOrderId,
-      immediateOrCancel,
-    } = args;
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
 
     const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
@@ -876,7 +796,7 @@ class Service extends EventEmitter {
 
     /** Modified callback that converts Order to ServiceOrder before passing to callback. */
     const serviceCallback: ((e: PlaceOrderEvent) => void) | undefined = callback
-      ? e => {
+      ? (e) => {
           const { type, order, swapSuccess, swapFailure } = e;
           callback({
             type,
@@ -929,34 +849,26 @@ class Service extends EventEmitter {
   public subscribeOrders = (
     args: { existing: boolean },
     callback: (order?: ServiceOrder, orderRemoval?: OrderPortion) => void,
-    cancelled$: Observable<void>
+    cancelled$: Observable<void>,
   ) => {
     if (args.existing) {
-      this.orderBook.pairIds.forEach(pair => {
+      this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buyArray.forEach(order =>
-          callback(this.toServiceOrder(order, false))
-        );
-        peerOrders.buyArray.forEach(order =>
-          callback(this.toServiceOrder(order, true))
-        );
-        ownOrders.sellArray.forEach(order =>
-          callback(this.toServiceOrder(order, false))
-        );
-        peerOrders.sellArray.forEach(order =>
-          callback(this.toServiceOrder(order, true))
-        );
+        ownOrders.buyArray.forEach((order) => callback(this.toServiceOrder(order, false)));
+        peerOrders.buyArray.forEach((order) => callback(this.toServiceOrder(order, true)));
+        ownOrders.sellArray.forEach((order) => callback(this.toServiceOrder(order, false)));
+        peerOrders.sellArray.forEach((order) => callback(this.toServiceOrder(order, true)));
       });
     }
 
     const orderAdded$ = merge(
       fromEvent<PeerOrder>(this.orderBook, 'peerOrder.incoming'),
-      fromEvent<OwnOrder>(this.orderBook, 'ownOrder.added')
+      fromEvent<OwnOrder>(this.orderBook, 'ownOrder.added'),
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
     orderAdded$.subscribe({
-      next: order => callback(this.toServiceOrder(order, true)),
+      next: (order) => callback(this.toServiceOrder(order, true)),
       error: this.logger.error,
     });
 
@@ -964,11 +876,11 @@ class Service extends EventEmitter {
       fromEvent<OrderPortion>(this.orderBook, 'peerOrder.invalidation'),
       fromEvent<OrderPortion>(this.orderBook, 'peerOrder.filled'),
       fromEvent<OrderPortion>(this.orderBook, 'ownOrder.filled'),
-      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.removed')
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.removed'),
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
     orderRemoved$.subscribe({
-      next: orderPortion => {
+      next: (orderPortion) => {
         callback(undefined, orderPortion);
       },
       error: this.logger.error,
@@ -981,7 +893,7 @@ class Service extends EventEmitter {
   public subscribeSwaps = async (
     args: { includeTaker: boolean },
     callback: (swapSuccess: SwapSuccess) => void,
-    cancelled$: Observable<void>
+    cancelled$: Observable<void>,
   ) => {
     const onSwapPaid = (swapSuccess: SwapSuccess) => {
       // always alert client for maker matches, taker matches only when specified
@@ -990,9 +902,7 @@ class Service extends EventEmitter {
       }
     };
 
-    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid').pipe(
-      takeUntil(cancelled$)
-    );
+    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid').pipe(takeUntil(cancelled$));
 
     swapPaid$.subscribe({
       next: onSwapPaid,
@@ -1006,16 +916,15 @@ class Service extends EventEmitter {
   public subscribeSwapsAccepted = async (
     _args: {},
     callback: (swapAccepted: SwapAccepted) => void,
-    cancelled$: Observable<void>
+    cancelled$: Observable<void>,
   ) => {
     const onSwapAccepted = (swapSuccess: SwapAccepted) => {
       callback(swapSuccess);
     };
 
-    const swapAccepted = fromEvent<SwapAccepted>(
-      this.swaps,
-      'swap.accepted'
-    ).pipe(takeUntil(cancelled$));
+    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted').pipe(
+      takeUntil(cancelled$),
+    );
 
     swapAccepted.subscribe({
       next: onSwapAccepted,
@@ -1029,13 +938,11 @@ class Service extends EventEmitter {
   public subscribeSwapFailures = async (
     args: { includeTaker: boolean },
     callback: (swapFailure: SwapFailure) => void,
-    cancelled$: Observable<void>
+    cancelled$: Observable<void>,
   ) => {
     const onSwapFailed = (deal: SwapDeal) => {
       this.logger.trace(
-        `notifying SwapFailure subscription for ${deal.rHash} with role ${
-          SwapRole[deal.role]
-        }`
+        `notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`,
       );
       // always alert client for maker matches, taker matches only when specified
       if (deal.role === SwapRole.Maker || args.includeTaker) {
@@ -1043,9 +950,7 @@ class Service extends EventEmitter {
       }
     };
 
-    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed').pipe(
-      takeUntil(cancelled$)
-    );
+    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed').pipe(takeUntil(cancelled$));
 
     swapFailed$.subscribe({
       next: onSwapFailed,

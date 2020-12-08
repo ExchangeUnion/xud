@@ -23,9 +23,7 @@ class P2PRepository {
     });
   };
 
-  public getReputationEvents = async (
-    node: NodeInstance
-  ): Promise<ReputationEventInstance[]> => {
+  public getReputationEvents = async (node: NodeInstance): Promise<ReputationEventInstance[]> => {
     return this.models.ReputationEvent.findAll({
       where: {
         nodeId: node.id,
@@ -51,9 +49,7 @@ class P2PRepository {
     }
   };
 
-  public addReputationEvent = async (
-    event: ReputationEventCreationAttributes
-  ) => {
+  public addReputationEvent = async (event: ReputationEventCreationAttributes) => {
     return this.models.ReputationEvent.create(<ReputationEventAttributes>event);
   };
 

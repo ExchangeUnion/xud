@@ -25,27 +25,17 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): SwapAcceptedPacket | pb.SwapAcceptedPacket.AsObject => {
     const obj = pb.SwapAcceptedPacket.deserializeBinary(binary).toObject();
-    return SwapAcceptedPacket.validate(obj)
-      ? SwapAcceptedPacket.convert(obj)
-      : obj;
+    return SwapAcceptedPacket.validate(obj) ? SwapAcceptedPacket.convert(obj) : obj;
   };
 
   private static validate = (obj: pb.SwapAcceptedPacket.AsObject): boolean => {
-    return !!(
-      obj.id &&
-      obj.reqId &&
-      obj.rHash &&
-      obj.quantity &&
-      obj.makerCltvDelta
-    );
+    return !!(obj.id && obj.reqId && obj.rHash && obj.quantity && obj.makerCltvDelta);
   };
 
-  private static convert = (
-    obj: pb.SwapAcceptedPacket.AsObject
-  ): SwapAcceptedPacket => {
+  private static convert = (obj: pb.SwapAcceptedPacket.AsObject): SwapAcceptedPacket => {
     return new SwapAcceptedPacket({
       header: {
         id: obj.id,

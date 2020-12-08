@@ -1,10 +1,4 @@
-import {
-  DataTypes,
-  IndexesOptions,
-  ModelAttributes,
-  ModelOptions,
-  Sequelize,
-} from 'sequelize';
+import { DataTypes, IndexesOptions, ModelAttributes, ModelOptions, Sequelize } from 'sequelize';
 import { Address } from '../../p2p/types';
 import { NodeInstance } from '../types';
 
@@ -31,9 +25,7 @@ export default function Node(sequelize: Sequelize) {
       type: DataTypes.VIRTUAL,
       allowNull: true,
       get(this: NodeInstance) {
-        return this.lastAddressText
-          ? JSON.parse(this.lastAddressText)
-          : undefined;
+        return this.lastAddressText ? JSON.parse(this.lastAddressText) : undefined;
       },
       set(this: NodeInstance, value: Address) {
         if (value) {

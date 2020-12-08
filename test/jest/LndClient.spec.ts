@@ -49,21 +49,15 @@ describe('LndClient', () => {
   });
 
   describe('openChannel', () => {
-    const peerPubKey =
-      '02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a';
+    const peerPubKey = '02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a';
     const units = 16000000;
     const externalIp1 = '123.456.789.321:9735';
     const externalIp2 = '192.168.63.155:9777';
-    const lndListeningUris = [
-      `${peerPubKey}@${externalIp1}`,
-      `${peerPubKey}@${externalIp2}`,
-    ];
+    const lndListeningUris = [`${peerPubKey}@${externalIp1}`, `${peerPubKey}@${externalIp2}`];
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
-      lnd['openChannelSync'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(openChannelSyncResponse));
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       const connectPeerFail = () => {
         throw new Error('connectPeer failed');
       };
@@ -85,9 +79,7 @@ describe('LndClient', () => {
 
     test('it does succeed when connecting to already connected peer', async () => {
       expect.assertions(4);
-      lnd['openChannelSync'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(openChannelSyncResponse));
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       const alreadyConnected = () => {
         throw new Error('already connected');
       };
@@ -100,20 +92,13 @@ describe('LndClient', () => {
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
-      expect(lnd['openChannelSync']).toHaveBeenCalledWith(
-        peerPubKey,
-        units,
-        0,
-        0
-      );
+      expect(lnd['openChannelSync']).toHaveBeenCalledWith(peerPubKey, units, 0, 0);
     });
 
     test('it pushes satoshis to the peer when specified', async () => {
       expect.assertions(4);
       const pushUnits = 481824;
-      lnd['openChannelSync'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(openChannelSyncResponse));
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn().mockImplementationOnce(() => {
         return Promise.resolve();
       });
@@ -126,20 +111,13 @@ describe('LndClient', () => {
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
-      expect(lnd['openChannelSync']).toHaveBeenCalledWith(
-        peerPubKey,
-        units,
-        pushUnits,
-        0
-      );
+      expect(lnd['openChannelSync']).toHaveBeenCalledWith(peerPubKey, units, pushUnits, 0);
     });
 
     test('it should set fee when specified', async () => {
       expect.assertions(4);
       const fee = 24;
-      lnd['openChannelSync'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(openChannelSyncResponse));
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn().mockImplementationOnce(() => {
         return Promise.resolve();
       });
@@ -152,19 +130,12 @@ describe('LndClient', () => {
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
-      expect(lnd['openChannelSync']).toHaveBeenCalledWith(
-        peerPubKey,
-        units,
-        0,
-        fee
-      );
+      expect(lnd['openChannelSync']).toHaveBeenCalledWith(peerPubKey, units, 0, fee);
     });
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
-      lnd['openChannelSync'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(openChannelSyncResponse));
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn().mockImplementationOnce(() => {
         return Promise.resolve();
       });
@@ -175,10 +146,7 @@ describe('LndClient', () => {
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
-      expect(lnd['connectPeer']).not.toHaveBeenCalledWith(
-        peerPubKey,
-        externalIp2
-      );
+      expect(lnd['connectPeer']).not.toHaveBeenCalledWith(peerPubKey, externalIp2);
     });
 
     test('it throws when openchannel fails', async () => {
@@ -202,9 +170,7 @@ describe('LndClient', () => {
 
   describe('sendPayment', () => {
     test('it resolves upon maker success', async () => {
-      lnd['sendPaymentV2'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(preimage));
+      lnd['sendPaymentV2'] = jest.fn().mockReturnValue(Promise.resolve(preimage));
       const deal = getValidDeal();
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       await expect(lnd.sendPayment(deal)).resolves.toEqual(preimage);
@@ -218,9 +184,7 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon taker success', async () => {
-      lnd['sendPaymentV2'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(preimage));
+      lnd['sendPaymentV2'] = jest.fn().mockReturnValue(Promise.resolve(preimage));
       const deal = {
         ...getValidDeal(),
         role: SwapRole.Taker,
@@ -241,17 +205,11 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon sendSmallestAmount success', async () => {
-      lnd['sendPaymentV2'] = jest
-        .fn()
-        .mockReturnValue(Promise.resolve(preimage));
+      lnd['sendPaymentV2'] = jest.fn().mockReturnValue(Promise.resolve(preimage));
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
-      const rHash =
-        '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80';
-      const destination =
-        '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac';
-      await expect(lnd.sendSmallestAmount(rHash, destination)).resolves.toEqual(
-        preimage
-      );
+      const rHash = '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80';
+      const destination = '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac';
+      await expect(lnd.sendSmallestAmount(rHash, destination)).resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         destination,
         rHash,

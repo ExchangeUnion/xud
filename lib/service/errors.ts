@@ -34,7 +34,7 @@ const errors = {
     currency: string,
     amount: number,
     errorMessage: string,
-    nodeIdentifier?: string
+    nodeIdentifier?: string,
   ) => {
     let message = `failed to open ${currency} channel for ${amount}`;
     if (nodeIdentifier) {

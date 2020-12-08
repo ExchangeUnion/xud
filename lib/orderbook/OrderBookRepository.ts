@@ -12,27 +12,21 @@ class OrderbookRepository {
     return this.models.Currency.findAll();
   };
 
-  public addCurrency = (
-    currency: db.CurrencyCreationAttributes
-  ): Promise<db.CurrencyInstance> => {
+  public addCurrency = (currency: db.CurrencyCreationAttributes): Promise<db.CurrencyInstance> => {
     return this.models.Currency.create(currency);
   };
 
   public addCurrencies = (
-    currencies: db.CurrencyCreationAttributes[]
+    currencies: db.CurrencyCreationAttributes[],
   ): Promise<db.CurrencyInstance[]> => {
     return this.models.Currency.bulkCreate(currencies);
   };
 
-  public addPair = (
-    pair: db.PairCreationAttributes
-  ): Promise<db.PairInstance> => {
+  public addPair = (pair: db.PairCreationAttributes): Promise<db.PairInstance> => {
     return this.models.Pair.create(<db.PairAttributes>pair);
   };
 
-  public addPairs = (
-    pairs: db.PairCreationAttributes[]
-  ): Promise<db.PairInstance[]> => {
+  public addPairs = (pairs: db.PairCreationAttributes[]): Promise<db.PairInstance[]> => {
     return this.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
   };
 

@@ -15,9 +15,7 @@ class PingPacket extends Packet<undefined> {
     return PacketType.Pong;
   }
 
-  public static deserialize = (
-    binary: Uint8Array
-  ): PingPacket | pb.PingPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): PingPacket | pb.PingPacket.AsObject => {
     const obj = pb.PingPacket.deserializeBinary(binary).toObject();
     return PingPacket.validate(obj) ? PingPacket.convert(obj) : obj;
   };

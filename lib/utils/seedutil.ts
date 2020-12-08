@@ -17,9 +17,7 @@ const exec = promisify(childProcessExec);
  */
 async function keystore(mnemonic: string[], password: string, pathVal: string) {
   const { stdout, stderr } = await exec(
-    `${seedutilPath} keystore -pass=${password} -path=${pathVal} ${mnemonic.join(
-      ' '
-    )}`
+    `${seedutilPath} keystore -pass=${password} -path=${pathVal} ${mnemonic.join(' ')}`,
   );
 
   if (stderr) {
@@ -36,27 +34,19 @@ async function keystore(mnemonic: string[], password: string, pathVal: string) {
  * @param decipheredSeedHex the deciphered seed in hex format
  */
 async function encipher(decipheredSeedHex: string) {
-  const { stdout, stderr } = await exec(
-    `${seedutilPath} encipher ${decipheredSeedHex}`
-  );
+  const { stdout, stderr } = await exec(`${seedutilPath} encipher ${decipheredSeedHex}`);
 
   if (stderr) {
     throw new Error(stderr);
   }
 
   const mnemonic = stdout.trim().split(' ');
-  assert.equal(
-    mnemonic.length,
-    24,
-    'seedutil did not encipher mnemonic of exactly 24 words'
-  );
+  assert.equal(mnemonic.length, 24, 'seedutil did not encipher mnemonic of exactly 24 words');
   return mnemonic;
 }
 
 async function decipher(mnemonic: string[]) {
-  const { stdout, stderr } = await exec(
-    `${seedutilPath} decipher ${mnemonic.join(' ')}`
-  );
+  const { stdout, stderr } = await exec(`${seedutilPath} decipher ${mnemonic.join(' ')}`);
 
   if (stderr) {
     throw new Error(stderr);
@@ -68,7 +58,7 @@ async function decipher(mnemonic: string[]) {
 
 async function deriveChild(mnemonic: string[], clientType: string) {
   const { stdout, stderr } = await exec(
-    `${seedutilPath} derivechild -client ${clientType} ${mnemonic.join(' ')}`
+    `${seedutilPath} derivechild -client ${clientType} ${mnemonic.join(' ')}`,
   );
 
   if (stderr) {
@@ -79,7 +69,7 @@ async function deriveChild(mnemonic: string[], clientType: string) {
   assert.equal(
     childMnenomic.length,
     24,
-    'seedutil did not derive child mnemonic of exactly 24 words'
+    'seedutil did not derive child mnemonic of exactly 24 words',
   );
   return childMnenomic;
 }
@@ -92,11 +82,7 @@ async function generate() {
   }
 
   const mnemonic = stdout.trim().split(' ');
-  assert.equal(
-    mnemonic.length,
-    24,
-    'seedutil did not generate mnemonic of exactly 24 words'
-  );
+  assert.equal(mnemonic.length, 24, 'seedutil did not generate mnemonic of exactly 24 words');
   return mnemonic;
 }
 

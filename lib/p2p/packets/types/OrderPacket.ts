@@ -16,9 +16,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array
-  ): OrderPacket | pb.OrderPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): OrderPacket | pb.OrderPacket.AsObject => {
     const obj = pb.OrderPacket.deserializeBinary(binary).toObject();
     return OrderPacket.validate(obj) ? OrderPacket.convert(obj) : obj;
   };

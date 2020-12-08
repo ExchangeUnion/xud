@@ -28,12 +28,7 @@ export type SwapDealCreationAttributes = Pick<
   SwapDeal,
   Exclude<
     keyof SwapDeal,
-    | 'takerMaxTimeLock'
-    | 'price'
-    | 'pairId'
-    | 'isBuy'
-    | 'takerUnits'
-    | 'makerUnits'
+    'takerMaxTimeLock' | 'price' | 'pairId' | 'isBuy' | 'takerUnits' | 'makerUnits'
   >
 >;
 

@@ -9,19 +9,13 @@ import { createConfig } from './sanity.spec';
 chai.use(chaiAsPromised);
 
 describe('P2P Networks Tests', () => {
-  function testConnectionFailure(
-    srcNodeNetwork: XuNetwork,
-    destNodeNetwork: XuNetwork
-  ) {
+  function testConnectionFailure(srcNodeNetwork: XuNetwork, destNodeNetwork: XuNetwork) {
     it(`should fail to connect a node from ${srcNodeNetwork} to a node from ${destNodeNetwork}`, async () => {
       const srcNodeConfig = createConfig(1, 0, false, srcNodeNetwork);
       const destNodeConfig = createConfig(2, 0, false, destNodeNetwork);
       const srcNode = new Xud();
       const destNode = new Xud();
-      await Promise.all([
-        srcNode.start(srcNodeConfig),
-        destNode.start(destNodeConfig),
-      ]);
+      await Promise.all([srcNode.start(srcNodeConfig), destNode.start(destNodeConfig)]);
 
       const host = 'localhost';
       const port = destNode['pool']['listenPort']!;
@@ -30,7 +24,7 @@ describe('P2P Networks Tests', () => {
 
       const rejectionMsg = `Peer ${nodePubKey}@${host}:${port} closed due to WireProtocolErr framer: incompatible msg origin network (expected: ${srcNodeNetwork}, found: ${destNodeNetwork})`;
       await expect(
-        srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })
+        srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }),
       ).to.be.rejectedWith(rejectionMsg);
 
       expect(await srcNode.service.listPeers().length).to.equal(0);
@@ -40,19 +34,13 @@ describe('P2P Networks Tests', () => {
     });
   }
 
-  function testConnectionSuccess(
-    srcNodeNetwork: XuNetwork,
-    destNodeNetwork: XuNetwork
-  ) {
+  function testConnectionSuccess(srcNodeNetwork: XuNetwork, destNodeNetwork: XuNetwork) {
     it(`should successfully connect a node from ${srcNodeNetwork} to a node from ${destNodeNetwork}`, async () => {
       const srcNodeConfig = createConfig(1, 0, false, srcNodeNetwork);
       const destNodeConfig = createConfig(2, 0, false, destNodeNetwork);
       const srcNode = new Xud();
       const destNode = new Xud();
-      await Promise.all([
-        srcNode.start(srcNodeConfig),
-        destNode.start(destNodeConfig),
-      ]);
+      await Promise.all([srcNode.start(srcNodeConfig), destNode.start(destNodeConfig)]);
       const srcNodePubKey = srcNode['pool'].nodePubKey;
       const destNodePubKey = destNode['pool'].nodePubKey;
 
@@ -60,16 +48,15 @@ describe('P2P Networks Tests', () => {
       const port = destNode['pool']['listenPort']!;
       const nodeTwoUri = toUri({ host, port, nodePubKey: destNodePubKey });
 
-      await expect(
-        srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })
-      ).to.be.fulfilled;
+      await expect(srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be
+        .fulfilled;
 
       const peers = srcNode.service.listPeers();
       expect(peers.length).to.equal(1);
       expect(peers[0].nodePubKey).to.equal(destNodePubKey);
 
       const verifyDestNodePeers = () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           setTimeout(() => {
             const peers = destNode.service.listPeers();
             expect(peers.length).to.equal(1);

@@ -57,7 +57,7 @@ class Backup extends EventEmitter {
       }
     }
 
-    this.startLndSubscriptions().catch(err => {
+    this.startLndSubscriptions().catch((err) => {
       this.logger.error(`Could not connect to LNDs: ${err}`);
     });
 
@@ -71,7 +71,7 @@ class Backup extends EventEmitter {
     if (this.checkLndTimer) {
       clearInterval(this.checkLndTimer);
     }
-    this.fileWatchers.forEach(watcher => {
+    this.fileWatchers.forEach((watcher) => {
       watcher.close();
     });
 
@@ -83,7 +83,7 @@ class Backup extends EventEmitter {
   };
 
   private waitForLndConnected = (lndClient: LndClient) => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       if (lndClient.isConnected()) {
         resolve();
       } else {
@@ -117,7 +117,7 @@ class Backup extends EventEmitter {
         const backupPath = this.getBackupPath('lnd', lndClient.currency);
 
         this.logger.verbose(
-          `Writing initial ${lndClient.currency} LND channel backup to: ${backupPath}`
+          `Writing initial ${lndClient.currency} LND channel backup to: ${backupPath}`,
         );
 
         const channelBackup = await lndClient.exportAllChannelBackup();
@@ -126,20 +126,18 @@ class Backup extends EventEmitter {
         lndClient.subscribeChannelBackups();
         this.logger.info(`Listening to ${currency} LND channel backups`);
 
-        lndClient.on('channelBackup', channelBackup => {
+        lndClient.on('channelBackup', (channelBackup) => {
           this.logger.trace(`New ${lndClient.currency} channel backup`);
           this.writeBackup(backupPath, channelBackup);
         });
         lndClient.on('channelBackupEnd', async () => {
           this.logger.warn(
-            `Lost subscription to ${lndClient.currency} channel backups - attempting to restore`
+            `Lost subscription to ${lndClient.currency} channel backups - attempting to restore`,
           );
           // attempt to re-subscribe to lnd backups
           await this.waitForLndConnected(lndClient);
           lndClient.subscribeChannelBackups();
-          this.logger.info(
-            `Subscription to ${lndClient.currency} channel backups restored`
-          );
+          this.logger.info(`Subscription to ${lndClient.currency} channel backups restored`);
         });
       }
     };
@@ -155,19 +153,17 @@ class Backup extends EventEmitter {
     const backupPath = this.getBackupPath(client);
 
     if (fs.existsSync(dbPath)) {
-      this.logger.verbose(
-        `Writing initial ${client} database backup to: ${backupPath}`
-      );
+      this.logger.verbose(`Writing initial ${client} database backup to: ${backupPath}`);
       const content = this.readDatabase(dbPath);
 
       this.writeBackup(backupPath, content);
     } else {
       this.logger.warn(
-        `Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`
+        `Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`,
       );
       const dbDir = path.dirname(dbPath);
       const dbFilename = path.basename(dbPath);
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         const dbCreateWatcher = fs.watch(dbDir, (_, filename) => {
           if (filename === dbFilename) {
             this.logger.info(`${client} database created at ${dbPath}`);
@@ -179,17 +175,13 @@ class Backup extends EventEmitter {
     }
 
     this.fileWatchers.push(
-      fs.watch(
-        dbPath,
-        { persistent: true, recursive: false },
-        (event: string) => {
-          if (event === 'change') {
-            this.logger.trace(`${client} database changed`);
-            this.emit('changeDetected', client);
-            this.databaseChangedMap.set(client, true);
-          }
+      fs.watch(dbPath, { persistent: true, recursive: false }, (event: string) => {
+        if (event === 'change') {
+          this.logger.trace(`${client} database changed`);
+          this.emit('changeDetected', client);
+          this.databaseChangedMap.set(client, true);
         }
-      )
+      }),
     );
 
     this.logger.verbose(`Listening for changes to the ${client} database`);

@@ -17,7 +17,7 @@ export default function ReputationEvent(sequelize: Sequelize) {
   const ReputationEvent = sequelize.define<ReputationEventInstance>(
     'ReputationEvent',
     attributes,
-    options
+    options,
   );
   return ReputationEvent;
 }

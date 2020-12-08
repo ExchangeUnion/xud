@@ -34,16 +34,14 @@ class GrpcServer {
       } else if (status.code !== 0) {
         if (typeof status.details === 'object') {
           logger.error(
-            `call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`
+            `call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`,
           );
         } else if (typeof status.details === 'string') {
           logger.error(
-            `call ${ctx.service.path} errored with code ${status.code}: ${status.details}`
+            `call ${ctx.service.path} errored with code ${status.code}: ${status.details}`,
           );
         } else {
-          logger.error(
-            `call ${ctx.service.path} errored with code ${status.code}`
-          );
+          logger.error(`call ${ctx.service.path} errored with code ${status.code}`);
         }
       } else {
         logger.trace(`call ${ctx.service.path} succeeded`);
@@ -59,11 +57,11 @@ class GrpcServer {
     port: number,
     host: string,
     tlsCertPath: string,
-    tlsKeyPath: string
+    tlsKeyPath: string,
   ): Promise<void> => {
     assert(
       Number.isInteger(port) && port > 1023 && port < 65536,
-      'port must be an integer between 1024 and 65535'
+      'port must be an integer between 1024 and 65535',
     );
 
     let certificate: Buffer;
@@ -75,13 +73,8 @@ class GrpcServer {
         fs.readFile(tlsKeyPath),
       ]);
     } catch (err) {
-      this.logger.info(
-        'Could not load gRPC TLS certificate. Generating new one'
-      );
-      const { tlsCert, tlsKey } = await this.generateCertificate(
-        tlsCertPath,
-        tlsKeyPath
-      );
+      this.logger.info('Could not load gRPC TLS certificate. Generating new one');
+      const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
       this.logger.info('gRPC TLS certificate created');
 
       certificate = Buffer.from(tlsCert);
@@ -97,7 +90,7 @@ class GrpcServer {
           private_key: privateKey,
         },
       ],
-      false
+      false,
     );
 
     const bindCode = this.server.bind(`${host}:${port}`, credentials);
@@ -118,7 +111,7 @@ class GrpcServer {
     if (this.grpcService) {
       this.grpcService.closeStreams();
     }
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.server.tryShutdown(() => {
         this.logger.info('gRPC server completed shutdown');
         resolve();
@@ -132,7 +125,7 @@ class GrpcServer {
    */
   private generateCertificate = async (
     tlsCertPath: string,
-    tlsKeyPath: string
+    tlsKeyPath: string,
   ): Promise<{ tlsCert: string; tlsKey: string }> => {
     const keys = pki.rsa.generateKeyPair(1024);
     const cert = pki.createCertificate();
@@ -143,11 +136,7 @@ class GrpcServer {
     // TODO: handle expired certificates
     const date = new Date();
     cert.validity.notBefore = date;
-    cert.validity.notAfter = new Date(
-      date.getFullYear() + 5,
-      date.getMonth(),
-      date.getDay()
-    );
+    cert.validity.notAfter = new Date(date.getFullYear() + 5, date.getMonth(), date.getDay());
 
     const attributes = [
       {

@@ -22,7 +22,7 @@ class InitService extends EventEmitter {
     private swapClientManager: SwapClientManager,
     private nodeKeyPath: string,
     private nodeKeyExists: boolean,
-    private databasePath: string
+    private databasePath: string,
   ) {
     super();
   }
@@ -143,7 +143,7 @@ class InitService extends EventEmitter {
     }
     if (this.swapClientManager.misconfiguredClients.size > 0) {
       const misconfiguredClientLabels: string[] = [];
-      this.swapClientManager.misconfiguredClients.forEach(client => {
+      this.swapClientManager.misconfiguredClients.forEach((client) => {
         misconfiguredClientLabels.push(client.label);
       });
       throw swapErrors.SWAP_CLIENT_MISCONFIGURED(misconfiguredClientLabels);

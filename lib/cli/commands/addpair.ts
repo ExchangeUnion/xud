@@ -17,10 +17,7 @@ export const builder = (argv: Argv) =>
       type: 'string',
     })
     .example('$0 addpair LTC/BTC', 'add the LTC/BTC trading pair by ticker id')
-    .example(
-      '$0 addpair LTC BTC',
-      'add the LTC/BTC trading pair by currencies'
-    );
+    .example('$0 addpair LTC BTC', 'add the LTC/BTC trading pair by currencies');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new AddPairRequest();

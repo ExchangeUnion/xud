@@ -14,7 +14,7 @@ const HEADERS = [
 
 const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   const formatted: any[] = [];
-  balances.balancesMap.forEach(balanceElement => {
+  balances.balancesMap.forEach((balanceElement) => {
     const currency = balanceElement[0];
     const balance = balanceElement[1];
     const row = [];
@@ -25,40 +25,28 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
       formatBalance(
         balance.channelBalance,
         balance.pendingChannelBalance,
-        balance.inactiveChannelBalance
-      )
+        balance.inactiveChannelBalance,
+      ),
     );
     formatted.push(row);
   });
   return formatted;
 };
 
-const formatBalance = (
-  availableBalance: number,
-  pendingBalance: number,
-  inactiveBalance = 0
-) => {
+const formatBalance = (availableBalance: number, pendingBalance: number, inactiveBalance = 0) => {
   const availableBalanceStr = satsToCoinsStr(availableBalance);
   const unconfirmedBalanceStr =
-    pendingBalance > 0
-      ? `${satsToCoinsStr(pendingBalance)} pending`
-      : undefined;
+    pendingBalance > 0 ? `${satsToCoinsStr(pendingBalance)} pending` : undefined;
   const inactiveBalanceStr =
-    inactiveBalance > 0
-      ? `${satsToCoinsStr(inactiveBalance)} inactive`
-      : undefined;
+    inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
   if (unconfirmedBalanceStr || inactiveBalanceStr) {
     let str = availableBalanceStr;
     let paranthetical = '';
     if (unconfirmedBalanceStr) {
-      paranthetical += paranthetical
-        ? ` | ${unconfirmedBalanceStr}`
-        : unconfirmedBalanceStr;
+      paranthetical += paranthetical ? ` | ${unconfirmedBalanceStr}` : unconfirmedBalanceStr;
     }
     if (inactiveBalanceStr) {
-      paranthetical += paranthetical
-        ? ` | ${inactiveBalanceStr}`
-        : inactiveBalanceStr;
+      paranthetical += paranthetical ? ` | ${inactiveBalanceStr}` : inactiveBalanceStr;
     }
     str += ` (${paranthetical})`;
     return str;
@@ -76,7 +64,7 @@ const createTable = () => {
 export const displayBalances = (balances: GetBalanceResponse.AsObject) => {
   const table = createTable();
   const formatted = formatBalances(balances);
-  formatted.forEach(balance => table.push(balance));
+  formatted.forEach((balance) => table.push(balance));
   console.log(colors.underline(colors.bold('\nBalance:')));
   console.log(table.toString());
 };
@@ -99,8 +87,5 @@ export const handler = async (argv: Arguments<any>) => {
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());
   }
-  (await loadXudClient(argv)).getBalance(
-    request,
-    callback(argv, displayBalances)
-  );
+  (await loadXudClient(argv)).getBalance(request, callback(argv, displayBalances));
 };

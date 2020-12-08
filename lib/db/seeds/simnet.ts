@@ -3,8 +3,7 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey:
-      '03ece33a30db1dbce4b62fa96a5e9541138a24997ef5672eebed2d332270e39542',
+    nodePubKey: '03ece33a30db1dbce4b62fa96a5e9541138a24997ef5672eebed2d332270e39542',
     addresses: [
       { host: 'xud1.simnet.exchangeunion.com', port: 28885 },
       {
@@ -14,8 +13,7 @@ const nodes = [
     ],
   },
   {
-    nodePubKey:
-      '03df4f36fa35bd242263e8d09d6b422108dab1f08d91237bb3aa2dad957cf08a71',
+    nodePubKey: '03df4f36fa35bd242263e8d09d6b422108dab1f08d91237bb3aa2dad957cf08a71',
     addresses: [
       { host: 'xud.kilrau.com', port: 28885 },
       {

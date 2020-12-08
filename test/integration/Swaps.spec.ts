@@ -20,8 +20,7 @@ const validMakerOrder = () => {
     initialQuantity: 1000000,
     pairId: 'LTC/BTC',
     isBuy: false,
-    peerPubKey:
-      '029706a877a39d9f22e1ecd1042b058bd5798b9fd79fcf8c8ced8c1f13a4aff055',
+    peerPubKey: '029706a877a39d9f22e1ecd1042b058bd5798b9fd79fcf8c8ced8c1f13a4aff055',
     id: 'b76158b1-e34c-11e8-92c2-9fa16c9aa9d1',
     createdAt: 1541677927103,
   };
@@ -52,11 +51,9 @@ const validSwapSuccess = () => {
     currencyReceived: 'LTC',
     currencySent: 'BTC',
     rHash: 'd94c22a73d2741ed5cdcf3714f9ab3c8664793b03a54c74a08877726007d67c2',
-    rPreimage:
-      'eab3fe55ce502b702bca13cbb9f1e4239502911d4c8823b73708c4a4433ed87a',
+    rPreimage: 'eab3fe55ce502b702bca13cbb9f1e4239502911d4c8823b73708c4a4433ed87a',
     price: 0.008,
-    peerPubKey:
-      '020c9a0fb8dac5b91756fb21509aefc4e95b585510c4de6e6311f18348a4723cdd',
+    peerPubKey: '020c9a0fb8dac5b91756fb21509aefc4e95b585510c4de6e6311f18348a4723cdd',
     role: 0,
   };
 };
@@ -134,9 +131,9 @@ describe('Swaps.Integration', () => {
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
       const swapSuccess = validSwapSuccess();
-      expect(
-        swaps.executeSwap(validMakerOrder(), validTakerOrder())
-      ).to.eventually.equal(swapSuccess);
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to.eventually.equal(
+        swapSuccess,
+      );
       await waitForSpy(swapListenersAdded);
       expect(addDealSpy.calledOnce).to.equal(true);
       swapSuccess.rHash = addDealSpy.args[0][0].rHash;
@@ -149,8 +146,7 @@ describe('Swaps.Integration', () => {
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
       const swapDeal = getValidDeal();
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to
-        .eventually.be.rejected;
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to.eventually.be.rejected;
       await waitForSpy(swapListenersAdded);
       expect(addDealSpy.calledOnce).to.equal(true);
       swapDeal.rHash = addDealSpy.args[0][0].rHash;
@@ -165,14 +161,14 @@ describe('Swaps.Integration', () => {
         pairId: INVALID_PAIR_ID,
       };
       expect(
-        swaps.executeSwap(invalidMakerOrder, validTakerOrder())
+        swaps.executeSwap(invalidMakerOrder, validTakerOrder()),
       ).to.eventually.be.rejected.and.equal(SwapFailureReason.InvalidOrders);
       const invalidTakerOrder = {
         ...validTakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
       expect(
-        swaps.executeSwap(validMakerOrder(), invalidTakerOrder)
+        swaps.executeSwap(validMakerOrder(), invalidTakerOrder),
       ).to.eventually.be.rejected.and.equal(SwapFailureReason.InvalidOrders);
     });
 
@@ -187,7 +183,7 @@ describe('Swaps.Integration', () => {
       ltcSwapClient!.getRoute = noRoutesFound;
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
       expect(
-        swaps.executeSwap(validMakerOrder(), validTakerOrder())
+        swaps.executeSwap(validMakerOrder(), validTakerOrder()),
       ).to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
         return Promise.reject('UNKNOWN');
@@ -199,10 +195,8 @@ describe('Swaps.Integration', () => {
       ltcSwapClient!.getRoute = rejectsWithUnknownError;
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
       expect(
-        swaps.executeSwap(validMakerOrder(), validTakerOrder())
-      ).to.eventually.be.rejected.and.equal(
-        SwapFailureReason.UnexpectedClientError
-      );
+        swaps.executeSwap(validMakerOrder(), validTakerOrder()),
+      ).to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
     });
   });
 });

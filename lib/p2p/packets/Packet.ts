@@ -35,17 +35,11 @@ enum PacketDirection {
 type ResponseType = PacketType | PacketType[] | undefined;
 
 function isPacketType(val: any): val is PacketType {
-  return (
-    val !== undefined &&
-    typeof val === 'number' &&
-    PacketType[val] !== undefined
-  );
+  return val !== undefined && typeof val === 'number' && PacketType[val] !== undefined;
 }
 
 function isPacketTypeArray(val: any): val is PacketType[] {
-  return (
-    val !== undefined && val instanceof Array && val.every(v => isPacketType(v))
-  );
+  return val !== undefined && val instanceof Array && val.every((v) => isPacketType(v));
 }
 
 /**

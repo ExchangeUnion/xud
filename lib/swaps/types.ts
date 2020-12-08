@@ -1,9 +1,4 @@
-import {
-  SwapRole,
-  SwapPhase,
-  SwapState,
-  SwapFailureReason,
-} from '../constants/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from '../constants/enums';
 
 export type SwapDeal = {
   /** Our role in the swap. */
@@ -71,14 +66,7 @@ export type SwapDeal = {
 /** The result of a successful swap. */
 export type SwapSuccess = Pick<
   SwapDeal,
-  | 'orderId'
-  | 'localId'
-  | 'pairId'
-  | 'rHash'
-  | 'peerPubKey'
-  | 'price'
-  | 'rPreimage'
-  | 'role'
+  'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' | 'rPreimage' | 'role'
 > & {
   /** The amount received denominated in satoshis. */
   amountReceived: number;
@@ -105,10 +93,7 @@ export type SwapAccepted = Pick<
   quantity: number;
 };
 
-export type SwapFailure = Pick<
-  SwapDeal,
-  'orderId' | 'pairId' | 'quantity' | 'peerPubKey'
-> & {
+export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey'> & {
   /** The quantity that was attempted and failed for the swap. */
   quantity: number;
   failureReason: SwapFailureReason;
@@ -119,10 +104,7 @@ export type Route = {
 };
 
 /** Tracks the state of a pending swap of 1 satoshi for 1 satoshi of a specified currency. */
-export type SanitySwap = Pick<
-  SwapDeal,
-  'rHash' | 'rPreimage' | 'peerPubKey'
-> & {
+export type SanitySwap = Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & {
   /** The currency for the swap. */
   currency: string;
 };

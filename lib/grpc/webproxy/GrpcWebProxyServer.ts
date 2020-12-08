@@ -19,11 +19,7 @@ class GrpcWebProxyServer {
     this.app = express();
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
-    this.app.use(
-      '/api-docs',
-      swaggerUi.serve,
-      swaggerUi.setup(swaggerDocument)
-    );
+    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
   }
 
   /**
@@ -33,7 +29,7 @@ class GrpcWebProxyServer {
     proxyPort: number,
     grpcPort: number,
     grpcHost: string,
-    tlsCertPath: string
+    tlsCertPath: string,
   ): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
@@ -41,7 +37,7 @@ class GrpcWebProxyServer {
       ['xudrpc.proto'],
       `${grpcHost}:${grpcPort}`,
       grpc.credentials.createSsl(await fs.readFile(tlsCertPath)),
-      protoPath
+      protoPath,
     );
     this.app.use('/api/', gateway);
     return new Promise<void>((resolve, reject) => {
@@ -56,7 +52,7 @@ class GrpcWebProxyServer {
 
         // remove listen error handler and set a general error handler
         this.server!.removeListener('error', listenErrHandler);
-        this.server!.on('error', err => {
+        this.server!.on('error', (err) => {
           this.logger.error('Web proxy server error', err);
         });
 
@@ -77,7 +73,7 @@ class GrpcWebProxyServer {
             this.logger.info('gRPC Web API proxy stopped listening');
             resolve();
           })
-          .once('error', err => {
+          .once('error', (err) => {
             this.logger.error(err);
             reject(err);
           });

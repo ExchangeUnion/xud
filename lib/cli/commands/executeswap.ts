@@ -30,8 +30,7 @@ export const builder = (argv: Argv) =>
     })
     .option('quantity', {
       type: 'number',
-      description:
-        'the quantity to swap; the whole order will be swapped if unspecified',
+      description: 'the quantity to swap; the whole order will be swapped if unspecified',
     });
 
 export const handler = async (argv: Arguments<any>) => {
@@ -41,8 +40,5 @@ export const handler = async (argv: Arguments<any>) => {
   if (argv.quantity) {
     request.setQuantity(coinsToSats(argv.quantity));
   }
-  (await loadXudClient(argv)).executeSwap(
-    request,
-    callback(argv, displaySwapSuccess)
-  );
+  (await loadXudClient(argv)).executeSwap(request, callback(argv, displaySwapSuccess));
 };

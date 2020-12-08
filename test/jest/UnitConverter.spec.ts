@@ -11,7 +11,7 @@ describe('UnitConverter', () => {
         unitConverter.amountToUnits({
           amount,
           currency: 'BTC',
-        })
+        }),
       ).toEqual(amount);
     });
 
@@ -21,7 +21,7 @@ describe('UnitConverter', () => {
         unitConverter.amountToUnits({
           amount: 7500000,
           currency: 'WETH',
-        })
+        }),
       ).toEqual(75000000000000000);
     });
 
@@ -47,7 +47,7 @@ describe('UnitConverter', () => {
         unitConverter.unitsToAmount({
           units,
           currency: 'BTC',
-        })
+        }),
       ).toEqual(units);
     });
 
@@ -57,7 +57,7 @@ describe('UnitConverter', () => {
         unitConverter.unitsToAmount({
           units: 75000000000000000,
           currency: 'WETH',
-        })
+        }),
       ).toEqual(7500000);
     });
 
@@ -88,22 +88,13 @@ describe('UnitConverter', () => {
         outboundAmount,
         inboundUnits,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(
-        quantity,
-        price,
-        true,
-        pairId
-      );
+      } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, true, pairId);
       expect(inboundCurrency).toEqual('LTC');
       expect(inboundAmount).toEqual(quantity);
-      expect(inboundUnits).toEqual(
-        unitConverter['UNITS_PER_CURRENCY']['LTC'] * quantity
-      );
+      expect(inboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['LTC'] * quantity);
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(quantity * price);
-      expect(outboundUnits).toEqual(
-        unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price
-      );
+      expect(outboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price);
     });
 
     test('calculate inbound and outbound amounts and currencies for a sell order', () => {
@@ -114,22 +105,13 @@ describe('UnitConverter', () => {
         outboundAmount,
         inboundUnits,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(
-        quantity,
-        price,
-        false,
-        pairId
-      );
+      } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, false, pairId);
       expect(inboundCurrency).toEqual('BTC');
       expect(inboundAmount).toEqual(quantity * price);
-      expect(inboundUnits).toEqual(
-        unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price
-      );
+      expect(inboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price);
       expect(outboundCurrency).toEqual('LTC');
       expect(outboundAmount).toEqual(quantity);
-      expect(outboundUnits).toEqual(
-        unitConverter['UNITS_PER_CURRENCY']['LTC'] * quantity
-      );
+      expect(outboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['LTC'] * quantity);
     });
 
     test('calculate 0 outbound amount for a market buy order', () => {
@@ -137,12 +119,7 @@ describe('UnitConverter', () => {
         outboundCurrency,
         outboundAmount,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(
-        quantity,
-        0,
-        true,
-        pairId
-      );
+      } = UnitConverter.calculateInboundOutboundAmounts(quantity, 0, true, pairId);
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(0);
       expect(outboundUnits).toEqual(0);
@@ -157,7 +134,7 @@ describe('UnitConverter', () => {
         quantity,
         Number.POSITIVE_INFINITY,
         false,
-        pairId
+        pairId,
       );
       expect(inboundCurrency).toEqual('BTC');
       expect(inboundAmount).toEqual(0);
@@ -172,22 +149,13 @@ describe('UnitConverter', () => {
         outboundAmount,
         inboundUnits,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(
-        quantity,
-        price,
-        true,
-        'ETH/BTC'
-      );
+      } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, true, 'ETH/BTC');
       expect(inboundCurrency).toEqual('ETH');
       expect(inboundAmount).toEqual(quantity);
-      expect(inboundUnits).toEqual(
-        unitConverter['UNITS_PER_CURRENCY']['ETH'] * quantity
-      );
+      expect(inboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['ETH'] * quantity);
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(quantity * price);
-      expect(outboundUnits).toEqual(
-        unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price
-      );
+      expect(outboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price);
     });
   });
 });

@@ -112,7 +112,7 @@ class Logger {
           filename,
           level: this.level,
           format: this.getLogFormat(false, dateFormat),
-        })
+        }),
       );
     }
 
@@ -126,7 +126,7 @@ class Logger {
     level: string,
     filename = '',
     instanceId = 0,
-    dateFormat?: string
+    dateFormat?: string,
   ): Loggers => {
     const object = { instanceId, level, filename, dateFormat };
     return {
@@ -156,7 +156,7 @@ class Logger {
   };
 
   public setLogLevel = (level: Level) => {
-    this.logger?.transports.forEach(transport => {
+    this.logger?.transports.forEach((transport) => {
       transport.level = level;
     });
   };
@@ -164,22 +164,19 @@ class Logger {
   private getLogFormat = (colorize: boolean, dateFormat?: string) => {
     const { format } = winston;
 
-    const context = this.subcontext
-      ? `${this.context}-${this.subcontext}`
-      : this.context;
+    const context = this.subcontext ? `${this.context}-${this.subcontext}` : this.context;
     if (this.instanceId > 0) {
       return format.printf(
-        info =>
+        (info) =>
           `${getTsString(dateFormat)} [${context}][${this.instanceId}] ` +
-          `${this.getLevel(info.level, colorize)}: ${info.message}`
+          `${this.getLevel(info.level, colorize)}: ${info.message}`,
       );
     } else {
       return format.printf(
-        info =>
-          `${getTsString(dateFormat)} [${context}] ${this.getLevel(
-            info.level,
-            colorize
-          )}: ${info.message}`
+        (info) =>
+          `${getTsString(dateFormat)} [${context}] ${this.getLevel(info.level, colorize)}: ${
+            info.message
+          }`,
       );
     }
   };

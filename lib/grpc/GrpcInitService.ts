@@ -27,7 +27,7 @@ class GrpcInitService {
    */
   private isReady = (
     initService: InitService | undefined,
-    callback: grpc.sendUnaryData<any>
+    callback: grpc.sendUnaryData<any>,
   ): initService is InitService => {
     if (!initService) {
       const err = this.disabled
@@ -88,9 +88,7 @@ class GrpcInitService {
       return;
     }
     try {
-      const unlockNodeResult = await this.initService.unlockNode(
-        call.request.toObject()
-      );
+      const unlockNodeResult = await this.initService.unlockNode(call.request.toObject());
       const response = new xudrpc.UnlockNodeResponse();
       response.setUnlockedLndsList(unlockNodeResult.unlockedLndClients);
       response.setLockedLndsList(unlockNodeResult.lockedLndClients);
@@ -116,10 +114,7 @@ class GrpcInitService {
       const lndBackupsMap = call.request.getLndBackupsMap();
       const seedMnemonicList = call.request.getSeedMnemonicList();
       const xudDatabase = call.request.getXudDatabase_asU8();
-      const {
-        initializedConnext,
-        initializedLndWallets,
-      } = await this.initService.restoreNode({
+      const { initializedConnext, initializedLndWallets } = await this.initService.restoreNode({
         password,
         seedMnemonicList,
         xudDatabase,

@@ -9,7 +9,7 @@ const createOrders = (
   amount: number,
   price: number,
   quantity: number,
-  randomAmounts = false
+  randomAmounts = false,
 ): Order.AsObject[] => {
   assert(amount >= 1, 'amount must greater than 0');
   const randomNumber = () => {

@@ -28,7 +28,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): SwapFailedPacket | pb.SwapFailedPacket.AsObject => {
     const obj = pb.SwapFailedPacket.deserializeBinary(binary).toObject();
     return SwapFailedPacket.validate(obj) ? SwapFailedPacket.convert(obj) : obj;
@@ -38,9 +38,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     return !!(obj.id && obj.rHash);
   };
 
-  private static convert = (
-    obj: pb.SwapFailedPacket.AsObject
-  ): SwapFailedPacket => {
+  private static convert = (obj: pb.SwapFailedPacket.AsObject): SwapFailedPacket => {
     return new SwapFailedPacket({
       header: removeUndefinedProps({
         id: obj.id,

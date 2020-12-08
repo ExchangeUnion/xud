@@ -24,9 +24,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
     };
   });
 });
-const mockedSwapClientManager = <jest.Mock<SwapClientManager>>(
-  (<any>SwapClientManager)
-);
+const mockedSwapClientManager = <jest.Mock<SwapClientManager>>(<any>SwapClientManager);
 jest.mock('../../lib/swaps/SwapClient');
 const mockedSwapClient = <jest.Mock<SwapClient>>(<any>SwapClient);
 jest.mock('../../lib/p2p/Pool');
@@ -49,8 +47,7 @@ const lndPubKey = 'lndpubkey';
 
 const getArgs = () => {
   return {
-    nodeIdentifier:
-      '02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a',
+    nodeIdentifier: '02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a',
     amount: 16000000,
     currency: 'BTC',
   };
@@ -112,11 +109,9 @@ describe('Service', () => {
       expect.assertions(1);
       service = new Service(components);
       const args = getArgs();
-      components.swapClientManager.openChannel = jest
-        .fn()
-        .mockImplementation(() => {
-          throw new Error('swapClientManager openChannel failure');
-        });
+      components.swapClientManager.openChannel = jest.fn().mockImplementation(() => {
+        throw new Error('swapClientManager openChannel failure');
+      });
       try {
         await service.openChannel(args);
       } catch (e) {
@@ -129,7 +124,7 @@ describe('Service', () => {
     const setup = () => {
       service = new Service(components);
       components.swapClientManager.swapClients = new Map();
-      components.swapClientManager.get = jest.fn().mockImplementation(arg => {
+      components.swapClientManager.get = jest.fn().mockImplementation((arg) => {
         return components.swapClientManager.swapClients.get(arg);
       });
 
@@ -215,16 +210,12 @@ describe('Service', () => {
 
     test('throws in case of invalid currency', async () => {
       setup();
-      await expect(
-        service.getBalance({ currency: 'A' })
-      ).rejects.toMatchSnapshot();
+      await expect(service.getBalance({ currency: 'A' })).rejects.toMatchSnapshot();
     });
 
     test('throws when swap client is not found', async () => {
       setup();
-      await expect(
-        service.getBalance({ currency: 'BBB' })
-      ).rejects.toMatchSnapshot();
+      await expect(service.getBalance({ currency: 'BBB' })).rejects.toMatchSnapshot();
     });
   });
 
@@ -232,23 +223,21 @@ describe('Service', () => {
     const setup = () => {
       service = new Service(components);
       components.swapClientManager.swapClients = new Map();
-      components.swapClientManager.tradingLimits = jest
-        .fn()
-        .mockImplementation(currency => {
-          if (currency === 'BTC') {
-            return Promise.resolve({
-              maxSell: 2000,
-              maxBuy: 1500,
-            });
-          } else if (currency === 'LTC') {
-            return Promise.resolve({
-              maxSell: 7000,
-              maxBuy: 5500,
-            });
-          } else {
-            return Promise.resolve();
-          }
-        });
+      components.swapClientManager.tradingLimits = jest.fn().mockImplementation((currency) => {
+        if (currency === 'BTC') {
+          return Promise.resolve({
+            maxSell: 2000,
+            maxBuy: 1500,
+          });
+        } else if (currency === 'LTC') {
+          return Promise.resolve({
+            maxSell: 7000,
+            maxBuy: 5500,
+          });
+        } else {
+          return Promise.resolve();
+        }
+      });
 
       const btcClient = new mockedSwapClient();
       btcClient.isConnected = jest.fn().mockReturnValue(true);
@@ -292,9 +281,7 @@ describe('Service', () => {
 
     test('throws in case of invalid currency', async () => {
       setup();
-      await expect(
-        service.tradingLimits({ currency: 'A' })
-      ).rejects.toMatchSnapshot();
+      await expect(service.tradingLimits({ currency: 'A' })).rejects.toMatchSnapshot();
     });
   });
 
@@ -305,12 +292,8 @@ describe('Service', () => {
       Object.defineProperty(components.orderBook, 'pairIds', {
         value: pairIds,
       });
-      components.orderBook.getPeersOrders = jest
-        .fn()
-        .mockImplementation(() => peersOrders);
-      components.orderBook.getOwnOrders = jest
-        .fn()
-        .mockImplementation(() => ownOrders);
+      components.orderBook.getPeersOrders = jest.fn().mockImplementation(() => peersOrders);
+      components.orderBook.getOwnOrders = jest.fn().mockImplementation(() => ownOrders);
       service = new Service(components);
     };
 
@@ -448,13 +431,9 @@ describe('Service', () => {
       });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
-      expect(
-        result.get(pairIds[0])!.buyArray.some(val => val.price === 2)
-      ).toBeTruthy();
+      expect(result.get(pairIds[0])!.buyArray.some((val) => val.price === 2)).toBeTruthy();
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
-      expect(
-        result.get(pairIds[0])!.sellArray.some(val => val.price === 5)
-      ).toBeTruthy();
+      expect(result.get(pairIds[0])!.sellArray.some((val) => val.price === 5)).toBeTruthy();
     });
   });
 });

@@ -47,10 +47,7 @@ const processResponse = (resolve: Function, reject: Function) => {
   };
 };
 
-const getBalance = async (
-  client: XudClient,
-  currency?: string
-): Promise<GetBalanceResponse> => {
+const getBalance = async (client: XudClient, currency?: string): Promise<GetBalanceResponse> => {
   const request = new GetBalanceRequest();
   if (currency) {
     request.setCurrency(currency.toUpperCase());
@@ -65,7 +62,7 @@ const checkBalanceObservable = (
   client: XudClient,
   currency: string,
   minimumBalance: number,
-  getBalance$: Observable<GetBalanceResponse>
+  getBalance$: Observable<GetBalanceResponse>,
 ): Observable<Balances> => {
   return getBalance$.pipe(
     mergeMap((balanceResponse: GetBalanceResponse) => {
@@ -80,25 +77,18 @@ const checkBalanceObservable = (
         // we'll hit the faucet with our connext address
         // and then recheck the balance
         return getConnextAddressObservable(client).pipe(
-          mergeMap(connextAddress => {
+          mergeMap((connextAddress) => {
             return from(faucetRequest(connextAddress)).pipe(
               // we wait 31 seconds (~2 blocks) before checking the balance again
               delay(31000),
-              mergeMap(() =>
-                checkBalanceObservable(
-                  client,
-                  currency,
-                  minimumBalance,
-                  getBalance$
-                )
-              )
+              mergeMap(() => checkBalanceObservable(client, currency, minimumBalance, getBalance$)),
             );
-          })
+          }),
         );
       } else {
         return of(balances);
       }
-    })
+    }),
   );
 };
 
@@ -121,9 +111,9 @@ const getConnextAddressObservable = (client: XudClient): Observable<string> => {
     }),
     catchError((_error, caught) => {
       return caught.pipe(
-        delay(5000) // we wait 5 seconds before trying getinfo again
+        delay(5000), // we wait 5 seconds before trying getinfo again
       );
-    })
+    }),
   );
 };
 
@@ -146,7 +136,7 @@ const faucetRequest = (connextAddress: string) => {
       'Content-Length': Buffer.byteLength(payloadStr),
     };
 
-    const req = http.request(options, res => {
+    const req = http.request(options, (res) => {
       switch (res.statusCode) {
         case 200:
           resolve(res);
@@ -180,27 +170,22 @@ const createSimnetChannel = ({
   retryInterval: number;
   getBalance$: Observable<GetBalanceResponse>;
 }) => {
-  const balances$ = checkBalanceObservable(
-    client,
-    currency,
-    channelAmount,
-    getBalance$
-  );
+  const balances$ = checkBalanceObservable(client, currency, channelAmount, getBalance$);
   const simnetChannel$ = balances$.pipe(
     // when error happens
-    retryWhen(errors =>
+    retryWhen((errors) =>
       errors.pipe(
         // we wait for retryInterval and attempt again
         delay(retryInterval),
         // for a maximum of 10 times
         take(10),
         // until we give up completely
-        concat(throwError('unrecoverable error happened - giving up'))
-      )
+        concat(throwError('unrecoverable error happened - giving up')),
+      ),
     ),
     mapTo(currency),
     // complete the observable when the flow is successful
-    take(1)
+    take(1),
   );
   return simnetChannel$;
 };
@@ -208,23 +193,23 @@ const createSimnetChannel = ({
 const createSimnetChannels = (config: ChannelsConfig): Observable<any> => {
   const client$ = defer(() => from(loadXudClient({}))).pipe(share());
   return client$.pipe(
-    mergeMap(client => {
+    mergeMap((client) => {
       const getBalance$ = defer(() => from(getBalance(client))).pipe(share());
       return from(
         // we map our channels config into observables
-        config.channels.map(channelConfig =>
+        config.channels.map((channelConfig) =>
           createSimnetChannel({
             ...channelConfig,
             client,
             getBalance$,
             retryInterval: config.retryInterval,
-          })
-        )
+          }),
+        ),
       ).pipe(
         // execute them in order
-        concatAll()
+        concatAll(),
       );
-    })
+    }),
   );
 };
 

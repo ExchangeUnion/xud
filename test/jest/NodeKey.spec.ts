@@ -7,9 +7,7 @@ import { getTempDir } from '../utils';
 function validateNodeKey(nodeKey: NodeKey) {
   expect(nodeKey.pubKey).toHaveLength(66);
   expect(secp256k1.privateKeyVerify(nodeKey['privKey'])).toEqual(true);
-  expect(secp256k1.publicKeyVerify(Buffer.from(nodeKey.pubKey, 'hex'))).toEqual(
-    true
-  );
+  expect(secp256k1.publicKeyVerify(Buffer.from(nodeKey.pubKey, 'hex'))).toEqual(true);
 }
 
 describe('NodeKey', () => {
@@ -51,7 +49,7 @@ describe('NodeKey', () => {
 
   test('it should error when creating a nodekey from a 32 zeroed bytes', () => {
     expect(() => NodeKey.fromBytes(Buffer.alloc(32))).toThrowError(
-      'private was invalid, try again'
+      'private was invalid, try again',
     );
   });
 
@@ -90,7 +88,7 @@ describe('NodeKey', () => {
         0x8c,
         0x4c,
         0x5e,
-      ])
+      ]),
     );
     expect(nodeKey.childSeed(SwapClientType.Connext)).toMatchSnapshot();
   });

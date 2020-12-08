@@ -15,9 +15,7 @@ class GetNodesPacket extends Packet<undefined> {
     return PacketType.Nodes;
   }
 
-  public static deserialize = (
-    binary: Uint8Array
-  ): GetNodesPacket | pb.GetNodesPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): GetNodesPacket | pb.GetNodesPacket.AsObject => {
     const obj = pb.GetNodesPacket.deserializeBinary(binary).toObject();
     return GetNodesPacket.validate(obj) ? GetNodesPacket.convert(obj) : obj;
   };
@@ -26,9 +24,7 @@ class GetNodesPacket extends Packet<undefined> {
     return !!obj.id;
   };
 
-  private static convert = (
-    obj: pb.GetNodesPacket.AsObject
-  ): GetNodesPacket => {
+  private static convert = (obj: pb.GetNodesPacket.AsObject): GetNodesPacket => {
     return new GetNodesPacket({
       header: {
         id: obj.id,

@@ -62,9 +62,7 @@ const tokenIdentifiers: any = {
   BTC: 'bitcoin-regtest',
   LTC: 'litecoin-regtest',
 };
-const mockPeerGetTokenIdentifer = jest.fn(
-  (currency: string) => tokenIdentifiers[currency]
-);
+const mockPeerGetTokenIdentifer = jest.fn((currency: string) => tokenIdentifiers[currency]);
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
     let currencyActive = false;
@@ -90,8 +88,7 @@ jest.mock('../../lib/p2p/Pool', () => {
       on: jest.fn(),
       removeListener: jest.fn(),
       getNetwork: () => XuNetwork.MainNet,
-      getTokenIdentifier: (currency: string) =>
-        tokenIdentifiers[currency] as string,
+      getTokenIdentifier: (currency: string) => tokenIdentifiers[currency] as string,
       broadcastOrderInvalidation: jest.fn(),
     };
   });
@@ -103,11 +100,9 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
       canRouteToPeer: jest.fn().mockReturnValue(true),
       isConnected: jest.fn().mockReturnValue(true),
       checkSwapCapacities: jest.fn(),
-      get: jest
-        .fn()
-        .mockReturnValue({
-          maximumOutboundCapacity: () => Number.MAX_SAFE_INTEGER,
-        }),
+      get: jest.fn().mockReturnValue({
+        maximumOutboundCapacity: () => Number.MAX_SAFE_INTEGER,
+      }),
     };
   });
 });
@@ -157,7 +152,7 @@ describe('OrderBook', () => {
         host: 'localhost',
         port: 9735,
       },
-      network
+      network,
     );
     peer['nodeState'] = {} as any;
     db = new DB(loggers.db, config.dbpath);
@@ -172,12 +167,7 @@ describe('OrderBook', () => {
     pool.broadcastOrder = jest.fn();
     unitConverter = new UnitConverter();
     unitConverter.init();
-    swapClientManager = new SwapClientManager(
-      config,
-      loggers,
-      unitConverter,
-      db.models
-    );
+    swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     swaps = new Swaps({
       pool,
       swapClientManager,
@@ -217,38 +207,24 @@ describe('OrderBook', () => {
   });
 
   test('isPeerCurrencySupported returns true for a known currency with matching identifiers', async () => {
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(
-      true
-    );
-    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(
-      true
-    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(true);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(true);
   });
 
   test('isPeerCurrencySupported returns false for an unknown currency', async () => {
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BCH')).toStrictEqual(
-      false
-    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BCH')).toStrictEqual(false);
   });
 
   test('isPeerCurrencySupported returns false for a known currency with a mismatching identifier', async () => {
     mockPeerGetTokenIdentifer.mockReturnValue('fakecoin-fakenet');
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(
-      false
-    );
-    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(
-      false
-    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
   });
 
   test('isPeerCurrencySupported returns false for a known currency without a swap client identifier for the peer', async () => {
     mockGetIdentifier.mockReturnValue('');
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(
-      false
-    );
-    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(
-      false
-    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
   });
 
   describe('placeOrder', () => {
@@ -280,7 +256,7 @@ describe('OrderBook', () => {
       await orderbook.placeMarketOrder({ order });
 
       expect(swaps.swapClientManager.checkSwapCapacities).toHaveBeenCalledWith(
-        expect.objectContaining({ ...order, price })
+        expect.objectContaining({ ...order, price }),
       );
     });
 
@@ -296,16 +272,15 @@ describe('OrderBook', () => {
       };
 
       await orderbook.placeLimitOrder({ order });
-      expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty(
-        'localId',
-        localId
+      expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
+      expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith(
+        'BTC',
+        quantity * price,
       );
-      expect(
-        swaps.swapClientManager.addInboundReservedAmount
-      ).toHaveBeenCalledWith('BTC', quantity * price);
-      expect(
-        swaps.swapClientManager.addOutboundReservedAmount
-      ).toHaveBeenCalledWith('LTC', quantity);
+      expect(swaps.swapClientManager.addOutboundReservedAmount).toHaveBeenCalledWith(
+        'LTC',
+        quantity,
+      );
     });
 
     test('placeLimitOrder immediateOrCancel does not add to order book', async () => {
@@ -322,7 +297,7 @@ describe('OrderBook', () => {
         immediateOrCancel: true,
       });
       expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(
-        `order with local id ${localId} does not exist`
+        `order with local id ${localId} does not exist`,
       );
     });
 
@@ -345,15 +320,9 @@ describe('OrderBook', () => {
         order,
       });
       expect(orderbook.getOwnOrders(pairId).sellArray.length).toEqual(1);
-      expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(
-        oldQuantity
-      );
-      expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(
-        oldPrice
-      );
-      expect(orderbook.getOwnOrders(pairId).sellArray[0].localId).toEqual(
-        localId
-      );
+      expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(oldQuantity);
+      expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(oldPrice);
+      expect(orderbook.getOwnOrders(pairId).sellArray[0].localId).toEqual(localId);
 
       const newOrder = await orderbook.placeLimitOrder({
         order: {
@@ -365,15 +334,9 @@ describe('OrderBook', () => {
       });
 
       expect(orderbook.getOwnOrders(pairId).sellArray.length).toEqual(1);
-      expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(
-        newQuantity
-      );
-      expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(
-        newPrice
-      );
-      expect(orderbook.getOwnOrders(pairId).sellArray[0].localId).toEqual(
-        localId
-      );
+      expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(newQuantity);
+      expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(newPrice);
+      expect(orderbook.getOwnOrders(pairId).sellArray[0].localId).toEqual(localId);
 
       expect(pool.broadcastOrderInvalidation).toHaveBeenCalledTimes(0);
       expect(pool.broadcastOrder).toHaveBeenCalledTimes(2);
@@ -388,7 +351,7 @@ describe('OrderBook', () => {
     });
   });
 
-  test('removeOwnOrder removes entire order if dust would have remained', async done => {
+  test('removeOwnOrder removes entire order if dust would have remained', async (done) => {
     const quantity = 10000;
     const order: OwnLimitOrder = {
       quantity,
@@ -400,7 +363,7 @@ describe('OrderBook', () => {
     const { remainingOrder } = await orderbook.placeLimitOrder({ order });
     expect(remainingOrder!.quantity).toEqual(quantity);
 
-    orderbook.on('ownOrder.removed', orderPortion => {
+    orderbook.on('ownOrder.removed', (orderPortion) => {
       expect(orderPortion.quantity).toEqual(quantity);
       expect(orderPortion.id).toEqual(remainingOrder!.id);
       expect(orderPortion.pairId).toEqual(pairId);

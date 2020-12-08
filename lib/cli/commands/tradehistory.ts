@@ -100,8 +100,5 @@ export const handler = async (argv: Arguments<any>) => {
     // don't set a limit if the --all flag is specified
     request.setLimit(argv.limit);
   }
-  (await loadXudClient(argv)).tradeHistory(
-    request,
-    callback(argv, displayTrades)
-  );
+  (await loadXudClient(argv)).tradeHistory(request, callback(argv, displayTrades));
 };

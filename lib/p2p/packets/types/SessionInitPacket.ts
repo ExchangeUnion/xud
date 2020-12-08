@@ -2,11 +2,7 @@ import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import {
-  validateNodeState,
-  convertNodeState,
-  serializeNodeState,
-} from '../utils';
+import { validateNodeState, convertNodeState, serializeNodeState } from '../utils';
 
 export type SessionInitPacketBody = {
   sign: string;
@@ -35,12 +31,10 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): SessionInitPacket | pb.SessionInitPacket.AsObject => {
     const obj = pb.SessionInitPacket.deserializeBinary(binary).toObject();
-    return SessionInitPacket.validate(obj)
-      ? SessionInitPacket.convert(obj)
-      : obj;
+    return SessionInitPacket.validate(obj) ? SessionInitPacket.convert(obj) : obj;
   };
 
   private static validate = (obj: pb.SessionInitPacket.AsObject): boolean => {
@@ -55,9 +49,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     );
   };
 
-  private static convert = (
-    obj: pb.SessionInitPacket.AsObject
-  ): SessionInitPacket => {
+  private static convert = (obj: pb.SessionInitPacket.AsObject): SessionInitPacket => {
     return new SessionInitPacket({
       header: {
         id: obj.id,

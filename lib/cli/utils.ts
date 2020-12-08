@@ -37,7 +37,7 @@ export function trim(key: string, length = 10) {
 }
 
 export const generateHeaders = (headers: string[]) => {
-  return headers.map(header => {
+  return headers.map((header) => {
     return colors.blue(header);
   });
 };
@@ -88,11 +88,7 @@ export function showSeed(seedMnemonicList: string[]) {
   });
   console.log('----------------------BEGIN XUD SEED---------------------');
   for (let n = 0; n < seedMnemonicList.length / WORDS_PER_ROW; n += 1) {
-    console.log(
-      numberedMnemonic
-        .slice(n * WORDS_PER_ROW, (n + 1) * WORDS_PER_ROW)
-        .join(' ')
-    );
+    console.log(numberedMnemonic.slice(n * WORDS_PER_ROW, (n + 1) * WORDS_PER_ROW).join(' '));
   }
   console.log('-----------------------END XUD SEED----------------------\n');
 

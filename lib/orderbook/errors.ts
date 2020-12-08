@@ -61,10 +61,7 @@ const errors = {
     message: `order with local id ${localId} does not exist`,
     code: errorCodes.LOCAL_ID_DOES_NOT_EXIST,
   }),
-  QUANTITY_DOES_NOT_MATCH: (
-    requestedQuantity: number,
-    orderQuantity: number
-  ) => ({
+  QUANTITY_DOES_NOT_MATCH: (requestedQuantity: number, orderQuantity: number) => ({
     message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),

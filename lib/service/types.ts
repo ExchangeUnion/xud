@@ -46,10 +46,7 @@ export type NodeIdentifier = {
 
 export type ServiceOrder = Pick<
   Order,
-  Exclude<
-    keyof Order,
-    'peerPubKey' | 'isBuy' | 'initialQuantity' | 'quantity' | 'price'
-  >
+  Exclude<keyof Order, 'peerPubKey' | 'isBuy' | 'initialQuantity' | 'quantity' | 'price'>
 > & {
   nodeIdentifier: NodeIdentifier;
   side: OrderSide;

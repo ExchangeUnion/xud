@@ -16,9 +16,7 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array
-  ): NodesPacket | pb.NodesPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): NodesPacket | pb.NodesPacket.AsObject => {
     const obj = pb.NodesPacket.deserializeBinary(binary).toObject();
     return NodesPacket.validate(obj) ? NodesPacket.convert(obj) : obj;
   };
@@ -28,10 +26,10 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
       obj.id &&
       obj.reqId &&
       obj.nodesList.every(
-        node =>
+        (node) =>
           !!node.nodePubKey &&
           node.addressesList.length > 0 &&
-          node.addressesList.every(addr => addr.port > 0 && !!addr.host)
+          node.addressesList.every((addr) => addr.port > 0 && !!addr.host),
       )
     );
 
@@ -44,7 +42,7 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
         id: obj.id,
         reqId: obj.reqId,
       },
-      body: obj.nodesList.map(node => ({
+      body: obj.nodesList.map((node) => ({
         nodePubKey: node.nodePubKey,
         addresses: node.addressesList,
       })),
@@ -56,20 +54,20 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     msg.setId(this.header.id);
     msg.setReqId(this.header.reqId!);
     msg.setNodesList(
-      this.body!.map(node => {
+      this.body!.map((node) => {
         const pbNode = new pb.Node();
         pbNode.setNodePubKey(node.nodePubKey);
         pbNode.setAddressesList(
-          node.addresses.map(addr => {
+          node.addresses.map((addr) => {
             const pbAddr = new pb.Address();
             pbAddr.setHost(addr.host);
             pbAddr.setPort(addr.port);
             return pbAddr;
-          })
+          }),
         );
 
         return pbNode;
-      })
+      }),
     );
 
     return msg.serializeBinary();

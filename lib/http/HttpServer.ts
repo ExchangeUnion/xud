@@ -12,10 +12,7 @@ class HttpServer {
     this.httpService = new HttpService(service);
   }
 
-  private processRequest = async (
-    req: http.IncomingMessage,
-    res: http.ServerResponse
-  ) => {
+  private processRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     let statusCode = 200;
     let resJson: any;
     let reqJson: any;
@@ -60,11 +57,7 @@ class HttpServer {
       return;
     }
 
-    const SUPPORTED_ENDPOINTS = [
-      '/preimage',
-      '/incoming-transfer',
-      '/deposit-confirmed',
-    ];
+    const SUPPORTED_ENDPOINTS = ['/preimage', '/incoming-transfer', '/deposit-confirmed'];
 
     if (req.url && SUPPORTED_ENDPOINTS.includes(req.url)) {
       await this.processRequest(req, res);
@@ -78,15 +71,12 @@ class HttpServer {
     return new Promise<object>((resolve, reject) => {
       const body: any[] = [];
       req
-        .on('data', chunk => {
+        .on('data', (chunk) => {
           body.push(chunk);
         })
         .on('end', () => {
           const bodyStr = Buffer.concat(body).toString();
-          const reqContentLength = parseInt(
-            req.headers['content-length'] || '',
-            10
-          );
+          const reqContentLength = parseInt(req.headers['content-length'] || '', 10);
 
           if (bodyStr.length !== reqContentLength) {
             reject('invalid content-length header');
@@ -95,9 +85,7 @@ class HttpServer {
 
           try {
             const reqJson = JSON.parse(bodyStr);
-            this.logger.debug(
-              `http server request json: ${JSON.stringify(reqJson)}`
-            );
+            this.logger.debug(`http server request json: ${JSON.stringify(reqJson)}`);
             resolve(reqJson);
           } catch (err) {
             reject('cannot parse request json');
@@ -130,7 +118,7 @@ class HttpServer {
    * Stops listening for requests.
    */
   public close = () => {
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve) => {
       this.server.close(() => {
         this.logger.info('http server has closed');
         resolve();

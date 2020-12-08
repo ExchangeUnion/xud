@@ -23,21 +23,17 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
   }
 
   public static deserialize = (
-    binary: Uint8Array
+    binary: Uint8Array,
   ): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {
     const obj = pb.DisconnectingPacket.deserializeBinary(binary).toObject();
-    return DisconnectingPacket.validate(obj)
-      ? DisconnectingPacket.convert(obj)
-      : obj;
+    return DisconnectingPacket.validate(obj) ? DisconnectingPacket.convert(obj) : obj;
   };
 
   private static validate = (msg: pb.DisconnectingPacket.AsObject): boolean => {
     return !!(msg.id && msg.reason);
   };
 
-  private static convert = (
-    obj: pb.DisconnectingPacket.AsObject
-  ): DisconnectingPacket => {
+  private static convert = (obj: pb.DisconnectingPacket.AsObject): DisconnectingPacket => {
     return new DisconnectingPacket({
       header: {
         id: obj.id,

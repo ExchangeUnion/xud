@@ -7,8 +7,7 @@ import { loadXudClient } from '../command';
 
 export const command = 'streamorders [existing]';
 
-export const describe =
-  'stream order added, removed, and swapped events (DEMO)';
+export const describe = 'stream order added, removed, and swapped events (DEMO)';
 
 export const builder = (argv: Argv) =>
   argv.option('existing', {
@@ -31,7 +30,7 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
     if (error) {
       if (error.message === 'Failed to connect before the deadline') {
         console.error(
-          `could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`
+          `could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`,
         );
         process.exit(1);
       }
@@ -51,15 +50,9 @@ const streamOrders = (argv: Arguments<any>) => {
   const ordersSubscription = client.subscribeOrders(ordersReqeust);
   ordersSubscription.on('data', (orderUpdate: xudrpc.OrderUpdate) => {
     if (orderUpdate.getOrder() !== undefined) {
-      console.log(
-        `Order added: ${JSON.stringify(orderUpdate.getOrder()!.toObject())}`
-      );
+      console.log(`Order added: ${JSON.stringify(orderUpdate.getOrder()!.toObject())}`);
     } else if (orderUpdate.getOrderRemoval() !== undefined) {
-      console.log(
-        `Order removed: ${JSON.stringify(
-          orderUpdate.getOrderRemoval()!.toObject()
-        )}`
-      );
+      console.log(`Order removed: ${JSON.stringify(orderUpdate.getOrderRemoval()!.toObject())}`);
     }
   });
 
@@ -69,13 +62,11 @@ const streamOrders = (argv: Arguments<any>) => {
   ordersSubscription.on('error', async (err: ServiceError) => {
     if (err.code === status.UNIMPLEMENTED) {
       console.error(
-        "xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again"
+        "xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again",
       );
       process.exit(1);
     }
-    console.warn(
-      `Unexpected error occured: ${err.message}, reconnecting in 1 second`
-    );
+    console.warn(`Unexpected error occured: ${err.message}, reconnecting in 1 second`);
     await setTimeoutPromise(1000);
     await ensureConnection(argv);
   });
@@ -88,13 +79,9 @@ const streamOrders = (argv: Arguments<any>) => {
   });
 
   const swapsAcceptedRequest = new xudrpc.SubscribeSwapsAcceptedRequest();
-  const swapsAcceptedSubscription = client.subscribeSwapsAccepted(
-    swapsAcceptedRequest
-  );
+  const swapsAcceptedSubscription = client.subscribeSwapsAccepted(swapsAcceptedRequest);
   swapsAcceptedSubscription.on('data', (swapAccepted: xudrpc.SwapAccepted) => {
-    console.log(
-      `Swap deal accepted: ${JSON.stringify(swapAccepted.toObject())}`
-    );
+    console.log(`Swap deal accepted: ${JSON.stringify(swapAccepted.toObject())}`);
   });
 
   const swapFailuresSubscription = client.subscribeSwapFailures(swapsRequest);

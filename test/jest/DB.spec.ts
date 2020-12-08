@@ -6,11 +6,7 @@ import {
   XuNetwork,
 } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
-import {
-  defaultCurrencies,
-  defaultNodes,
-  defaultPairs,
-} from '../../lib/db/seeds';
+import { defaultCurrencies, defaultNodes, defaultPairs } from '../../lib/db/seeds';
 import { TradeCreationAttributes } from '../../lib/db/types';
 import Logger, { Level } from '../../lib/Logger';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
@@ -24,10 +20,8 @@ const loggers = Logger.createLoggers(Level.Warn);
 
 const price = 0.005;
 const quantity = 10000000;
-const peerPubKey =
-  '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
-const rHash =
-  '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
+const peerPubKey = '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
+const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
 
 const order = createOwnOrder(price, quantity, true);
 const orderId = order.id;
@@ -97,9 +91,7 @@ describe('Database', () => {
       currencies.forEach((currency, index) => {
         const simnetCurrency = simnetCurrencies[index];
         expect(currency.id).toEqual(simnetCurrency.id);
-        expect(currency.tokenAddress ?? undefined).toEqual(
-          simnetCurrency.tokenAddress
-        );
+        expect(currency.tokenAddress ?? undefined).toEqual(simnetCurrency.tokenAddress);
       });
 
       expect(pairs.length).toEqual(simnetPairs.length);
@@ -156,9 +148,7 @@ describe('Database', () => {
       simnetCurrencies.forEach((simnetCurrency, index) => {
         const currency = currencies[index + 2];
         expect(currency.id).toEqual(simnetCurrency.id);
-        expect(currency.tokenAddress ?? undefined).toEqual(
-          simnetCurrency.tokenAddress
-        );
+        expect(currency.tokenAddress ?? undefined).toEqual(simnetCurrency.tokenAddress);
       });
 
       expect(pairs.length).toEqual(simnetPairs.length + 1);
@@ -257,11 +247,7 @@ describe('Database', () => {
     });
 
     it('should add market orders and have their price in db be null', async () => {
-      const buyMarketOrder = createOwnOrder(
-        Number.POSITIVE_INFINITY,
-        quantity,
-        true
-      );
+      const buyMarketOrder = createOwnOrder(Number.POSITIVE_INFINITY, quantity, true);
       const sellMarketOrder = createOwnOrder(0, quantity, true);
       await orderBookRepo.addOrderIfNotExists(buyMarketOrder);
       await orderBookRepo.addOrderIfNotExists(sellMarketOrder);

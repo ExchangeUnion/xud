@@ -18,9 +18,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array
-  ): OrdersPacket | pb.OrdersPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): OrdersPacket | pb.OrdersPacket.AsObject => {
     const obj = pb.OrdersPacket.deserializeBinary(binary).toObject();
     return OrdersPacket.validate(obj) ? OrdersPacket.convert(obj) : obj;
   };
@@ -30,8 +28,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
       obj.id &&
       obj.reqId &&
       obj.ordersList.every(
-        order =>
-          !!order.id && !!order.pairId && order.price > 0 && order.quantity > 0
+        (order) => !!order.id && !!order.pairId && order.price > 0 && order.quantity > 0,
       )
     );
   };
@@ -42,7 +39,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
         id: obj.id,
         reqId: obj.reqId,
       },
-      body: obj.ordersList.map(pbOrder => ({
+      body: obj.ordersList.map((pbOrder) => ({
         id: pbOrder.id,
         pairId: pbOrder.pairId,
         price: pbOrder.price,
@@ -57,7 +54,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     msg.setId(this.header.id);
     msg.setReqId(this.header.reqId!);
     msg.setOrdersList(
-      this.body!.map(order => {
+      this.body!.map((order) => {
         const pbOrder = new pb.Order();
         pbOrder.setId(order.id);
         pbOrder.setPairId(order.pairId);
@@ -65,7 +62,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
         pbOrder.setQuantity(order.quantity);
         pbOrder.setIsBuy(order.isBuy);
         return pbOrder;
-      })
+      }),
     );
 
     return msg.serializeBinary();

@@ -12,22 +12,13 @@ import { ConnextClientConfig } from './connextclient/types';
 import { deepMerge } from './utils/utils';
 
 const propAssertions = {
-  port: (val: number) =>
-    assert(val >= 0 && val <= 65535, 'port must be between 0 and 65535'),
-  cltvdelta: (val: number) =>
-    assert(val > 0, 'cltvdelta must be a positive number'),
-  discoverminutes: (val: number) =>
-    assert(val > 0, 'discoverminutes must be a positive number'),
-  minQuantity: (val: number) =>
-    assert(val >= 0, 'minQuantity must be 0 or a positive number'),
+  port: (val: number) => assert(val >= 0 && val <= 65535, 'port must be between 0 and 65535'),
+  cltvdelta: (val: number) => assert(val > 0, 'cltvdelta must be a positive number'),
+  discoverminutes: (val: number) => assert(val > 0, 'discoverminutes must be a positive number'),
+  minQuantity: (val: number) => assert(val >= 0, 'minQuantity must be 0 or a positive number'),
 };
 
-function validateConfig(
-  propVal: any,
-  defaultVal: any,
-  propKey?: string,
-  prefix?: string
-) {
+function validateConfig(propVal: any, defaultVal: any, propKey?: string, prefix?: string) {
   const actualType = typeof propVal;
   const expectedType = typeof defaultVal;
   if (actualType === 'undefined') {
@@ -39,9 +30,7 @@ function validateConfig(
   assert.equal(
     actualType,
     expectedType,
-    `${
-      prefix || ''
-    }${propKey} is type ${actualType} but should be ${expectedType}`
+    `${prefix || ''}${propKey} is type ${actualType} but should be ${expectedType}`,
   );
 
   if (actualType === 'object') {
@@ -52,7 +41,7 @@ function validateConfig(
         propVal[nestedPropKey],
         defaultVal[nestedPropKey],
         nestedPropKey,
-        nestedPrefix
+        nestedPrefix,
       );
     }
   } else {
@@ -112,12 +101,7 @@ class Config {
         // mac
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
-        lndDefaultDatadir = path.join(
-          homeDir,
-          'Library',
-          'Application Support',
-          'Lnd'
-        );
+        lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
         break;
       }
       default: {
@@ -173,7 +157,7 @@ class Config {
         'chain',
         'bitcoin',
         this.network,
-        'admin.macaroon'
+        'admin.macaroon',
       ),
       host: 'localhost',
       port: 10009,
@@ -189,7 +173,7 @@ class Config {
         'chain',
         'litecoin',
         this.network,
-        'admin.macaroon'
+        'admin.macaroon',
       ),
       host: 'localhost',
       port: 10010,
@@ -217,7 +201,7 @@ class Config {
         configProps = toml.parse(configText);
       } catch (e) {
         throw new Error(
-          `Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`
+          `Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`,
         );
       }
     }
@@ -252,12 +236,9 @@ class Config {
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
         if (
-          ![
-            XuNetwork.MainNet,
-            XuNetwork.TestNet,
-            XuNetwork.SimNet,
-            XuNetwork.RegTest,
-          ].includes(configProps.network)
+          ![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(
+            configProps.network,
+          )
         ) {
           throw new Error(`Invalid network config: ${configProps.network}`);
         }
@@ -327,7 +308,7 @@ class Config {
       [XuNetwork.RegTest]: args.regtest,
     };
 
-    const selected = Object.keys(networks).filter(key => networks[key]);
+    const selected = Object.keys(networks).filter((key) => networks[key]);
     if (selected.length > 1) {
       throw Error('only one network selection is allowed');
     }
@@ -349,7 +330,7 @@ class Config {
             '..',
             '..',
             this.network === XuNetwork.TestNet ? 'testnet4' : this.network,
-            'admin.macaroon'
+            'admin.macaroon',
           );
           break;
         default:
@@ -359,7 +340,7 @@ class Config {
             '..',
             '..',
             this.network,
-            'admin.macaroon'
+            'admin.macaroon',
           );
           break;
       }

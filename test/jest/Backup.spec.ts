@@ -4,7 +4,7 @@ import Backup from '../../lib/backup/Backup';
 
 const removeDir = (dir: string) => {
   if (fs.existsSync(dir)) {
-    fs.readdirSync(dir).forEach(file => {
+    fs.readdirSync(dir).forEach((file) => {
       fs.unlinkSync(`${dir}/${file}`);
     });
   }
@@ -69,23 +69,17 @@ describe('Backup', () => {
   });
 
   test('should write LND backups on startup', () => {
-    expect(fs.readFileSync(path.join(backupdir, 'lnd-BTC'), 'utf8')).toEqual(
-      backups.lnd.startup
-    );
+    expect(fs.readFileSync(path.join(backupdir, 'lnd-BTC'), 'utf8')).toEqual(backups.lnd.startup);
   });
 
   test('should write LND backups on new event', () => {
     channelBackupCallback(backups.lnd.event);
 
-    expect(fs.readFileSync(path.join(backupdir, 'lnd-BTC'), 'utf8')).toEqual(
-      backups.lnd.event
-    );
+    expect(fs.readFileSync(path.join(backupdir, 'lnd-BTC'), 'utf8')).toEqual(backups.lnd.event);
   });
 
   test('should write XUD database backups on startup', () => {
-    expect(fs.readFileSync(path.join(backupdir, 'xud'), 'utf8')).toEqual(
-      backups.xud.startup
-    );
+    expect(fs.readFileSync(path.join(backupdir, 'xud'), 'utf8')).toEqual(backups.xud.startup);
   });
 
   test('should detect XUD database backups on new event', async () => {
@@ -94,7 +88,7 @@ describe('Backup', () => {
     // Wait to make sure the file watcher handled the new file
     await new Promise((resolve, reject) => {
       setTimeout(reject, 3000);
-      backup.on('changeDetected', path => {
+      backup.on('changeDetected', (path) => {
         if (path.endsWith(xudDatabasePath)) {
           resolve();
         }

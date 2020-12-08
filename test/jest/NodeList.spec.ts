@@ -3,8 +3,7 @@ import NodeList from '../../lib/p2p/NodeList';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import { NodeConnectionInfo } from '../../lib/p2p/types';
 
-const nodePubKey =
-  '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0a';
+const nodePubKey = '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0a';
 const nodeConnectionInfo: NodeConnectionInfo = {
   nodePubKey,
   addresses: [],
@@ -64,9 +63,7 @@ describe('NodeList', () => {
 
     test('it should return an empty array when there are no events', async () => {
       p2pRepo.getReputationEvents = jest.fn().mockImplementation(() => []);
-      const negativeReputationEvents = await nodeList[
-        'getNegativeReputationEvents'
-      ](nodeInstance);
+      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](nodeInstance);
       expect(negativeReputationEvents.length).toEqual(0);
     });
 
@@ -76,9 +73,7 @@ describe('NodeList', () => {
         { event: ReputationEvent.SwapSuccess, nodeId: 1 },
         { event: ReputationEvent.SwapFailure, nodeId: 1 },
       ]);
-      const negativeReputationEvents = await nodeList[
-        'getNegativeReputationEvents'
-      ](nodeInstance);
+      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](nodeInstance);
       expect(negativeReputationEvents).toEqual([
         ReputationEvent.PacketTimeout,
         ReputationEvent.SwapFailure,
@@ -90,9 +85,10 @@ describe('NodeList', () => {
         { event: ReputationEvent.PacketTimeout, nodeId: 1 },
         { event: ReputationEvent.SwapFailure, nodeId: 1 },
       ]);
-      const negativeReputationEvents = await nodeList[
-        'getNegativeReputationEvents'
-      ](nodeInstance, ReputationEvent.SwapDelay);
+      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](
+        nodeInstance,
+        ReputationEvent.SwapDelay,
+      );
       expect(negativeReputationEvents).toEqual([
         ReputationEvent.SwapDelay,
         ReputationEvent.PacketTimeout,
@@ -115,9 +111,10 @@ describe('NodeList', () => {
         { event: ReputationEvent.PacketTimeout, nodeId: 1 },
         { event: ReputationEvent.SwapFailure, nodeId: 1 },
       ]);
-      const negativeReputationEvents = await nodeList[
-        'getNegativeReputationEvents'
-      ](nodeInstance, ReputationEvent.SwapDelay);
+      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](
+        nodeInstance,
+        ReputationEvent.SwapDelay,
+      );
       expect(negativeReputationEvents.length).toEqual(10);
     });
   });

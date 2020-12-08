@@ -25,18 +25,12 @@ export const builder = (argv: Argv) =>
       description: 'the fee in satoshis (or equivalent) per byte',
       type: 'number',
     })
-    .example(
-      '$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE',
-      'withdraws 0.1 BTC'
-    )
+    .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws 0.1 BTC')
     .example(
       '$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE 20',
-      'withdraws 0.1 BTC using 20 sats/byte'
+      'withdraws 0.1 BTC using 20 sats/byte',
     )
-    .example(
-      '$0 walletwithdraw all BTC 1BitcoinEaterAddressDontSendf59kuE',
-      'withdraws all BTC'
-    );
+    .example('$0 walletwithdraw all BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();
