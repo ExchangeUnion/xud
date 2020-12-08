@@ -2,8 +2,8 @@
 
 exports[`ConnextClient sendRequest deposit fails with 404 1`] = `
 Object {
-  "code": "8.8",
-  "message": "connext payment not found",
+  "code": "8.18",
+  "message": "connext returned not found response",
 }
 `;
 

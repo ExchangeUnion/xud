@@ -330,8 +330,11 @@ abstract class SwapClient extends EventEmitter {
     { remoteIdentifier, units, currency, destination, force, fee }: CloseChannelParams,
   ): Promise<string[]>;
 
-  /** Gets a deposit address. */
+  /** Gets an address for depositing directly to a channel. */
   public abstract async deposit(): Promise<string>;
+
+  /** Gets a deposit address for on-chain wallet. */
+  public abstract async walletDeposit(): Promise<string>;
 
   /** Withdraws from the onchain wallet of the client and returns the transaction id or transaction hash in case of Ethereum */
   public abstract async withdraw(args: WithdrawArguments): Promise<string>;

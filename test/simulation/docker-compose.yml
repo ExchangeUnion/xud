@@ -8,10 +8,10 @@ services:
     build: ./docker-lnd
     volumes:
       - lnd-vol:/app
-  connext:
-    build: ./docker-connext
-    volumes:
-      - connext-vol:/app
+        # connext:
+        # build: ./docker-connext
+        # volumes:
+        # - connext-vol:/app
   xud:
     build: ./docker-xud
     volumes:
@@ -29,13 +29,13 @@ services:
     depends_on:
       - btcd
       - lnd
-      - connext
+        # - connext
       - xud
       - gomod
     volumes:
       - btcd-vol:/btcd-vol
       - lnd-vol:/lnd-vol
-      - connext-vol:/connext-vol
+        # - connext-vol:/connext-vol
       - xud-vol:/xud-vol
       - custom-xud-vol:/custom-xud-vol
       - nvm-vol:/nvm-vol
@@ -43,12 +43,12 @@ services:
 volumes:
   btcd-vol:
   lnd-vol:
-  connext-vol:
+    # connext-vol:
   xud-vol:
   custom-xud-vol:
   nvm-vol:
   gomod-vol:
-networks:
-  default:
-    external:
-      name: indra
+    # networks:
+  # default:
+    # external:
+      # name: indra

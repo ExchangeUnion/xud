@@ -200,6 +200,33 @@
         ]
       }
     },
+    "/v1/deposit": {
+      "post": {
+        "summary": "Gets an address to deposit a given currency directly into a channel.\nshell: xucli deposit \u003ccurrency\u003e",
+        "operationId": "Deposit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/discovernodes": {
       "post": {
         "summary": "Discover nodes from a specific peer and apply new connections",

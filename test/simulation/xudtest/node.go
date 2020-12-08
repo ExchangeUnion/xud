@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ExchangeUnion/xud-simulation/connexttest"
+	// "github.com/ExchangeUnion/xud-simulation/connexttest"
 
 	"context"
 
@@ -91,23 +91,26 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.port=%v", cfg.LndLtcPort))
 	args = append(args, fmt.Sprintf("--lnd.LTC.certpath=%v", cfg.LndLtcCertPath))
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
+	args = append(args, "--connext.disable")
 
-	if !cfg.RaidenDisable {
-		args = append(args, fmt.Sprintf("--raiden.host=%v", cfg.RaidenHost))
-		args = append(args, fmt.Sprintf("--raiden.port=%v", cfg.RaidenPort))
-	} else {
-		args = append(args, "--raiden.disable")
-	}
+	/*
+		if !cfg.RaidenDisable {
+			args = append(args, fmt.Sprintf("--raiden.host=%v", cfg.RaidenHost))
+			args = append(args, fmt.Sprintf("--raiden.port=%v", cfg.RaidenPort))
+		} else {
+			args = append(args, "--raiden.disable")
+		}
 
-	if !cfg.ConnextDisable {
-		args = append(args, fmt.Sprintf("--connext.host=%v", cfg.ConnextHost))
-		args = append(args, fmt.Sprintf("--connext.port=%v", cfg.ConnextPort))
-		args = append(args, "--connext.webhookhost=127.0.0.1")
-		args = append(args, fmt.Sprintf("--connext.webhookport=%v", cfg.HTTPPort))
+		if !cfg.ConnextDisable {
+			args = append(args, fmt.Sprintf("--connext.host=%v", cfg.ConnextHost))
+			args = append(args, fmt.Sprintf("--connext.port=%v", cfg.ConnextPort))
+			args = append(args, "--connext.webhookhost=127.0.0.1")
+			args = append(args, fmt.Sprintf("--connext.webhookport=%v", cfg.HTTPPort))
 
-	} else {
-		args = append(args, "--connext.disable")
-	}
+		} else {
+			args = append(args, "--connext.disable")
+		}
+	*/
 
 	return args
 }
@@ -124,9 +127,9 @@ type HarnessNode struct {
 	ID     int
 	pubKey string
 
-	LndBtcNode    *lntest.HarnessNode
-	LndLtcNode    *lntest.HarnessNode
-	ConnextClient *connexttest.HarnessClient
+	LndBtcNode *lntest.HarnessNode
+	LndLtcNode *lntest.HarnessNode
+	// ConnextClient *connexttest.HarnessClient
 
 	// processExit is a channel that's closed once it's detected that the
 	// process this instance of HarnessNode is bound to has exited.
@@ -209,11 +212,13 @@ func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
 	}
 }
 
+/*
 func (hn *HarnessNode) SetConnextClient(client *connexttest.HarnessClient) {
 	hn.Cfg.ConnextHost = "0.0.0.0"
 	hn.Cfg.ConnextPort = client.Cfg.Port
 	hn.ConnextClient = client
 }
+*/
 
 func (hn *HarnessNode) SetEnvVars(envVars []string) {
 	hn.EnvVars = envVars

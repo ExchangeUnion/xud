@@ -1,7 +1,7 @@
 {
   "name": "xud",
   "minCompatibleVersion": "1.0.0-rc.1",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -59,7 +59,7 @@
     "test:sim:clean:connext": "(cd test/simulation && ./docker-clean.sh connext)",
     "test:sim:clean:custom-xud": "(cd test/simulation && ./docker-clean.sh custom-xud)",
     "test:sim:logs": "cd test/simulation && ./logs.sh",
-    "test:jest": "jest --unhandled-rejections=strict --rootDir test/jest",
+    "test:jest": "jest --forceExit --unhandled-rejections=strict --rootDir test/jest",
     "test:seedutil": "jest --rootDir seedutil",
     "test:jest:watch": "jest --watch",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
@@ -209,7 +209,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "concurrently": "^5.2.0",
-    "conventional-changelog-cli": "^2.0.34",
+    "conventional-changelog-cli": "^2.1.1",
     "grpc-tools": "1.8.0",
     "grpc_tools_node_protoc_ts": "^2.5.5",
     "jest": "^26.2.2",

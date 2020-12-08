@@ -1,16 +1,16 @@
 import grpc from 'grpc';
 import http from 'http';
-import { defer, empty, from, Observable, of, throwError } from 'rxjs';
+import { defer, from, Observable, of, throwError } from 'rxjs';
 import {
   catchError,
   concat,
   concatAll,
   delay,
-  mapTo,
   mergeMap,
   retryWhen,
   share,
   take,
+  mapTo,
 } from 'rxjs/operators';
 import { loadXudClient } from '../cli/command';
 import { XudClient } from '../proto/xudrpc_grpc_pb';
@@ -19,8 +19,6 @@ import {
   GetBalanceResponse,
   GetInfoRequest,
   GetInfoResponse,
-  OpenChannelRequest,
-  OpenChannelResponse,
 } from '../proto/xudrpc_pb';
 
 type Balances = {
@@ -63,20 +61,6 @@ const getBalance = async (
   return balances as GetBalanceResponse;
 };
 
-const openConnextChannel = async (
-  client: XudClient,
-  currency: string,
-  amount: number,
-): Promise<OpenChannelResponse> => {
-  const request = new OpenChannelRequest();
-  request.setCurrency(currency.toUpperCase());
-  request.setAmount(amount);
-  const openChannelResponse = await new Promise((resolve, reject) => {
-    client.openChannel(request, processResponse(resolve, reject));
-  });
-  return openChannelResponse as OpenChannelResponse;
-};
-
 const checkBalanceObservable = (
   client: XudClient,
   currency: string,
@@ -91,7 +75,7 @@ const checkBalanceObservable = (
         walletBalance: currencyBalance.getWalletBalance(),
         channelBalance: currencyBalance.getChannelBalance(),
       };
-      if (balances.walletBalance < minimumBalance) {
+      if (balances.channelBalance < minimumBalance) {
         // the balance is under our specified threshold
         // we'll hit the faucet with our connext address
         // and then recheck the balance
@@ -185,7 +169,6 @@ const faucetRequest = (connextAddress: string) => {
 const createSimnetChannel = ({
   client,
   currency,
-  minChannelAmount,
   channelAmount,
   retryInterval,
   getBalance$,
@@ -204,17 +187,6 @@ const createSimnetChannel = ({
     getBalance$,
   );
   const simnetChannel$ = balances$.pipe(
-    mergeMap((balances) => {
-      if (balances.channelBalance >= minChannelAmount) {
-        // in case we already have enough channelBalance we won't attempt
-        // to open a channel
-        return empty();
-      } else {
-        return from(openConnextChannel(client, currency, channelAmount)).pipe(
-          mapTo(currency),
-        );
-      }
-    }),
     // when error happens
     retryWhen(errors =>
       errors.pipe(
@@ -226,6 +198,7 @@ const createSimnetChannel = ({
         concat(throwError('unrecoverable error happened - giving up')),
       ),
     ),
+    mapTo(currency),
     // complete the observable when the flow is successful
     take(1),
   );
