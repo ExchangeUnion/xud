@@ -20,20 +20,12 @@ describe('WebProxy', () => {
       },
       logpath: '',
       loglevel: 'error',
-      p2p: {
-        listen: false,
-      },
+      p2p: { listen: false },
       lnd: {
-        LTC: {
-          disable: true,
-        },
-        BTC: {
-          disable: true,
-        },
+        LTC: { disable: true },
+        BTC: { disable: true },
       },
-      connext: {
-        disable: true,
-      },
+      connext: { disable: true },
     };
 
     xud = new Xud();

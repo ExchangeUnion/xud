@@ -90,9 +90,7 @@ describe('Swaps.Integration', () => {
     pool.tryGetPeer = () => peer;
     // getRoute response
     getRouteResponse = () => {
-      return Promise.resolve({
-        getTotalTimeLock: () => 1,
-      });
+      return Promise.resolve({ getTotalTimeLock: () => 1 });
     };
     swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
     swapClientManager['swapClients'] = new Map<string, SwapClient>();

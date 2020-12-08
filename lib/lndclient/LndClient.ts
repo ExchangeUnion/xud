@@ -157,8 +157,8 @@ class LndClient extends SwapClient {
               clearTimeout(timeout);
               fs.readFile(certpath)
                 .then(resolve)
-                .catch((err) => {
-                  this.logger.error(err);
+                .catch((readFileErr) => {
+                  this.logger.error(readFileErr);
                   resolve(undefined);
                 });
             }
@@ -207,7 +207,7 @@ class LndClient extends SwapClient {
   }
 
   public setReservedInboundAmount = (_reservedInboundAmount: number) => {
-    return; // not currently used for lnd
+    // not currently used for lnd
   };
 
   /** Lnd specific procedure to mark the client as locked. */
@@ -940,7 +940,7 @@ class LndClient extends SwapClient {
 
     try {
       // QueryRoutes no longer returns more than one route
-      route = (await this.queryRoutes(request)).getRoutesList()[0];
+      [route] = (await this.queryRoutes(request)).getRoutesList();
     } catch (err) {
       if (typeof err.message === 'string' && err.message.includes('insufficient local balance')) {
         throw swapErrors.INSUFFICIENT_BALANCE;

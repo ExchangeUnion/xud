@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import NodeKey from 'lib/nodekey/NodeKey';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
@@ -22,7 +23,7 @@ import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
+import { SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -37,7 +38,6 @@ import {
   ServiceTrade,
   XudInfo,
 } from './types';
-import NodeKey from 'lib/nodekey/NodeKey';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -186,21 +186,21 @@ class Service extends EventEmitter {
       }
     } else {
       const balancePromises: Promise<any>[] = [];
-      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+      this.swapClientManager.swapClients.forEach((swapClient, swapClientCurrency) => {
         if (swapClient.isConnected()) {
           balancePromises.push(
             swapClient
-              .channelBalance(currency)
+              .channelBalance(swapClientCurrency)
               .then((channelBalance) => {
-                channelBalances.set(currency, channelBalance);
+                channelBalances.set(swapClientCurrency, channelBalance);
               })
               .catch(this.logger.error),
           );
           balancePromises.push(
             swapClient
-              .walletBalance(currency)
+              .walletBalance(swapClientCurrency)
               .then((walletBalance) => {
-                walletBalances.set(currency, walletBalance);
+                walletBalances.set(swapClientCurrency, walletBalance);
               })
               .catch(this.logger.error),
           );
@@ -219,8 +219,8 @@ class Service extends EventEmitter {
         totalBalance: number;
       }
     >();
-    channelBalances.forEach((channelBalance, currency) => {
-      const walletBalance = walletBalances.get(currency);
+    channelBalances.forEach((channelBalance, channelBalanceCurrency) => {
+      const walletBalance = walletBalances.get(channelBalanceCurrency);
       if (walletBalance) {
         // check to make sure we have a wallet balance, which isn't guaranteed since it may involve
         // a separate call from the one to get channel balance. unless we have both wallet and
@@ -231,7 +231,7 @@ class Service extends EventEmitter {
           channelBalance.inactiveBalance +
           walletBalance.confirmedBalance +
           walletBalance.unconfirmedBalance;
-        balances.set(currency, {
+        balances.set(channelBalanceCurrency, {
           totalBalance,
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
@@ -256,13 +256,13 @@ class Service extends EventEmitter {
       tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
-      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+      this.swapClientManager.swapClients.forEach((swapClient, swapClientCurrency) => {
         if (swapClient.isConnected()) {
           promises.push(
             this.swapClientManager
-              .tradingLimits(currency)
+              .tradingLimits(swapClientCurrency)
               .then((tradingLimits) => {
-                tradingLimitsMap.set(currency, tradingLimits);
+                tradingLimitsMap.set(swapClientCurrency, tradingLimits);
               })
               .catch(this.logger.error),
           );
@@ -583,19 +583,19 @@ class Service extends EventEmitter {
 
     const result = new Map<string, ServiceOrderSidesArrays>();
 
-    const listOrderTypes = (pairId: string) => {
+    const listOrderTypes = (pairIdToList: string) => {
       let buyArray: Order[] = [];
       let sellArray: Order[] = [];
 
       if (includePeerOrders) {
-        const peerOrders = this.orderBook.getPeersOrders(pairId);
+        const peerOrders = this.orderBook.getPeersOrders(pairIdToList);
 
         buyArray = buyArray.concat(peerOrders.buyArray);
         sellArray = sellArray.concat(peerOrders.sellArray);
       }
 
       if (includeOwnOrders) {
-        const ownOrders = this.orderBook.getOwnOrders(pairId);
+        const ownOrders = this.orderBook.getOwnOrders(pairIdToList);
 
         buyArray = buyArray.concat(ownOrders.buyArray);
         sellArray = sellArray.concat(ownOrders.sellArray);
@@ -619,8 +619,8 @@ class Service extends EventEmitter {
     if (pairId) {
       result.set(pairId, listOrderTypes(pairId));
     } else {
-      this.orderBook.pairIds.forEach((pairId) => {
-        result.set(pairId, listOrderTypes(pairId));
+      this.orderBook.pairIds.forEach((orderBookPairId) => {
+        result.set(orderBookPairId, listOrderTypes(orderBookPairId));
       });
     }
 
@@ -738,7 +738,7 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (
+  public placeOrder = (
     args: {
       pairId: string;
       price: number;
@@ -783,8 +783,8 @@ class Service extends EventEmitter {
       onUpdate: serviceCallback,
     };
     return price > 0
-      ? await this.orderBook.placeLimitOrder(placeOrderRequest)
-      : await this.orderBook.placeMarketOrder(placeOrderRequest);
+      ? this.orderBook.placeLimitOrder(placeOrderRequest)
+      : this.orderBook.placeMarketOrder(placeOrderRequest);
   };
 
   /** Removes a currency. */
@@ -921,15 +921,6 @@ class Service extends EventEmitter {
       next: onSwapFailed,
       error: this.logger.error,
     });
-  };
-
-  /**
-   * Resolves a hash to its preimage.
-   */
-  public resolveHash = async (request: ResolveRequest) => {
-    argChecks.HAS_RHASH(request);
-    argChecks.POSITIVE_AMOUNT(request);
-    return this.swaps.handleResolveRequest(request);
   };
 
   /**

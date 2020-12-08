@@ -3,12 +3,12 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
+import { ConnextClientConfig } from './connextclient/types';
 import { XuNetwork } from './constants/enums';
 import { LndClientConfig } from './lndclient/types';
 import { Level } from './Logger';
 import { OrderBookThresholds } from './orderbook/types';
 import { PoolConfig } from './p2p/types';
-import { ConnextClientConfig } from './connextclient/types';
 import { deepMerge } from './utils/utils';
 
 const propAssertions = {
@@ -35,15 +35,13 @@ function validateConfig(propVal: any, defaultVal: any, propKey?: string, prefix?
 
   if (actualType === 'object') {
     // if this is an object, we recurse
-    for (const nestedPropKey in propVal) {
+    Object.keys(propVal).forEach((nestedPropKey) => {
       const nestedPrefix = propKey ? `${prefix || ''}${propKey}.` : undefined;
       validateConfig(propVal[nestedPropKey], defaultVal[nestedPropKey], nestedPropKey, nestedPrefix);
-    }
-  } else {
-    if (propKey && propKey in propAssertions) {
-      // shortcoming in typescript 3.6.4 `in` keyword type guard requires manual cast to any below
-      (propAssertions as any)[propKey](propVal);
-    }
+    });
+  } else if (propKey && propKey in propAssertions) {
+    // shortcoming in typescript 3.6.4 `in` keyword type guard requires manual cast to any below
+    (propAssertions as any)[propKey](propVal);
   }
 }
 
@@ -140,9 +138,7 @@ class Config {
       port: 8080,
     };
     // TODO: add dynamic max/min price limits
-    this.orderthresholds = {
-      minQuantity: 0, // 0 = disabled
-    };
+    this.orderthresholds = { minQuantity: 0 }; // 0 = disabled
     this.lnd.BTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
@@ -300,7 +296,7 @@ class Config {
   };
 
   private setDefaultMacaroonPaths = () => {
-    for (const currency in this.lnd) {
+    Object.keys(this.lnd).forEach((currency) => {
       switch (currency) {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
@@ -323,7 +319,7 @@ class Config {
           );
           break;
       }
-    }
+    });
   };
 
   private getDefaultP2pPort = () => {

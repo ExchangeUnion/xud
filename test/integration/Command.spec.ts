@@ -9,9 +9,7 @@ describe('Command.callback', () => {
     };
     const mockGrpcResponse = {
       toObject: () => {
-        return {
-          orderMap: [],
-        };
+        return { orderMap: [] };
       },
     };
     const defaultArgv = {

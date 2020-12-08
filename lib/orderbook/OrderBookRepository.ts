@@ -47,9 +47,7 @@ class OrderbookRepository {
   };
 
   public getOrder = (id: string) => {
-    return this.models.Order.findOne({
-      where: { id },
-    });
+    return this.models.Order.findOne({ where: { id } });
   };
 
   public addTrade = (trade: db.TradeCreationAttributes) => {

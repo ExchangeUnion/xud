@@ -16,18 +16,12 @@ class P2PRepository {
   };
 
   public getNode = async (nodePubKey: string): Promise<NodeInstance | null> => {
-    return this.models.Node.findOne({
-      where: {
-        nodePubKey,
-      },
-    });
+    return this.models.Node.findOne({ where: { nodePubKey } });
   };
 
   public getReputationEvents = async (node: NodeInstance): Promise<ReputationEventInstance[]> => {
     return this.models.ReputationEvent.findAll({
-      where: {
-        nodeId: node.id,
-      },
+      where: { nodeId: node.id },
       order: [['createdAt', 'DESC']],
     });
   };

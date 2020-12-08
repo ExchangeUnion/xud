@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { EventEmitter } from 'events';
-import { UnitConverter } from '../utils/UnitConverter';
 import uuidv1 from 'uuid/v1';
+import { UnitConverter } from '../utils/UnitConverter';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
 import { CurrencyCreationAttributes, CurrencyInstance, OrderCreationAttributes, PairInstance } from '../db/types';
@@ -312,7 +312,7 @@ class OrderBook extends EventEmitter {
     try {
       return this.getOwnOrder(orderId, pairId);
     } catch (err) {
-      return;
+      return undefined;
     }
   };
 
@@ -711,8 +711,8 @@ class OrderBook extends EventEmitter {
               // back to the order book after matching is complete for this taker order.
               removedOrder.quantity += portion.quantity;
               failedMakerOrders.push(removedOrder);
-            } catch (err) {
-              if (err.code === errorCodes.ORDER_NOT_FOUND) {
+            } catch (removeOrderErr) {
+              if (removeOrderErr.code === errorCodes.ORDER_NOT_FOUND) {
                 // if the order has already been removed, either it was removed fully during
                 // matching or it's been invalidated by a peer or filled by a separate order
                 // in this case we want to add back the order removed during matching
@@ -722,7 +722,7 @@ class OrderBook extends EventEmitter {
                 }
               } else {
                 // for other errors we throw
-                throw err;
+                throw removeOrderErr;
               }
             }
             onUpdate && onUpdate({ swapFailure, type: PlaceOrderEventType.SwapFailure });
@@ -1012,20 +1012,20 @@ class OrderBook extends EventEmitter {
       const failedHandler = (deal: SwapDeal) => {
         if (deal.orderId === order.id) {
           // remove the portion that failed now that it's not on hold
-          const quantityToRemove = Math.min(deal.quantity!, remainingQuantityToRemove);
+          const failedQuantityToRemove = Math.min(deal.quantity!, remainingQuantityToRemove);
           this.removeOwnOrder({
-            quantityToRemove,
+            quantityToRemove: failedQuantityToRemove,
             orderId: order.id,
             pairId: order.pairId,
           });
-          cleanup(quantityToRemove);
+          cleanup(failedQuantityToRemove);
         }
       };
 
       const paidHandler = (result: SwapSuccess) => {
         if (result.orderId === order.id) {
-          const quantityToRemove = Math.min(result.quantity, remainingQuantityToRemove);
-          cleanup(quantityToRemove);
+          const paidQuantityToRemove = Math.min(result.quantity, remainingQuantityToRemove);
+          cleanup(paidQuantityToRemove);
         }
       };
 

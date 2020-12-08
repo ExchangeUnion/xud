@@ -70,9 +70,9 @@ class SwapClientManager extends EventEmitter {
    * @returns A promise that resolves upon successful initialization, rejects otherwise.
    */
   public init = async (): Promise<void> => {
-    const initPromises = [];
+    const initPromises: Promise<void>[] = [];
     // setup configured LND clients and initialize them
-    for (const currency in this.config.lnd) {
+    Object.keys(this.config.lnd).forEach((currency) => {
       const lndConfig = this.config.lnd[currency]!;
       if (!lndConfig.disable) {
         const lndClient = new LndClient({
@@ -83,7 +83,7 @@ class SwapClientManager extends EventEmitter {
         this.swapClients.set(currency, lndClient);
         initPromises.push(lndClient.init());
       }
-    }
+    });
 
     if (!this.config.connext.disable) {
       // setup Connext
@@ -365,14 +365,14 @@ class SwapClientManager extends EventEmitter {
       if (isLndClient(swapClient)) {
         if (swapClient.isWaitingUnlock()) {
           // first we check whether this lnd is using an old wallet password
-          const oldEncryptedPassword = oldEncryptedPasswords.find((oldEncryptedPassword) => {
+          const swapClientOldEncryptedPassword = oldEncryptedPasswords.find((oldEncryptedPassword) => {
             return (
               oldEncryptedPassword.swapClient === SwapClientType.Lnd &&
               oldEncryptedPassword.currency === swapClient.currency
             );
           });
-          const oldPassword = oldEncryptedPassword
-            ? decrypt(oldEncryptedPassword.encryptedPassword, walletPassword).toString()
+          const oldPassword = swapClientOldEncryptedPassword
+            ? decrypt(swapClientOldEncryptedPassword.encryptedPassword, walletPassword).toString()
             : undefined;
 
           if (oldPassword) {
@@ -382,7 +382,7 @@ class SwapClientManager extends EventEmitter {
               .changePassword(oldPassword, walletPassword)
               .then(() => {
                 unlockedLndClients.push(swapClient.currency);
-                return oldEncryptedPassword?.destroy(); // we can remove the old password from the database
+                return swapClientOldEncryptedPassword?.destroy(); // we can remove the old password from the database
               })
               .catch(async (err) => {
                 this.loggers.lnd.error(`could not change password for ${swapClient.currency}`, err);
@@ -404,14 +404,14 @@ class SwapClientManager extends EventEmitter {
                   try {
                     await swapClient.initWallet(walletPassword ?? '', seedMnemonic);
                     walletCreated = true;
-                  } catch (err) {
-                    swapClient.logger.error('could not initialize lnd wallet', err);
+                  } catch (initWalletErr) {
+                    swapClient.logger.error('could not initialize lnd wallet', initWalletErr);
                   }
-                }
 
-                if (!walletCreated) {
-                  lockedLndClients.push(swapClient.currency);
-                  swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
+                  if (!walletCreated) {
+                    lockedLndClients.push(swapClient.currency);
+                    swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
+                  }
                 }
               });
             unlockWalletPromises.push(unlockWalletPromise);
@@ -630,13 +630,7 @@ class SwapClientManager extends EventEmitter {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
     }
 
-    return await swapClient.withdraw({
-      currency,
-      amount,
-      destination,
-      all,
-      fee,
-    });
+    return swapClient.withdraw({ currency, amount, destination, all, fee });
   };
 
   /**

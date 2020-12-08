@@ -34,9 +34,7 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
 
   private static convert = (obj: pb.SwapRequestPacket.AsObject): SwapRequestPacket => {
     return new SwapRequestPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: {
         proposedQuantity: obj.proposedQuantity,
         pairId: obj.pairId,

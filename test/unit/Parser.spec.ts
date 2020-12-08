@@ -407,9 +407,7 @@ describe('Parser', () => {
     );
     testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })));
 
-    const getOrdersPacketBody = {
-      pairIds: [uuid()],
-    };
+    const getOrdersPacketBody = { pairIds: [uuid()] };
     testValidPacket(new packets.GetOrdersPacket(getOrdersPacketBody));
     testInvalidPacket(new packets.GetOrdersPacket(getOrdersPacketBody, uuid()));
     testInvalidPacket(

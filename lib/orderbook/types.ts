@@ -31,9 +31,9 @@ export type PlaceOrderEvent = {
 
 export enum PlaceOrderEventType {
   Match,
-  SwapSuccess,
+  SwapSuccess, // eslint-disable-line @typescript-eslint/no-shadow
   RemainingOrder,
-  SwapFailure,
+  SwapFailure, // eslint-disable-line @typescript-eslint/no-shadow
 }
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */

@@ -42,13 +42,11 @@ class Parser extends EventEmitter {
       return;
     }
 
-    // reading through a split message
     if (this.waiting) {
+      // reading through a split message
       this.read(this.waiting, chunk);
-    }
-
-    // reading through a message which is split on the header
-    else if (this.waitingHeader) {
+    } else if (this.waitingHeader) {
+      // reading through a message which is split on the header
       this.pending.push(chunk);
       const data = Buffer.concat(this.pending);
       const length = this.parseLength(data);
@@ -57,16 +55,12 @@ class Parser extends EventEmitter {
       }
       this.pending = [];
       this.read(length + this.msgHeaderLength, data);
-    }
-
-    // starting to read a new message which is split on the header
-    else if (chunk.length < this.msgHeaderLength) {
+    } else if (chunk.length < this.msgHeaderLength) {
+      // starting to read a new message which is split on the header
       this.pending.push(chunk);
       this.waitingHeader = this.msgHeaderLength - chunk.length;
-    }
-
-    // starting to read a new message
-    else {
+    } else {
+      // starting to read a new message
       const length = this.parseLength(chunk);
       if (!length) {
         return;
@@ -78,13 +72,11 @@ class Parser extends EventEmitter {
   private read = (length: number, chunk: Buffer) => {
     this.pending.push(chunk.slice(0, length));
 
-    // message isn't complete
     if (length > chunk.length) {
+      // message isn't complete
       this.waiting = length - chunk.length;
-    }
-
-    // chunk is finalizing the msg
-    else {
+    } else {
+      // chunk is finalizing the msg
       this.parseMessage(this.pending);
       this.resetBuffer();
 

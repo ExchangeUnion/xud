@@ -216,6 +216,8 @@ abstract class SwapClient extends EventEmitter {
         // this is the starting status and cannot be reassigned
         validStatusTransition = false;
         break;
+      default:
+        throw new Error('unrecognized client status');
     }
 
     if (validStatusTransition) {

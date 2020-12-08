@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
-import { getDefaultBackupDir } from '../../utils/utils';
 import { join } from 'path';
 import readline from 'readline';
 import { Arguments } from 'yargs';
+import { getDefaultBackupDir } from '../../utils/utils';
 import { RestoreNodeRequest, RestoreNodeResponse } from '../../proto/xudrpc_pb';
 import { callback, loadXudInitClient } from '../command';
 import { getDefaultCertPath, waitForCert } from '../utils';

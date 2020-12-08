@@ -1,5 +1,4 @@
 import * as bodyParser from 'body-parser';
-import Logger from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
 import grpcGateway from '@exchangeunion/grpc-dynamic-gateway';
@@ -7,6 +6,7 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import grpc from 'grpc';
 import { promises as fs } from 'fs';
+import Logger from '../../Logger';
 
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 

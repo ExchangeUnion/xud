@@ -22,9 +22,7 @@ jest.mock('http', () => {
   return {
     request: jest.fn().mockImplementation((options, cb) => {
       if (options.path === '/deposit') {
-        cb({
-          statusCode: 404,
-        });
+        cb({ statusCode: 404 });
       }
 
       let errorCb: any;
@@ -97,9 +95,7 @@ describe('ConnextClient', () => {
     const DESTINATION_ADDRESS = '0x12345';
 
     beforeEach(() => {
-      connext['getBalance'] = jest.fn().mockReturnValue({
-        freeBalanceOnChain: MOCK_FREE_BALANCE_ON_CHAIN,
-      });
+      connext['getBalance'] = jest.fn().mockReturnValue({ freeBalanceOnChain: MOCK_FREE_BALANCE_ON_CHAIN });
       connext['sendRequest'] = jest.fn();
     });
 
@@ -225,9 +221,7 @@ describe('ConnextClient', () => {
     it('returns PaymentState.Pending', async () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest.fn().mockReturnValue({
-        transferState: {
-          expiry: '10001',
-        },
+        transferState: { expiry: '10001' },
         transferResolver: {},
       });
       connext['getHeight'] = jest.fn().mockReturnValue(10000);
@@ -238,12 +232,8 @@ describe('ConnextClient', () => {
     it('returns PaymentState.Completed with preimage', async () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest.fn().mockReturnValue({
-        transferState: {
-          expiry: '10001',
-        },
-        transferResolver: {
-          preImage: '0x1337',
-        },
+        transferState: { expiry: '10001' },
+        transferResolver: { preImage: '0x1337' },
       });
       connext['getHeight'] = jest.fn().mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
@@ -256,12 +246,8 @@ describe('ConnextClient', () => {
     it('returns PaymentState.Failed when preimage is hash zero', async () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest.fn().mockReturnValue({
-        transferState: {
-          expiry: '10001',
-        },
-        transferResolver: {
-          preImage: '0x0000000000000000000000000000000000000000000000000000000000000000',
-        },
+        transferState: { expiry: '10001' },
+        transferResolver: { preImage: '0x0000000000000000000000000000000000000000000000000000000000000000' },
       });
       connext['getHeight'] = jest.fn().mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
@@ -271,9 +257,7 @@ describe('ConnextClient', () => {
     it('returns PaymentState.Failed when EXPIRED', async () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest.fn().mockReturnValue({
-        transferState: {
-          expiry: '10001',
-        },
+        transferState: { expiry: '10001' },
         transferResolver: {},
       });
       connext['getHeight'] = jest.fn().mockReturnValue(10001);

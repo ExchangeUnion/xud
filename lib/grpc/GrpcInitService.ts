@@ -8,8 +8,6 @@ class GrpcInitService {
   private disabled = false;
   private initService?: InitService;
 
-  constructor() {}
-
   public setInitService = (initService: InitService) => {
     this.initService = initService;
   };
@@ -31,16 +29,8 @@ class GrpcInitService {
   ): initService is InitService => {
     if (!initService) {
       const err = this.disabled
-        ? {
-            code: status.UNIMPLEMENTED,
-            message: 'xud init service is disabled',
-            name: 'DisabledError',
-          }
-        : {
-            code: status.UNAVAILABLE,
-            message: 'xud is starting',
-            name: 'NotReadyError',
-          };
+        ? { code: status.UNIMPLEMENTED, message: 'xud init service is disabled', name: 'DisabledError' }
+        : { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' };
       callback(err, null);
       return false;
     }

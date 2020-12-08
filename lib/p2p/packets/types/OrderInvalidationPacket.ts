@@ -29,9 +29,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
 
   private static convert = (obj: pb.OrderInvalidationPacket.AsObject): OrderInvalidationPacket => {
     return new OrderInvalidationPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: {
         id: obj.orderId,
         pairId: obj.pairId,

@@ -32,16 +32,14 @@ const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
 };
 
 const createTable = () => {
-  const table = new Table({
-    head: HEADERS,
-  }) as HorizontalTable;
+  const table = new Table({ head: HEADERS }) as HorizontalTable;
   return table;
 };
 
 export const displayLimits = (limits: TradingLimitsResponse.AsObject) => {
   const table = createTable();
   const formatted = formatTradingLimits(limits);
-  formatted.forEach((limits) => table.push(limits));
+  formatted.forEach((formattedLimit) => table.push(formattedLimit));
   console.log(colors.underline(colors.bold('\nTrading Limits:')));
   console.log(table.toString());
 };
