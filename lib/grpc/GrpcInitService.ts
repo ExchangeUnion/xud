@@ -50,19 +50,17 @@ class GrpcInitService {
   /**
    * See [[InitService.createNode]]
    */
-  public createNode: grpc.handleUnaryCall<
-    xudrpc.CreateNodeRequest,
-    xudrpc.CreateNodeResponse
-  > = async (call, callback) => {
+  public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.initService, callback)) {
       return;
     }
     try {
-      const {
-        mnemonic,
-        initializedLndWallets,
-        initializedConnext,
-      } = await this.initService.createNode(call.request.toObject());
+      const { mnemonic, initializedLndWallets, initializedConnext } = await this.initService.createNode(
+        call.request.toObject(),
+      );
       const response = new xudrpc.CreateNodeResponse();
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
@@ -80,10 +78,10 @@ class GrpcInitService {
   /**
    * See [[InitService.unlockNode]]
    */
-  public unlockNode: grpc.handleUnaryCall<
-    xudrpc.UnlockNodeRequest,
-    xudrpc.UnlockNodeResponse
-  > = async (call, callback) => {
+  public unlockNode: grpc.handleUnaryCall<xudrpc.UnlockNodeRequest, xudrpc.UnlockNodeResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.initService, callback)) {
       return;
     }
@@ -102,10 +100,10 @@ class GrpcInitService {
   /**
    * See [[InitService.restoreNode]]
    */
-  public restoreNode: grpc.handleUnaryCall<
-    xudrpc.RestoreNodeRequest,
-    xudrpc.RestoreNodeResponse
-  > = async (call, callback) => {
+  public restoreNode: grpc.handleUnaryCall<xudrpc.RestoreNodeRequest, xudrpc.RestoreNodeResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.initService, callback)) {
       return;
     }

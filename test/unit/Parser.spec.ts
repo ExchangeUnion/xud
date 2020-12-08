@@ -117,9 +117,7 @@ describe('Parser', () => {
   }
 
   function testConcatenatedPackets(packets: Packet[]) {
-    it(`should parse ${packets
-      .map((packet) => PacketType[packet.type])
-      .join(' ')} concatenated`, (done) => {
+    it(`should parse ${packets.map((packet) => PacketType[packet.type]).join(' ')} concatenated`, (done) => {
       verify(packets).then(done).catch(done);
 
       Promise.all(
@@ -133,9 +131,7 @@ describe('Parser', () => {
         .catch(done);
     });
 
-    it(`should parse encrypted ${packets
-      .map((packet) => PacketType[packet.type])
-      .join(' ')} concatenated`, (done) => {
+    it(`should parse encrypted ${packets.map((packet) => PacketType[packet.type]).join(' ')} concatenated`, (done) => {
       verify(packets).then(done).catch(done);
 
       parser.setEncryptionKey(encryptionKey);
@@ -274,9 +270,7 @@ describe('Parser', () => {
     );
     testInvalidPacket(new packets.SessionInitPacket(sessionInitPacketBody, uuid()));
     testInvalidPacket(
-      new packets.SessionInitPacket(
-        removeUndefinedProps({ ...sessionInitPacketBody, sign: undefined }),
-      ),
+      new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, sign: undefined })),
     );
     testInvalidPacket(
       new packets.SessionInitPacket(
@@ -357,15 +351,11 @@ describe('Parser', () => {
     };
     testValidPacket(new packets.DisconnectingPacket(disconnectingPacketBody));
     testValidPacket(
-      new packets.DisconnectingPacket(
-        removeUndefinedProps({ ...disconnectingPacketBody, payload: undefined }),
-      ),
+      new packets.DisconnectingPacket(removeUndefinedProps({ ...disconnectingPacketBody, payload: undefined })),
     );
     testInvalidPacket(new packets.DisconnectingPacket(disconnectingPacketBody, uuid()));
     testInvalidPacket(
-      new packets.DisconnectingPacket(
-        removeUndefinedProps({ ...disconnectingPacketBody, reason: undefined }),
-      ),
+      new packets.DisconnectingPacket(removeUndefinedProps({ ...disconnectingPacketBody, reason: undefined })),
     );
 
     testValidPacket(new packets.GetNodesPacket());
@@ -380,9 +370,7 @@ describe('Parser', () => {
     };
     testValidPacket(new packets.NodesPacket([node], uuid()));
     testInvalidPacket(new packets.NodesPacket([node]));
-    testInvalidPacket(
-      new packets.NodesPacket([removeUndefinedProps({ ...node, nodePubKey: undefined })], uuid()),
-    );
+    testInvalidPacket(new packets.NodesPacket([removeUndefinedProps({ ...node, nodePubKey: undefined })], uuid()));
     testInvalidPacket(new packets.NodesPacket([{ ...node, addresses: [] }], uuid()));
 
     const orderPacketBody = {
@@ -396,24 +384,12 @@ describe('Parser', () => {
     testValidPacket(new packets.OrderPacket({ ...orderPacketBody, isBuy: true }));
     testValidPacket(new packets.OrderPacket({ ...orderPacketBody, replaceOrderId: uuid() }));
     testInvalidPacket(new packets.OrderPacket(orderPacketBody, uuid()));
-    testInvalidPacket(
-      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })),
-    );
-    testInvalidPacket(
-      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })),
-    );
-    testInvalidPacket(
-      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: undefined })),
-    );
-    testInvalidPacket(
-      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: 0 })),
-    );
-    testInvalidPacket(
-      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: undefined })),
-    );
-    testInvalidPacket(
-      new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })),
-    );
+    testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })));
+    testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })));
+    testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: undefined })));
+    testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: 0 })));
+    testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: undefined })));
+    testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })));
 
     const orderInvalidationPacketBody = {
       id: uuid(),
@@ -422,26 +398,14 @@ describe('Parser', () => {
     };
     testValidPacket(new packets.OrderInvalidationPacket(orderInvalidationPacketBody));
     testInvalidPacket(new packets.OrderInvalidationPacket(orderInvalidationPacketBody, uuid()));
+    testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })));
     testInvalidPacket(
-      new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, id: undefined }),
-      ),
+      new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })),
     );
     testInvalidPacket(
-      new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, pairId: undefined }),
-      ),
+      new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, quantity: undefined })),
     );
-    testInvalidPacket(
-      new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, quantity: undefined }),
-      ),
-    );
-    testInvalidPacket(
-      new packets.OrderInvalidationPacket(
-        removeUndefinedProps({ ...orderPacketBody, quantity: 0 }),
-      ),
-    );
+    testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })));
 
     const getOrdersPacketBody = {
       pairIds: [uuid()],
@@ -449,13 +413,9 @@ describe('Parser', () => {
     testValidPacket(new packets.GetOrdersPacket(getOrdersPacketBody));
     testInvalidPacket(new packets.GetOrdersPacket(getOrdersPacketBody, uuid()));
     testInvalidPacket(
-      new packets.GetOrdersPacket(
-        removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined }),
-      ),
+      new packets.GetOrdersPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined })),
     );
-    testInvalidPacket(
-      new packets.GetOrdersPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })),
-    );
+    testInvalidPacket(new packets.GetOrdersPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })));
 
     const ordersPacketBody = [orderPacketBody];
     testValidPacket(new packets.OrdersPacket(ordersPacketBody, uuid()));
@@ -477,9 +437,7 @@ describe('Parser', () => {
       ),
     );
     testInvalidPacket(
-      new packets.SanitySwapInitPacket(
-        removeUndefinedProps({ ...sanitySwapInitPacketBody, rHash: undefined }),
-      ),
+      new packets.SanitySwapInitPacket(removeUndefinedProps({ ...sanitySwapInitPacketBody, rHash: undefined })),
     );
 
     const swapRequestPacketBody = {
@@ -500,19 +458,13 @@ describe('Parser', () => {
       ),
     );
     testInvalidPacket(
-      new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, proposedQuantity: 0 }),
-      ),
+      new packets.SwapRequestPacket(removeUndefinedProps({ ...swapRequestPacketBody, proposedQuantity: 0 })),
     );
     testInvalidPacket(
-      new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, orderId: undefined }),
-      ),
+      new packets.SwapRequestPacket(removeUndefinedProps({ ...swapRequestPacketBody, orderId: undefined })),
     );
     testInvalidPacket(
-      new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, rHash: undefined }),
-      ),
+      new packets.SwapRequestPacket(removeUndefinedProps({ ...swapRequestPacketBody, rHash: undefined })),
     );
     testInvalidPacket(
       new packets.SwapRequestPacket(
@@ -523,9 +475,7 @@ describe('Parser', () => {
       ),
     );
     testInvalidPacket(
-      new packets.SwapRequestPacket(
-        removeUndefinedProps({ ...swapRequestPacketBody, takerCltvDelta: 0 }),
-      ),
+      new packets.SwapRequestPacket(removeUndefinedProps({ ...swapRequestPacketBody, takerCltvDelta: 0 })),
     );
 
     const swapAcceptedPacketBody = {
@@ -536,20 +486,12 @@ describe('Parser', () => {
     testValidPacket(new packets.SwapAcceptedPacket(swapAcceptedPacketBody, uuid()));
     testInvalidPacket(new packets.SwapAcceptedPacket(swapAcceptedPacketBody));
     testInvalidPacket(
-      new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, rHash: undefined }),
-      ),
+      new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, rHash: undefined })),
     );
     testInvalidPacket(
-      new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: undefined }),
-      ),
+      new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: undefined })),
     );
-    testInvalidPacket(
-      new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: 0 }),
-      ),
-    );
+    testInvalidPacket(new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, quantity: 0 })));
     testInvalidPacket(
       new packets.SwapAcceptedPacket(
         removeUndefinedProps({
@@ -559,9 +501,7 @@ describe('Parser', () => {
       ),
     );
     testInvalidPacket(
-      new packets.SwapAcceptedPacket(
-        removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: 0 }),
-      ),
+      new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: 0 })),
     );
 
     const swapFailedPacketBody = {
@@ -580,9 +520,7 @@ describe('Parser', () => {
       ),
     );
     testInvalidPacket(
-      new packets.SwapFailedPacket(
-        removeUndefinedProps({ ...swapFailedPacketBody, rHash: undefined }),
-      ),
+      new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, rHash: undefined })),
     );
     testInvalidPacket(
       new packets.SwapFailedPacket(
@@ -600,15 +538,9 @@ describe('Parser', () => {
     testSplitPacket(pingPacket);
     testSplitPacket(sessionInitPacket);
     testConcatenatedPackets([pingPacket, sessionInitPacket, pingPacket]);
-    testConcatenatedAndSplit(
-      [pingPacket, sessionInitPacket, pingPacket],
-      Framer.MSG_HEADER_LENGTH - 1,
-    );
+    testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH - 1);
     testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH);
-    testConcatenatedAndSplit(
-      [pingPacket, sessionInitPacket, pingPacket],
-      Framer.MSG_HEADER_LENGTH + 1,
-    );
+    testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH + 1);
   });
 
   describe('test more edge-cases', () => {

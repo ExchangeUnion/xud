@@ -18,9 +18,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): OrderInvalidationPacket | pb.OrderInvalidationPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): OrderInvalidationPacket | pb.OrderInvalidationPacket.AsObject => {
     const obj = pb.OrderInvalidationPacket.deserializeBinary(binary).toObject();
     return OrderInvalidationPacket.validate(obj) ? OrderInvalidationPacket.convert(obj) : obj;
   };

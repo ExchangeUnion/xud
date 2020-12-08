@@ -37,12 +37,7 @@ function validateConfig(propVal: any, defaultVal: any, propKey?: string, prefix?
     // if this is an object, we recurse
     for (const nestedPropKey in propVal) {
       const nestedPrefix = propKey ? `${prefix || ''}${propKey}.` : undefined;
-      validateConfig(
-        propVal[nestedPropKey],
-        defaultVal[nestedPropKey],
-        nestedPropKey,
-        nestedPrefix,
-      );
+      validateConfig(propVal[nestedPropKey], defaultVal[nestedPropKey], nestedPropKey, nestedPrefix);
     }
   } else {
     if (propKey && propKey in propAssertions) {
@@ -151,14 +146,7 @@ class Config {
     this.lnd.BTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(
-        lndDefaultDatadir,
-        'data',
-        'chain',
-        'bitcoin',
-        this.network,
-        'admin.macaroon',
-      ),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
       nomacaroons: false,
@@ -167,14 +155,7 @@ class Config {
     this.lnd.LTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(
-        lndDefaultDatadir,
-        'data',
-        'chain',
-        'litecoin',
-        this.network,
-        'admin.macaroon',
-      ),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       nomacaroons: false,
@@ -236,9 +217,7 @@ class Config {
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
         if (
-          ![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(
-            configProps.network,
-          )
+          ![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)
         ) {
           throw new Error(`Invalid network config: ${configProps.network}`);
         }

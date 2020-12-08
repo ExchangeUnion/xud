@@ -18,9 +18,7 @@ class NodeStateUpdatePacket extends Packet<NodeState> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): NodeStateUpdatePacket | pb.NodeStateUpdatePacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): NodeStateUpdatePacket | pb.NodeStateUpdatePacket.AsObject => {
     const obj = pb.NodeStateUpdatePacket.deserializeBinary(binary).toObject();
     return NodeStateUpdatePacket.validate(obj) ? NodeStateUpdatePacket.convert(obj) : obj;
   };

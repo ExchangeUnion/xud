@@ -30,9 +30,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     return PacketType.SessionAck;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): SessionInitPacket | pb.SessionInitPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): SessionInitPacket | pb.SessionInitPacket.AsObject => {
     const obj = pb.SessionInitPacket.deserializeBinary(binary).toObject();
     return SessionInitPacket.validate(obj) ? SessionInitPacket.convert(obj) : obj;
   };

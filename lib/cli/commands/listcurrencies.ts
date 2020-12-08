@@ -16,12 +16,7 @@ const formatCurrencies = (currencies: ListCurrenciesResponse.AsObject) => {
   const formatted: any[] = [];
   currencies.currenciesList.forEach((currency) => {
     const element = [];
-    element.push(
-      currency.currency,
-      currency.decimalPlaces,
-      currency.tokenAddress,
-      SwapClientType[currency.swapClient],
-    );
+    element.push(currency.currency, currency.decimalPlaces, currency.tokenAddress, SwapClientType[currency.swapClient]);
     formatted.push(element);
   });
   return formatted;
@@ -49,8 +44,5 @@ export const command = 'listcurrencies';
 export const describe = 'list available currencies';
 
 export const handler = async (argv: Arguments) => {
-  (await loadXudClient(argv)).listCurrencies(
-    new ListCurrenciesRequest(),
-    callback(argv, displayTable),
-  );
+  (await loadXudClient(argv)).listCurrencies(new ListCurrenciesRequest(), callback(argv, displayTable));
 };

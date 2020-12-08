@@ -273,14 +273,8 @@ describe('OrderBook', () => {
 
       await orderbook.placeLimitOrder({ order });
       expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
-      expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith(
-        'BTC',
-        quantity * price,
-      );
-      expect(swaps.swapClientManager.addOutboundReservedAmount).toHaveBeenCalledWith(
-        'LTC',
-        quantity,
-      );
+      expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith('BTC', quantity * price);
+      expect(swaps.swapClientManager.addOutboundReservedAmount).toHaveBeenCalledWith('LTC', quantity);
     });
 
     test('placeLimitOrder immediateOrCancel does not add to order book', async () => {
@@ -296,9 +290,7 @@ describe('OrderBook', () => {
         order,
         immediateOrCancel: true,
       });
-      expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(
-        `order with local id ${localId} does not exist`,
-      );
+      expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(`order with local id ${localId} does not exist`);
     });
 
     test('placeLimitOrder with replaceOrderId replaces an order ', async () => {

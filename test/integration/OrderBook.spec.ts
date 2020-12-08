@@ -57,9 +57,7 @@ const initValues = async (db: DB) => {
     { id: currencies[0], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
     { id: currencies[1], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   ]);
-  await orderBookRepository.addPairs([
-    { baseCurrency: currencies[0], quoteCurrency: currencies[1] },
-  ]);
+  await orderBookRepository.addPairs([{ baseCurrency: currencies[0], quoteCurrency: currencies[1] }]);
 };
 
 describe('OrderBook', () => {
@@ -375,10 +373,7 @@ describe('nomatching OrderBook', () => {
         id: ownOrderWithLocalId.localId,
         pairId: ownOrderWithLocalId.pairId,
       });
-      const stampedOrder = orderBook['stampOwnOrder'](
-        ownOrderWithLocalId,
-        ownOrderWithLocalId.localId,
-      );
+      const stampedOrder = orderBook['stampOwnOrder'](ownOrderWithLocalId, ownOrderWithLocalId.localId);
       expect(stampedOrder.localId).to.equal(ownOrderWithLocalId.localId);
     });
   });

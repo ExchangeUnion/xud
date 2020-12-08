@@ -20,9 +20,7 @@ class SanitySwapInitPacket extends Packet<SanitySwapInitPacketBody> {
     return PacketType.SanitySwapAck;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): SanitySwapInitPacket | pb.SanitySwapInitPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): SanitySwapInitPacket | pb.SanitySwapInitPacket.AsObject => {
     const obj = pb.SanitySwapInitPacket.deserializeBinary(binary).toObject();
     return SanitySwapInitPacket.validate(obj) ? SanitySwapInitPacket.convert(obj) : obj;
   };

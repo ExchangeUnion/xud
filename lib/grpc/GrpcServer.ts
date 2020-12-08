@@ -33,13 +33,9 @@ class GrpcServer {
         logger.trace(`unknown status for call ${ctx.service.path}`);
       } else if (status.code !== 0) {
         if (typeof status.details === 'object') {
-          logger.error(
-            `call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`,
-          );
+          logger.error(`call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`);
         } else if (typeof status.details === 'string') {
-          logger.error(
-            `call ${ctx.service.path} errored with code ${status.code}: ${status.details}`,
-          );
+          logger.error(`call ${ctx.service.path} errored with code ${status.code}: ${status.details}`);
         } else {
           logger.error(`call ${ctx.service.path} errored with code ${status.code}`);
         }
@@ -53,25 +49,14 @@ class GrpcServer {
    * Start the server and begin listening on the provided port
    * @returns true if the server started listening successfully, false otherwise
    */
-  public listen = async (
-    port: number,
-    host: string,
-    tlsCertPath: string,
-    tlsKeyPath: string,
-  ): Promise<void> => {
-    assert(
-      Number.isInteger(port) && port > 1023 && port < 65536,
-      'port must be an integer between 1024 and 65535',
-    );
+  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string): Promise<void> => {
+    assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     let certificate: Buffer;
     let privateKey: Buffer;
 
     try {
-      [certificate, privateKey] = await Promise.all([
-        fs.readFile(tlsCertPath),
-        fs.readFile(tlsKeyPath),
-      ]);
+      [certificate, privateKey] = await Promise.all([fs.readFile(tlsCertPath), fs.readFile(tlsKeyPath)]);
     } catch (err) {
       this.logger.info('Could not load gRPC TLS certificate. Generating new one');
       const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
@@ -174,10 +159,7 @@ class GrpcServer {
     const certificate = pki.certificateToPem(cert);
     const privateKey = pki.privateKeyToPem(keys.privateKey);
 
-    await Promise.all([
-      fs.writeFile(tlsCertPath, certificate),
-      fs.writeFile(tlsKeyPath, privateKey),
-    ]);
+    await Promise.all([fs.writeFile(tlsCertPath, certificate), fs.writeFile(tlsKeyPath, privateKey)]);
     return {
       tlsCert: certificate,
       tlsKey: privateKey,

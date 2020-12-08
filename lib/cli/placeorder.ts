@@ -52,10 +52,7 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
       `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`,
     )
     .example(`$0 ${command} 3 BTC/USDT mkt`, `place a market order to ${command} 3 BTC for USDT`)
-    .example(
-      `$0 ${command} 1 BTC/USDT market`,
-      `place a market order to ${command} 1 BTC for USDT`,
-    );
+    .example(`$0 ${command} 1 BTC/USDT market`, `place a market order to ${command} 1 BTC for USDT`);
 };
 
 export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) => {
@@ -129,9 +126,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
       if (noMatches) {
         console.log('no matches found');
       } else if (remainingQuantity > 0) {
-        console.log(
-          `no more matches found, ${satsToCoinsStr(remainingQuantity)} qty will be discarded`,
-        );
+        console.log(`no more matches found, ${satsToCoinsStr(remainingQuantity)} qty will be discarded`);
       }
     });
     subscription.on('error', (err) => {
@@ -143,11 +138,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
 
 const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
   const { internalMatchesList, swapSuccessesList, swapFailuresList, remainingOrder } = response;
-  if (
-    internalMatchesList.length === 0 &&
-    swapSuccessesList.length === 0 &&
-    swapFailuresList.length === 0
-  ) {
+  if (internalMatchesList.length === 0 && swapSuccessesList.length === 0 && swapFailuresList.length === 0) {
     console.log('no matches found');
   } else {
     internalMatchesList.forEach(formatInternalMatch);
@@ -161,11 +152,7 @@ const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
 
 const formatInternalMatch = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
-  console.log(
-    `matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with own order ${
-      order.id
-    }`,
-  );
+  console.log(`matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with own order ${order.id}`);
 };
 
 const formatPeerMatch = (order: Order.AsObject) => {
@@ -199,11 +186,7 @@ const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
 
 const formatRemainingOrder = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
-  console.log(
-    `remaining ${satsToCoinsStr(order.quantity)} ${baseCurrency} entered the order book as ${
-      order.id
-    }`,
-  );
+  console.log(`remaining ${satsToCoinsStr(order.quantity)} ${baseCurrency} entered the order book as ${order.id}`);
 };
 
 const getBaseCurrency = (pairId: string) => pairId.substring(0, pairId.indexOf('/'));

@@ -5,12 +5,7 @@ import { Order } from '../../lib/proto/xudrpc_pb';
 import { createOrderbookSide } from '../../lib/cli/commands/orderbook';
 import { performance } from 'perf_hooks';
 
-const createOrders = (
-  amount: number,
-  price: number,
-  quantity: number,
-  randomAmounts = false,
-): Order.AsObject[] => {
+const createOrders = (amount: number, price: number, quantity: number, randomAmounts = false): Order.AsObject[] => {
   assert(amount >= 1, 'amount must greater than 0');
   const randomNumber = () => {
     return Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1);

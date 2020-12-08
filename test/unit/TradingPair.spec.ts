@@ -24,34 +24,22 @@ const init = () => {
 
 describe('TradingPair.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5, 10, true),
-      createOwnOrder(5.5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5, 10, true), createOwnOrder(5.5, 10, false));
     expect(res).to.equal(0);
   });
 
   it('should match buy order with a higher then a sell order', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5.5, 10, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5.5, 10, true), createOwnOrder(5, 10, false));
     expect(res).to.equal(10);
   });
 
   it('should match buy order with an equal price to a sell order', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5, 10, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5, 10, true), createOwnOrder(5, 10, false));
     expect(res).to.equal(10);
   });
 
   it('should match with lowest quantity of both orders', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5, 5, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5, 5, true), createOwnOrder(5, 10, false));
     expect(res).to.equal(5);
   });
 });
@@ -83,19 +71,13 @@ describe('TradingPair.getOrdersPriorityQueueComparator', () => {
 
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
-    const res = comparator(
-      createOwnOrder(5, 10, true, ms() - 1),
-      createOwnOrder(5, 10, false, ms()),
-    );
+    const res = comparator(createOwnOrder(5, 10, true, ms() - 1), createOwnOrder(5, 10, false, ms()));
     expect(res).to.be.true;
   });
 
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
-    const res = comparator(
-      createOwnOrder(5, 10, true, ms() - 1),
-      createOwnOrder(5, 10, false, ms()),
-    );
+    const res = comparator(createOwnOrder(5, 10, true, ms() - 1), createOwnOrder(5, 10, false, ms()));
     expect(res).to.be.true;
   });
 });

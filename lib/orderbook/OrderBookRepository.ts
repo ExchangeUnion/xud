@@ -16,9 +16,7 @@ class OrderbookRepository {
     return this.models.Currency.create(currency);
   };
 
-  public addCurrencies = (
-    currencies: db.CurrencyCreationAttributes[],
-  ): Promise<db.CurrencyInstance[]> => {
+  public addCurrencies = (currencies: db.CurrencyCreationAttributes[]): Promise<db.CurrencyInstance[]> => {
     return this.models.Currency.bulkCreate(currencies);
   };
 

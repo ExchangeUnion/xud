@@ -74,10 +74,7 @@ describe('NodeList', () => {
         { event: ReputationEvent.SwapFailure, nodeId: 1 },
       ]);
       const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](nodeInstance);
-      expect(negativeReputationEvents).toEqual([
-        ReputationEvent.PacketTimeout,
-        ReputationEvent.SwapFailure,
-      ]);
+      expect(negativeReputationEvents).toEqual([ReputationEvent.PacketTimeout, ReputationEvent.SwapFailure]);
     });
 
     test('it should append a new event to the beginning of the array', async () => {

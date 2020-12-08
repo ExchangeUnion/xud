@@ -67,14 +67,10 @@ describe('Semver', () => {
   });
 
   it('should throw error for non-semantic first', async () => {
-    expect(semver.compare.bind(undefined, '1.0.0.beta.2', '1.0.0-rc.1')).to.throw(
-      'Invalid Version: 1.0.0.beta.2',
-    );
+    expect(semver.compare.bind(undefined, '1.0.0.beta.2', '1.0.0-rc.1')).to.throw('Invalid Version: 1.0.0.beta.2');
   });
 
   it('should throw error for non-semantic second', async () => {
-    expect(semver.compare.bind(undefined, '1.0.0-beta.2', '1._3')).to.throw(
-      'Invalid Version: 1._3',
-    );
+    expect(semver.compare.bind(undefined, '1.0.0-beta.2', '1._3')).to.throw('Invalid Version: 1._3');
   });
 });

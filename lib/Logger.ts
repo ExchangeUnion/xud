@@ -122,12 +122,7 @@ class Logger {
     });
   }
 
-  public static createLoggers = (
-    level: string,
-    filename = '',
-    instanceId = 0,
-    dateFormat?: string,
-  ): Loggers => {
+  public static createLoggers = (level: string, filename = '', instanceId = 0, dateFormat?: string): Loggers => {
     const object = { instanceId, level, filename, dateFormat };
     return {
       global: new Logger({ ...object, context: Context.Global }),
@@ -173,10 +168,7 @@ class Logger {
       );
     } else {
       return format.printf(
-        (info) =>
-          `${getTsString(dateFormat)} [${context}] ${this.getLevel(info.level, colorize)}: ${
-            info.message
-          }`,
+        (info) => `${getTsString(dateFormat)} [${context}] ${this.getLevel(info.level, colorize)}: ${info.message}`,
       );
     }
   };

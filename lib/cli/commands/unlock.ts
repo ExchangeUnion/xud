@@ -15,9 +15,7 @@ const formatOutput = (response: UnlockNodeResponse.AsObject) => {
     console.log(`The following wallets were unlocked: ${response.unlockedLndsList.join(', ')}`);
   }
   if (response.lockedLndsList.length) {
-    console.log(
-      `The following wallets could not be unlocked: ${response.lockedLndsList.join(', ')}`,
-    );
+    console.log(`The following wallets could not be unlocked: ${response.lockedLndsList.join(', ')}`);
   }
 };
 

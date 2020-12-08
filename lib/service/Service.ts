@@ -22,14 +22,7 @@ import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import {
-  ResolveRequest,
-  SwapAccepted,
-  SwapDeal,
-  SwapFailure,
-  SwapSuccess,
-  TradingLimits,
-} from '../swaps/types';
+import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -58,8 +51,7 @@ const argChecks = {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_NODE_IDENTIFIER: ({ nodeIdentifier }: { nodeIdentifier: string }) => {
-    if (nodeIdentifier === '')
-      throw errors.INVALID_ARGUMENT('peerPubKey or alias must be specified');
+    if (nodeIdentifier === '') throw errors.INVALID_ARGUMENT('peerPubKey or alias must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => {
     if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified');
@@ -74,14 +66,11 @@ const argChecks = {
     if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative');
   },
   PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
-    if (checkDecimalPlaces(price))
-      throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
+    if (checkDecimalPlaces(price)) throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
   },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
     if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/)) {
-      throw errors.INVALID_ARGUMENT(
-        'currency must consist of 2 to 5 upper case English letters or numbers',
-      );
+      throw errors.INVALID_ARGUMENT('currency must consist of 2 to 5 upper case English letters or numbers');
     }
   },
   VALID_PORT: ({ port }: { port: number }) => {
@@ -92,8 +81,7 @@ const argChecks = {
     if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
   VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType; fee?: number }) => {
-    if (swapClient === SwapClientType.Connext && fee)
-      throw errors.INVALID_ARGUMENT('fee is not valid for connext');
+    if (swapClient === SwapClientType.Connext && fee) throw errors.INVALID_ARGUMENT('fee is not valid for connext');
   },
 };
 
@@ -180,10 +168,7 @@ class Service extends EventEmitter {
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const channelBalances = new Map<string, ChannelBalance>();
-    const walletBalances = new Map<
-      string,
-      { confirmedBalance: number; unconfirmedBalance: number }
-    >();
+    const walletBalances = new Map<string, { confirmedBalance: number; unconfirmedBalance: number }>();
 
     if (currency) {
       argChecks.VALID_CURRENCY(args);
@@ -349,9 +334,7 @@ class Service extends EventEmitter {
     const swapClientType = this.swapClientManager.getType(currency);
     let remoteIdentifier: string | undefined;
     if (nodeIdentifier) {
-      const nodePubKey = isNodePubKey(nodeIdentifier)
-        ? nodeIdentifier
-        : this.pool.resolveAlias(nodeIdentifier);
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
       if (swapClientType === undefined) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
@@ -400,9 +383,7 @@ class Service extends EventEmitter {
     let uris: string[] | undefined;
 
     if (nodeIdentifier) {
-      const nodePubKey = isNodePubKey(nodeIdentifier)
-        ? nodeIdentifier
-        : this.pool.resolveAlias(nodeIdentifier);
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
       const swapClientType = this.swapClientManager.getType(currency);
       if (swapClientType === undefined) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -451,12 +432,7 @@ class Service extends EventEmitter {
     return this.pool.unbanNode(nodePubKey, args.reconnect);
   };
 
-  public executeSwap = async (args: {
-    orderId: string;
-    pairId: string;
-    peerPubKey: string;
-    quantity: number;
-  }) => {
+  public executeSwap = async (args: { orderId: string; pairId: string; peerPubKey: string; quantity: number }) => {
     if (!this.orderBook.nomatching) {
       throw errors.NOMATCHING_MODE_IS_REQUIRED();
     }
@@ -521,10 +497,8 @@ class Service extends EventEmitter {
       const peerOrders = this.orderBook.getPeersOrders(pairId);
       const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-      peerOrdersCount +=
-        Object.keys(peerOrders.buyArray).length + Object.keys(peerOrders.sellArray).length;
-      ownOrdersCount +=
-        Object.keys(ownOrders.buyArray).length + Object.keys(ownOrders.sellArray).length;
+      peerOrdersCount += Object.keys(peerOrders.buyArray).length + Object.keys(peerOrders.sellArray).length;
+      ownOrdersCount += Object.keys(ownOrders.buyArray).length + Object.keys(ownOrders.sellArray).length;
       numPairs += 1;
     }
 
@@ -684,10 +658,7 @@ class Service extends EventEmitter {
     const { limit } = args;
     const trades = await this.orderBook.getTrades(limit || undefined);
 
-    const orderInstanceToServiceOrder = (
-      order: OrderAttributes,
-      quantity: number,
-    ): ServiceOrder => {
+    const orderInstanceToServiceOrder = (order: OrderAttributes, quantity: number): ServiceOrder => {
       const isOwnOrder = !!order.localId;
       let nodeIdentifier: NodeIdentifier;
 
@@ -718,9 +689,7 @@ class Service extends EventEmitter {
     };
 
     const serviceTrades: ServiceTrade[] = trades.map((trade: TradeInstance) => {
-      const takerOrder = trade.takerOrder
-        ? orderInstanceToServiceOrder(trade.takerOrder, trade.quantity)
-        : undefined;
+      const takerOrder = trade.takerOrder ? orderInstanceToServiceOrder(trade.takerOrder, trade.quantity) : undefined;
       const makerOrder = orderInstanceToServiceOrder(trade.makerOrder!, trade.quantity);
       let role: SwapRole;
       let side: OrderSide;
@@ -922,9 +891,7 @@ class Service extends EventEmitter {
       callback(swapSuccess);
     };
 
-    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted').pipe(
-      takeUntil(cancelled$),
-    );
+    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted').pipe(takeUntil(cancelled$));
 
     swapAccepted.subscribe({
       next: onSwapAccepted,
@@ -941,9 +908,7 @@ class Service extends EventEmitter {
     cancelled$: Observable<void>,
   ) => {
     const onSwapFailed = (deal: SwapDeal) => {
-      this.logger.trace(
-        `notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`,
-      );
+      this.logger.trace(`notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`);
       // always alert client for maker matches, taker matches only when specified
       if (deal.role === SwapRole.Maker || args.includeTaker) {
         callback(deal as SwapFailure);
@@ -988,13 +953,7 @@ class Service extends EventEmitter {
     this.swapClientManager.connextClient?.emit('depositConfirmed', hash);
   };
 
-  public changePassword = async ({
-    newPassword,
-    oldPassword,
-  }: {
-    newPassword: string;
-    oldPassword: string;
-  }) => {
+  public changePassword = async ({ newPassword, oldPassword }: { newPassword: string; oldPassword: string }) => {
     if (!this.nodekey.password) {
       throw errors.NO_ENCRYPT_MODE_ENABLED;
     }

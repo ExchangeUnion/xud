@@ -115,22 +115,19 @@ describe('UnitConverter', () => {
     });
 
     test('calculate 0 outbound amount for a market buy order', () => {
-      const {
-        outboundCurrency,
-        outboundAmount,
-        outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(quantity, 0, true, pairId);
+      const { outboundCurrency, outboundAmount, outboundUnits } = UnitConverter.calculateInboundOutboundAmounts(
+        quantity,
+        0,
+        true,
+        pairId,
+      );
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(0);
       expect(outboundUnits).toEqual(0);
     });
 
     test('calculate 0 inbound amount for a market sell order', () => {
-      const {
-        inboundCurrency,
-        inboundAmount,
-        inboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(
+      const { inboundCurrency, inboundAmount, inboundUnits } = UnitConverter.calculateInboundOutboundAmounts(
         quantity,
         Number.POSITIVE_INFINITY,
         false,

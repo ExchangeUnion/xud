@@ -23,8 +23,7 @@ export const builder = (argv: Argv) =>
       },
     })
     .option('decimal_places', {
-      description:
-        'the places to the right of the decimal point of the smallest subunit (e.g. satoshi)',
+      description: 'the places to the right of the decimal point of the smallest subunit (e.g. satoshi)',
       default: 8,
       type: 'number',
     })

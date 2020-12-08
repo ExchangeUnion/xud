@@ -144,13 +144,9 @@ export type Pair = {
 };
 
 export function isOwnOrder(order: Order): order is OwnOrder {
-  return (
-    (order as PeerOrder).peerPubKey === undefined && typeof (order as OwnOrder).localId === 'string'
-  );
+  return (order as PeerOrder).peerPubKey === undefined && typeof (order as OwnOrder).localId === 'string';
 }
 
 export function isPeerOrder(order: Order): order is PeerOrder {
-  return (
-    (order as OwnOrder).localId === undefined && typeof (order as PeerOrder).peerPubKey === 'string'
-  );
+  return (order as OwnOrder).localId === undefined && typeof (order as PeerOrder).peerPubKey === 'string';
 }

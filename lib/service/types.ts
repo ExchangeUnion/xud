@@ -75,9 +75,6 @@ export type ServiceOrderSidesArrays = {
   sellArray: ServiceOrder[];
 };
 
-export type ServicePlaceOrderEvent = Pick<
-  PlaceOrderEvent,
-  Exclude<keyof PlaceOrderEvent, 'order'>
-> & {
+export type ServicePlaceOrderEvent = Pick<PlaceOrderEvent, Exclude<keyof PlaceOrderEvent, 'order'>> & {
   order?: ServiceOrder;
 };

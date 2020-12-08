@@ -1,10 +1,4 @@
-import {
-  SwapClientType,
-  SwapFailureReason,
-  SwapPhase,
-  SwapRole,
-  SwapState,
-} from '../../lib/constants/enums';
+import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../../lib/constants/enums';
 import LndClient from '../../lib/lndclient/LndClient';
 import Logger from '../../lib/Logger';
 import Peer from '../../lib/p2p/Peer';

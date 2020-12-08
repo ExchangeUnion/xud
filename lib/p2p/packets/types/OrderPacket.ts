@@ -22,14 +22,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
   };
 
   private static validate = (obj: pb.OrderPacket.AsObject): boolean => {
-    return !!(
-      obj.id &&
-      obj.order &&
-      obj.order.id &&
-      obj.order.pairId &&
-      obj.order.price > 0 &&
-      obj.order.quantity > 0
-    );
+    return !!(obj.id && obj.order && obj.order.id && obj.order.pairId && obj.order.price > 0 && obj.order.quantity > 0);
   };
 
   private static convert = (obj: pb.OrderPacket.AsObject): OrderPacket => {

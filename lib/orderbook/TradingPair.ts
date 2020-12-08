@@ -4,15 +4,7 @@ import FastPriorityQueue from 'fastpriorityqueue';
 import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
 import errors from './errors';
-import {
-  isOwnOrder,
-  MatchingResult,
-  Order,
-  OrderMatch,
-  OrderPortion,
-  OwnOrder,
-  PeerOrder,
-} from './types';
+import { isOwnOrder, MatchingResult, Order, OrderMatch, OrderPortion, OwnOrder, PeerOrder } from './types';
 
 /** A map between orders and their order ids. */
 type OrderMap<T extends Order> = Map<string, T>;
@@ -77,18 +69,14 @@ class TradingPair extends EventEmitter {
     this.peersOrders = new Map<string, OrderSidesMaps<PeerOrder>>();
   }
 
-  private static createPriorityQueue = (
-    orderingDirection: OrderingDirection,
-  ): FastPriorityQueue<Order> => {
+  private static createPriorityQueue = (orderingDirection: OrderingDirection): FastPriorityQueue<Order> => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(orderingDirection);
     return new FastPriorityQueue(comparator);
   };
 
   public static getOrdersPriorityQueueComparator = (orderingDirection: OrderingDirection) => {
     const directionComparator =
-      orderingDirection === OrderingDirection.Asc
-        ? (a: number, b: number) => a < b
-        : (a: number, b: number) => a > b;
+      orderingDirection === OrderingDirection.Asc ? (a: number, b: number) => a < b : (a: number, b: number) => a > b;
 
     return (a: Order, b: Order) => {
       if (a.price === b.price) {
@@ -123,14 +111,8 @@ class TradingPair extends EventEmitter {
    * @param matchingQuantity the quantity for the split order and to subtract from the original order
    * @returns the split portion of the order with the matching quantity
    */
-  private static splitOrderByQuantity = <T extends Order>(
-    order: T,
-    matchingQuantity: number,
-  ): T => {
-    assert(
-      order.quantity > matchingQuantity,
-      'order quantity must be greater than matchingQuantity',
-    );
+  private static splitOrderByQuantity = <T extends Order>(order: T, matchingQuantity: number): T => {
+    assert(order.quantity > matchingQuantity, 'order quantity must be greater than matchingQuantity');
 
     order.quantity -= matchingQuantity;
     const matchedOrder = Object.assign({}, order, {
@@ -246,10 +228,7 @@ class TradingPair extends EventEmitter {
    * quantity then the entire order is removed
    * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
-  public removeOwnOrder = (
-    orderId: string,
-    quantityToRemove?: number,
-  ): { order: OwnOrder; fullyRemoved: boolean } => {
+  public removeOwnOrder = (orderId: string, quantityToRemove?: number): { order: OwnOrder; fullyRemoved: boolean } => {
     return this.removeOrder(orderId, this.ownOrders, quantityToRemove);
   };
 
@@ -264,10 +243,7 @@ class TradingPair extends EventEmitter {
     maps: OrderSidesMaps<Order>,
     quantityToRemove?: number,
   ): { order: T; fullyRemoved: boolean } => {
-    assert(
-      quantityToRemove === undefined || quantityToRemove > 0,
-      'quantityToRemove cannot be 0 or negative',
-    );
+    assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
     const order = maps.buyMap.get(orderId) || maps.sellMap.get(orderId);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
@@ -280,9 +256,7 @@ class TradingPair extends EventEmitter {
         remainingQuantity * order.price < TradingPair.QUANTITY_DUST_LIMIT
       ) {
         // the remaining quantity doesn't meet the dust limit, so we remove the entire order
-        this.logger.trace(
-          `removing entire order ${orderId} because remaining quantity does not meet dust limit`,
-        );
+        this.logger.trace(`removing entire order ${orderId} because remaining quantity does not meet dust limit`);
       } else {
         // if quantityToRemove is below the order quantity but above dust limit, reduce the order quantity
         if (isOwnOrder(order)) {
@@ -468,8 +442,7 @@ class TradingPair extends EventEmitter {
       } else {
         /** Whether the maker order is fully matched and should be removed from the queue. */
         const makerFullyMatched = makerOrder.quantity === matchingQuantity;
-        const makerAvailableQuantityFullyMatched =
-          makerAvailableQuantityOrder.quantity === matchingQuantity;
+        const makerAvailableQuantityFullyMatched = makerAvailableQuantityOrder.quantity === matchingQuantity;
         const remainingFullyMatched = remainingOrder.quantity === matchingQuantity;
 
         if (makerFullyMatched && remainingFullyMatched) {
@@ -484,19 +457,13 @@ class TradingPair extends EventEmitter {
           matches.push({ maker: matchedMakerOrder, taker: remainingOrder });
         } else if (makerAvailableQuantityFullyMatched) {
           // maker order quantity is not sufficient. taker order will split
-          const matchedTakerOrder = TradingPair.splitOrderByQuantity(
-            remainingOrder,
-            matchingQuantity,
-          );
+          const matchedTakerOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
           matches.push({
             maker: makerAvailableQuantityOrder,
             taker: matchedTakerOrder,
           });
         } else {
-          assert(
-            false,
-            'matchingQuantity should not be lower than both orders available quantity values',
-          );
+          assert(false, 'matchingQuantity should not be lower than both orders available quantity values');
         }
 
         if (remainingFullyMatched) {

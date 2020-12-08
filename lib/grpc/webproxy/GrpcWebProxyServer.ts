@@ -25,12 +25,7 @@ class GrpcWebProxyServer {
   /**
    * Start the server and begins listening on the specified proxy port.
    */
-  public listen = async (
-    proxyPort: number,
-    grpcPort: number,
-    grpcHost: string,
-    tlsCertPath: string,
-  ): Promise<void> => {
+  public listen = async (proxyPort: number, grpcPort: number, grpcHost: string, tlsCertPath: string): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
     const gateway = grpcGateway(

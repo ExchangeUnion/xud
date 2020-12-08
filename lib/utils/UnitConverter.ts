@@ -20,16 +20,10 @@ class UnitConverter {
    * @returns An object with the calculated incoming and outgoing values. The quote currency
    * amount is returned as zero if the price is 0 or infinity, indicating a market order.
    */
-  public static calculateInboundOutboundAmounts = (
-    quantity: number,
-    price: number,
-    isBuy: boolean,
-    pairId: string,
-  ) => {
+  public static calculateInboundOutboundAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
     const baseCurrencyAmount = quantity;
-    const quoteCurrencyAmount =
-      price > 0 && price < Number.POSITIVE_INFINITY ? Math.round(quantity * price) : 0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
+    const quoteCurrencyAmount = price > 0 && price < Number.POSITIVE_INFINITY ? Math.round(quantity * price) : 0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
     const baseCurrencyUnits = Math.floor(baseCurrencyAmount * UNITS_PER_CURRENCY[baseCurrency]);
     const quoteCurrencyUnits = Math.floor(quoteCurrencyAmount * UNITS_PER_CURRENCY[quoteCurrency]);
 

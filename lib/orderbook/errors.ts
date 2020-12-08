@@ -28,9 +28,7 @@ const errors = {
     code: errorCodes.DUPLICATE_ORDER,
   }),
   ORDER_NOT_FOUND: (orderId: string, peerPubKey?: string) => ({
-    message: `order with id ${orderId}${
-      peerPubKey ? ` for peer ${peerPubKey}` : ''
-    } could not be found`,
+    message: `order with id ${orderId}${peerPubKey ? ` for peer ${peerPubKey}` : ''} could not be found`,
     code: errorCodes.ORDER_NOT_FOUND,
   }),
   CURRENCY_DOES_NOT_EXIST: (currency: string) => ({

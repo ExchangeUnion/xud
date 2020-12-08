@@ -11,9 +11,7 @@ export const builder = {};
 
 const formatOutput = () => {
   console.log('The master xud password was succesfully changed.');
-  console.log(
-    'Passwords for lnd wallets will be changed the next time xud is restarted and unlocked.',
-  );
+  console.log('Passwords for lnd wallets will be changed the next time xud is restarted and unlocked.');
 };
 
 export const handler = (argv: Arguments<any>) => {

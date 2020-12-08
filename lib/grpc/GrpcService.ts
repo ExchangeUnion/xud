@@ -4,13 +4,7 @@ import { fromEvent } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
-import {
-  isOwnOrder,
-  Order,
-  OrderPortion,
-  PlaceOrderEventType,
-  PlaceOrderResult,
-} from '../orderbook/types';
+import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
 import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
@@ -175,9 +169,7 @@ class GrpcService {
   public locked = false;
   private service?: Service;
   /** The set of active streaming calls. */
-  private streams: Set<grpc.ServerWriteableStream<any>> = new Set<
-    grpc.ServerWriteableStream<any>
-  >();
+  private streams: Set<grpc.ServerWriteableStream<any>> = new Set<grpc.ServerWriteableStream<any>>();
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor() {}
@@ -239,10 +231,7 @@ class GrpcService {
   /**
    * See [[Service.addCurrency]]
    */
-  public addCurrency: grpc.handleUnaryCall<xudrpc.Currency, xudrpc.AddCurrencyResponse> = async (
-    call,
-    callback,
-  ) => {
+  public addCurrency: grpc.handleUnaryCall<xudrpc.Currency, xudrpc.AddCurrencyResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -259,10 +248,7 @@ class GrpcService {
   /**
    * See [[Service.addPair]]
    */
-  public addPair: grpc.handleUnaryCall<xudrpc.AddPairRequest, xudrpc.AddPairResponse> = async (
-    call,
-    callback,
-  ) => {
+  public addPair: grpc.handleUnaryCall<xudrpc.AddPairRequest, xudrpc.AddPairResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -279,10 +265,10 @@ class GrpcService {
   /**
    * See [[Service.closeChannel]]
    */
-  public closeChannel: grpc.handleUnaryCall<
-    xudrpc.CloseChannelRequest,
-    xudrpc.CloseChannelResponse
-  > = async (call, callback) => {
+  public closeChannel: grpc.handleUnaryCall<xudrpc.CloseChannelRequest, xudrpc.CloseChannelResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -300,20 +286,17 @@ class GrpcService {
   /**
    * See [[Service.removeOrder]]
    */
-  public removeOrder: grpc.handleUnaryCall<
-    xudrpc.RemoveOrderRequest,
-    xudrpc.RemoveOrderResponse
-  > = async (call, callback) => {
+  public removeOrder: grpc.handleUnaryCall<xudrpc.RemoveOrderRequest, xudrpc.RemoveOrderResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      const {
-        removedQuantity,
-        remainingQuantity,
-        onHoldQuantity,
-        pairId,
-      } = this.service.removeOrder(call.request.toObject());
+      const { removedQuantity, remainingQuantity, onHoldQuantity, pairId } = this.service.removeOrder(
+        call.request.toObject(),
+      );
       const response = new xudrpc.RemoveOrderResponse();
       response.setQuantityOnHold(onHoldQuantity);
       response.setRemainingQuantity(remainingQuantity);
@@ -328,10 +311,10 @@ class GrpcService {
   /**
    * See [[Service.removeAllOrders]]
    */
-  public removeAllOrders: grpc.handleUnaryCall<
-    xudrpc.RemoveAllOrdersRequest,
-    xudrpc.RemoveAllOrdersResponse
-  > = async (_, callback) => {
+  public removeAllOrders: grpc.handleUnaryCall<xudrpc.RemoveAllOrdersRequest, xudrpc.RemoveAllOrdersResponse> = async (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -351,10 +334,10 @@ class GrpcService {
   /**
    * See [[Service.getBalance]]
    */
-  public getBalance: grpc.handleUnaryCall<
-    xudrpc.GetBalanceRequest,
-    xudrpc.GetBalanceResponse
-  > = async (call, callback) => {
+  public getBalance: grpc.handleUnaryCall<xudrpc.GetBalanceRequest, xudrpc.GetBalanceResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -381,10 +364,10 @@ class GrpcService {
   /**
    * See [[Service.tradingLimits]]
    */
-  public tradingLimits: grpc.handleUnaryCall<
-    xudrpc.TradingLimitsRequest,
-    xudrpc.TradingLimitsResponse
-  > = async (call, callback) => {
+  public tradingLimits: grpc.handleUnaryCall<xudrpc.TradingLimitsRequest, xudrpc.TradingLimitsResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -409,10 +392,10 @@ class GrpcService {
   /**
    * See [[Service.openChannel]]
    */
-  public openChannel: grpc.handleUnaryCall<
-    xudrpc.OpenChannelRequest,
-    xudrpc.OpenChannelResponse
-  > = async (call, callback) => {
+  public openChannel: grpc.handleUnaryCall<xudrpc.OpenChannelRequest, xudrpc.OpenChannelResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -430,10 +413,7 @@ class GrpcService {
   /**
    * See [[Service.connect]]
    */
-  public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (
-    call,
-    callback,
-  ) => {
+  public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -450,10 +430,10 @@ class GrpcService {
   /**
    * See [[Service.walletDeposit]]
    */
-  public walletDeposit: grpc.handleUnaryCall<
-    xudrpc.DepositRequest,
-    xudrpc.DepositResponse
-  > = async (call, callback) => {
+  public walletDeposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -470,10 +450,7 @@ class GrpcService {
   /**
    * See [[Service.deposit]]
    */
-  public deposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (
-    call,
-    callback,
-  ) => {
+  public deposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -490,10 +467,10 @@ class GrpcService {
   /**
    * See [[Service.walletWithdraw]]
    */
-  public walletWithdraw: grpc.handleUnaryCall<
-    xudrpc.WithdrawRequest,
-    xudrpc.WithdrawResponse
-  > = async (call, callback) => {
+  public walletWithdraw: grpc.handleUnaryCall<xudrpc.WithdrawRequest, xudrpc.WithdrawResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -510,10 +487,7 @@ class GrpcService {
   /**
    * See [[Service.ban]]
    */
-  public ban: grpc.handleUnaryCall<xudrpc.BanRequest, xudrpc.BanResponse> = async (
-    call,
-    callback,
-  ) => {
+  public ban: grpc.handleUnaryCall<xudrpc.BanRequest, xudrpc.BanResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -529,10 +503,7 @@ class GrpcService {
   /**
    * See [[Service.unban]]
    */
-  public unban: grpc.handleUnaryCall<xudrpc.UnbanRequest, xudrpc.UnbanResponse> = async (
-    call,
-    callback,
-  ) => {
+  public unban: grpc.handleUnaryCall<xudrpc.UnbanRequest, xudrpc.UnbanResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -548,10 +519,7 @@ class GrpcService {
   /**
    * See [[Service.executeSwap]]
    */
-  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (
-    call,
-    callback,
-  ) => {
+  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -600,10 +568,7 @@ class GrpcService {
   /**
    * See [[Service.getInfo]]
    */
-  public getInfo: grpc.handleUnaryCall<xudrpc.GetInfoRequest, xudrpc.GetInfoResponse> = async (
-    _,
-    callback,
-  ) => {
+  public getInfo: grpc.handleUnaryCall<xudrpc.GetInfoRequest, xudrpc.GetInfoResponse> = async (_, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -672,10 +637,10 @@ class GrpcService {
   /**
    * See [[Service.getMnemonic]]
    */
-  public getMnemonic: grpc.handleUnaryCall<
-    xudrpc.GetMnemonicRequest,
-    xudrpc.GetMnemonicResponse
-  > = async (_, callback) => {
+  public getMnemonic: grpc.handleUnaryCall<xudrpc.GetMnemonicRequest, xudrpc.GetMnemonicResponse> = async (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -692,10 +657,10 @@ class GrpcService {
   /**
    * See [[Service.getNodeInfo]]
    */
-  public getNodeInfo: grpc.handleUnaryCall<
-    xudrpc.GetNodeInfoRequest,
-    xudrpc.GetNodeInfoResponse
-  > = async (call, callback) => {
+  public getNodeInfo: grpc.handleUnaryCall<xudrpc.GetNodeInfoRequest, xudrpc.GetNodeInfoResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -715,10 +680,7 @@ class GrpcService {
   /**
    * See [[Service.listOrders]]
    */
-  public listOrders: grpc.handleUnaryCall<xudrpc.ListOrdersRequest, xudrpc.ListOrdersResponse> = (
-    call,
-    callback,
-  ) => {
+  public listOrders: grpc.handleUnaryCall<xudrpc.ListOrdersRequest, xudrpc.ListOrdersResponse> = (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -750,10 +712,10 @@ class GrpcService {
   /**
    * See [[Service.listCurrencies]]
    */
-  public listCurrencies: grpc.handleUnaryCall<
-    xudrpc.ListCurrenciesRequest,
-    xudrpc.ListCurrenciesResponse
-  > = (_, callback) => {
+  public listCurrencies: grpc.handleUnaryCall<xudrpc.ListCurrenciesRequest, xudrpc.ListCurrenciesResponse> = (
+    _,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -781,10 +743,7 @@ class GrpcService {
   /**
    * See [[Service.listPairs]]
    */
-  public listPairs: grpc.handleUnaryCall<xudrpc.ListPairsRequest, xudrpc.ListPairsResponse> = (
-    _,
-    callback,
-  ) => {
+  public listPairs: grpc.handleUnaryCall<xudrpc.ListPairsRequest, xudrpc.ListPairsResponse> = (_, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -802,10 +761,10 @@ class GrpcService {
   /**
    * See [[Service.tradeHistory]]
    */
-  public tradeHistory: grpc.handleUnaryCall<
-    xudrpc.TradeHistoryRequest,
-    xudrpc.TradeHistoryResponse
-  > = async (call, callback) => {
+  public tradeHistory: grpc.handleUnaryCall<xudrpc.TradeHistoryRequest, xudrpc.TradeHistoryResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -849,10 +808,7 @@ class GrpcService {
   /**
    * See [[Service.listPeers]]
    */
-  public listPeers: grpc.handleUnaryCall<xudrpc.ListPeersRequest, xudrpc.ListPeersResponse> = (
-    _,
-    callback,
-  ) => {
+  public listPeers: grpc.handleUnaryCall<xudrpc.ListPeersRequest, xudrpc.ListPeersResponse> = (_, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -887,10 +843,9 @@ class GrpcService {
   /**
    * See [[Service.placeOrder]]
    */
-  public placeOrder: grpc.handleServerStreamingCall<
-    xudrpc.PlaceOrderRequest,
-    xudrpc.PlaceOrderResponse
-  > = async (call) => {
+  public placeOrder: grpc.handleServerStreamingCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (
+    call,
+  ) => {
     if (!this.service) {
       call.emit('error', {
         code: status.UNAVAILABLE,
@@ -913,10 +868,10 @@ class GrpcService {
   /**
    * See [[Service.placeOrder]]
    */
-  public placeOrderSync: grpc.handleUnaryCall<
-    xudrpc.PlaceOrderRequest,
-    xudrpc.PlaceOrderResponse
-  > = async (call, callback) => {
+  public placeOrderSync: grpc.handleUnaryCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -931,10 +886,10 @@ class GrpcService {
   /**
    * See [[Service.addCurrency]]
    */
-  public removeCurrency: grpc.handleUnaryCall<
-    xudrpc.RemoveCurrencyRequest,
-    xudrpc.RemoveCurrencyResponse
-  > = async (call, callback) => {
+  public removeCurrency: grpc.handleUnaryCall<xudrpc.RemoveCurrencyRequest, xudrpc.RemoveCurrencyResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -951,10 +906,10 @@ class GrpcService {
   /**
    * See [[Service.addPair]]
    */
-  public removePair: grpc.handleUnaryCall<
-    xudrpc.RemovePairRequest,
-    xudrpc.RemovePairResponse
-  > = async (call, callback) => {
+  public removePair: grpc.handleUnaryCall<xudrpc.RemovePairRequest, xudrpc.RemovePairResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -971,10 +926,10 @@ class GrpcService {
   /**
    * See [[Service.discoverNodes]]
    */
-  public discoverNodes: grpc.handleUnaryCall<
-    xudrpc.DiscoverNodesRequest,
-    xudrpc.DiscoverNodesResponse
-  > = async (call, callback) => {
+  public discoverNodes: grpc.handleUnaryCall<xudrpc.DiscoverNodesRequest, xudrpc.DiscoverNodesResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -990,10 +945,10 @@ class GrpcService {
     }
   };
 
-  public setLogLevel: grpc.handleUnaryCall<
-    xudrpc.SetLogLevelRequest,
-    xudrpc.SetLogLevelResponse
-  > = async (call, callback) => {
+  public setLogLevel: grpc.handleUnaryCall<xudrpc.SetLogLevelRequest, xudrpc.SetLogLevelResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -1007,10 +962,10 @@ class GrpcService {
     }
   };
 
-  public changePassword: grpc.handleUnaryCall<
-    xudrpc.ChangePasswordRequest,
-    xudrpc.ChangePasswordResponse
-  > = async (call, callback) => {
+  public changePassword: grpc.handleUnaryCall<xudrpc.ChangePasswordRequest, xudrpc.ChangePasswordResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -1024,10 +979,7 @@ class GrpcService {
     }
   };
 
-  public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (
-    _,
-    callback,
-  ) => {
+  public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (_, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
@@ -1043,10 +995,9 @@ class GrpcService {
   /*
    * See [[Service.subscribeOrders]]
    */
-  public subscribeOrders: grpc.handleServerStreamingCall<
-    xudrpc.SubscribeOrdersRequest,
-    xudrpc.OrderUpdate
-  > = (call) => {
+  public subscribeOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeOrdersRequest, xudrpc.OrderUpdate> = (
+    call,
+  ) => {
     if (!this.isReady(this.service, call)) {
       return;
     }
@@ -1077,10 +1028,9 @@ class GrpcService {
   /*
    * See [[Service.subscribeSwapFailures]]
    */
-  public subscribeSwapFailures: grpc.handleServerStreamingCall<
-    xudrpc.SubscribeSwapsRequest,
-    xudrpc.SwapFailure
-  > = (call) => {
+  public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (
+    call,
+  ) => {
     if (!this.isReady(this.service, call)) {
       return;
     }
@@ -1099,10 +1049,7 @@ class GrpcService {
   /*
    * See [[Service.subscribeSwaps]]
    */
-  public subscribeSwaps: grpc.handleServerStreamingCall<
-    xudrpc.SubscribeSwapsRequest,
-    xudrpc.SwapSuccess
-  > = (call) => {
+  public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {
     if (!this.isReady(this.service, call)) {
       return;
     }

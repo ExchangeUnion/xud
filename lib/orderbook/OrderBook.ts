@@ -4,12 +4,7 @@ import { UnitConverter } from '../utils/UnitConverter';
 import uuidv1 from 'uuid/v1';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
-import {
-  CurrencyCreationAttributes,
-  CurrencyInstance,
-  OrderCreationAttributes,
-  PairInstance,
-} from '../db/types';
+import { CurrencyCreationAttributes, CurrencyInstance, OrderCreationAttributes, PairInstance } from '../db/types';
 import Logger from '../Logger';
 import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
 import Peer from '../p2p/Peer';
@@ -152,12 +147,7 @@ class OrderBook extends EventEmitter {
         outboundCurrency,
         inboundAmount,
         outboundAmount,
-      } = UnitConverter.calculateInboundOutboundAmounts(
-        order.quantity,
-        order.price,
-        order.isBuy,
-        order.pairId,
-      );
+      } = UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
     };
@@ -170,12 +160,7 @@ class OrderBook extends EventEmitter {
         outboundCurrency,
         inboundAmount,
         outboundAmount,
-      } = UnitConverter.calculateInboundOutboundAmounts(
-        order.quantity,
-        order.price,
-        order.isBuy,
-        order.pairId,
-      );
+      } = UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
     });
@@ -184,10 +169,7 @@ class OrderBook extends EventEmitter {
     this.bindSwaps();
   }
 
-  private static createOutgoingOrder = (
-    order: OwnOrder,
-    replaceOrderId?: string,
-  ): OutgoingOrder => {
+  private static createOutgoingOrder = (order: OwnOrder, replaceOrderId?: string): OutgoingOrder => {
     const { createdAt, localId, initialQuantity, hold, ...outgoingOrder } = order;
     return replaceOrderId ? { ...outgoingOrder, replaceOrderId } : outgoingOrder;
   };
@@ -273,10 +255,7 @@ class OrderBook extends EventEmitter {
 
   /** Loads the supported pairs and currencies from the database. */
   public init = async () => {
-    const [pairs, currencies] = await Promise.all([
-      this.repository.getPairs(),
-      this.repository.getCurrencies(),
-    ]);
+    const [pairs, currencies] = await Promise.all([this.repository.getPairs(), this.repository.getCurrencies()]);
 
     currencies.forEach((currency) => this.currencyInstances.set(currency.id, currency));
     pairs.forEach((pair) => {
@@ -547,9 +526,7 @@ class OrderBook extends EventEmitter {
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {
       assert(retry, 'we may only timeout placeOrder on retries');
-      this.logger.debug(
-        `placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be fully matched`,
-      );
+      this.logger.debug(`placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be fully matched`);
 
       // returning the remaining order to be rolled back and handled by the initial call
       return {
@@ -634,9 +611,7 @@ class OrderBook extends EventEmitter {
      * @param failedSwapQuantity the quantity of the failed portion to retry
      */
     const retryFailedSwap = async (failedSwapQuantity: number) => {
-      this.logger.debug(
-        `repeating matching routine for ${order.id} for failed quantity of ${failedSwapQuantity}`,
-      );
+      this.logger.debug(`repeating matching routine for ${order.id} for failed quantity of ${failedSwapQuantity}`);
       const orderToRetry: OwnOrder = { ...order, quantity: failedSwapQuantity };
 
       // invoke placeOrder recursively, append matches/swaps and any remaining order
@@ -667,9 +642,7 @@ class OrderBook extends EventEmitter {
       onUpdate && onUpdate({ type: PlaceOrderEventType.Match, order: maker });
       if (isOwnOrder(maker)) {
         // this is an internal match which is effectively executed immediately upon being found
-        this.logger.info(
-          `internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`,
-        );
+        this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         internalMatches.push(maker);
         this.pool.broadcastOrderInvalidation(maker);
         this.emit('ownOrder.filled', maker);
@@ -731,8 +704,7 @@ class OrderBook extends EventEmitter {
 
             try {
               // we remove orders from the order book when they fail a swap so that we don't immediately retry them
-              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey)
-                .order;
+              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey).order;
 
               // we want to try matching with this order again at a later time so we add
               // the failed quantity back to the order and preserve the order to add it
@@ -779,9 +751,7 @@ class OrderBook extends EventEmitter {
     }
     if (remainingOrder) {
       if (discardRemaining) {
-        this.logger.verbose(
-          `no more matches found for order ${order.id}, remaining order will be discarded`,
-        );
+        this.logger.verbose(`no more matches found for order ${order.id}, remaining order will be discarded`);
         remainingOrder = undefined;
       } else if (!retry) {
         // on recursive retries of placeOrder, we don't add remaining orders to the orderbook
@@ -793,9 +763,7 @@ class OrderBook extends EventEmitter {
           remainingOrder.quantity * remainingOrder.price < TradingPair.QUANTITY_DUST_LIMIT
         ) {
           remainingOrder = undefined;
-          this.logger.verbose(
-            `remainder for order ${order.id} does not meet dust limit and will be discarded`,
-          );
+          this.logger.verbose(`remainder for order ${order.id} does not meet dust limit and will be discarded`);
         } else {
           this.addOwnOrder(remainingOrder, replacedOrderIdentifier?.id);
           onUpdate &&
@@ -902,10 +870,7 @@ class OrderBook extends EventEmitter {
     makerOrderId?: string;
     rHash?: string;
   }) => {
-    assert(
-      makerOrder || makerOrderId,
-      'either makerOrder or makerOrderId must be specified to persist a trade',
-    );
+    assert(makerOrder || makerOrderId, 'either makerOrder or makerOrderId must be specified to persist a trade');
     const addOrderPromises: Promise<any>[] = [];
     if (makerOrder) {
       addOrderPromises.push(this.repository.addOrderIfNotExists(makerOrder));
@@ -1006,11 +971,7 @@ class OrderBook extends EventEmitter {
    * was on hold and could not be immediately removed, the total quantity removed, and the quantity
    * remaining on the order.
    */
-  public removeOwnOrderByLocalId = (
-    localId: string,
-    allowAsyncRemoval?: boolean,
-    quantityToRemove?: number,
-  ) => {
+  public removeOwnOrderByLocalId = (localId: string, allowAsyncRemoval?: boolean, quantityToRemove?: number) => {
     const order = this.getOwnOrderByLocalId(localId);
 
     let remainingQuantityToRemove = quantityToRemove || order.quantity;
@@ -1253,10 +1214,7 @@ class OrderBook extends EventEmitter {
           // perform sanity swaps for each of the currencies that we support
           const sanitySwapPromise = new Promise<void>(async (resolve) => {
             // success resolves to true if the sanity swap succeeds before the timeout
-            const success = await Promise.race([
-              this.swaps.executeSanitySwap(currency, peer),
-              sanitySwapTimeout,
-            ]);
+            const success = await Promise.race([this.swaps.executeSanitySwap(currency, peer), sanitySwapTimeout]);
             if (!success) {
               currenciesToVerify.set(currency, false);
             }
@@ -1301,12 +1259,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buyArray.forEach((order) =>
-          outgoingOrders.push(OrderBook.createOutgoingOrder(order)),
-        );
-        orders.sellArray.forEach((order) =>
-          outgoingOrders.push(OrderBook.createOutgoingOrder(order)),
-        );
+        orders.buyArray.forEach((order) => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sellArray.forEach((order) => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     await peer.sendOrders(outgoingOrders, reqId);
@@ -1335,10 +1289,7 @@ class OrderBook extends EventEmitter {
       const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
       this.emit('peerOrder.invalidation', removeResult.order);
     } catch (err) {
-      this.logger.error(
-        `failed to remove order (${oi.id}) of peer ${peerPubKey} (${pubKeyToAlias(peerPubKey)})`,
-        err,
-      );
+      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${pubKeyToAlias(peerPubKey)})`, err);
       // TODO: Penalize peer
     }
   };

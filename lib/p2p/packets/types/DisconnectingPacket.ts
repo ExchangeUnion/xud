@@ -22,9 +22,7 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {
     const obj = pb.DisconnectingPacket.deserializeBinary(binary).toObject();
     return DisconnectingPacket.validate(obj) ? DisconnectingPacket.convert(obj) : obj;
   };

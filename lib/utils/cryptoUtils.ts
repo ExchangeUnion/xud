@@ -1,9 +1,4 @@
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes as cryptoRandomBytes,
-} from 'crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes as cryptoRandomBytes } from 'crypto';
 import { promisify } from 'util';
 
 const ENCRYPTION_IV_LENGTH = 16;

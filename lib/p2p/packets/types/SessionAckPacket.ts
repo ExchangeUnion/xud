@@ -19,9 +19,7 @@ class SessionAckPacket extends Packet<SessionAckPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): SessionAckPacket | pb.SessionAckPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): SessionAckPacket | pb.SessionAckPacket.AsObject => {
     const obj = pb.SessionAckPacket.deserializeBinary(binary).toObject();
     return SessionAckPacket.validate(obj) ? SessionAckPacket.convert(obj) : obj;
   };

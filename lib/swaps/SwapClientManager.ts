@@ -34,23 +34,14 @@ type LndUpdate = {
 
 interface SwapClientManager {
   on(event: 'lndUpdate', listener: (lndUpdate: LndUpdate) => void): this;
-  on(
-    event: 'connextUpdate',
-    listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void,
-  ): this;
+  on(event: 'connextUpdate', listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void): this;
   on(
     event: 'htlcAccepted',
     listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void,
   ): this;
   emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
   emit(event: 'connextUpdate', tokenAddresses: Map<string, string>, pubKey?: string): boolean;
-  emit(
-    event: 'htlcAccepted',
-    swapClient: SwapClient,
-    rHash: string,
-    amount: number,
-    currency: string,
-  ): boolean;
+  emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
 }
 
 class SwapClientManager extends EventEmitter {
@@ -196,14 +187,8 @@ class SwapClientManager extends EventEmitter {
       const swapCapacities = await swapClient.swapCapacities(currency);
       const reservedOutbound = this.outboundReservedAmounts.get(currency) ?? 0;
       const reservedInbound = this.inboundReservedAmounts.get(currency) ?? 0;
-      const availableOutboundCapacity = Math.max(
-        0,
-        swapCapacities.totalOutboundCapacity - reservedOutbound,
-      );
-      const availableInboundCapacity = Math.max(
-        0,
-        swapCapacities.totalInboundCapacity - reservedInbound,
-      );
+      const availableOutboundCapacity = Math.max(0, swapCapacities.totalOutboundCapacity - reservedOutbound);
+      const availableInboundCapacity = Math.max(0, swapCapacities.totalInboundCapacity - reservedInbound);
 
       return {
         reservedSell: reservedOutbound,
@@ -245,11 +230,7 @@ class SwapClientManager extends EventEmitter {
     const reservedOutbound = this.outboundReservedAmounts.get(outboundCurrency) ?? 0;
     const availableOutboundCapacity = outboundCapacities.totalOutboundCapacity - reservedOutbound;
     if (outboundAmount > availableOutboundCapacity) {
-      throw errors.INSUFFICIENT_OUTBOUND_CAPACITY(
-        outboundCurrency,
-        outboundAmount,
-        availableOutboundCapacity,
-      );
+      throw errors.INSUFFICIENT_OUTBOUND_CAPACITY(outboundCurrency, outboundAmount, availableOutboundCapacity);
     }
 
     // check if sufficient inbound channel capacity exists
@@ -264,11 +245,7 @@ class SwapClientManager extends EventEmitter {
       const reservedInbound = this.inboundReservedAmounts.get(inboundCurrency) ?? 0;
       const availableInboundCapacity = inboundCapacities.totalInboundCapacity - reservedInbound;
       if (inboundAmount > availableInboundCapacity) {
-        throw errors.INSUFFICIENT_INBOUND_CAPACITY(
-          inboundCurrency,
-          inboundAmount,
-          availableInboundCapacity,
-        );
+        throw errors.INSUFFICIENT_INBOUND_CAPACITY(inboundCurrency, inboundAmount, availableInboundCapacity);
       }
     }
   };
@@ -439,11 +416,7 @@ class SwapClientManager extends EventEmitter {
               });
             unlockWalletPromises.push(unlockWalletPromise);
           }
-        } else if (
-          swapClient.isDisconnected() ||
-          swapClient.isMisconfigured() ||
-          swapClient.isNotInitialized()
-        ) {
+        } else if (swapClient.isDisconnected() || swapClient.isMisconfigured() || swapClient.isNotInitialized()) {
           // if the swap client is not connected, we treat it as locked since lnd will likely be locked when it comes online
           lockedLndClients.push(swapClient.currency);
         }
@@ -807,11 +780,7 @@ class SwapClientManager extends EventEmitter {
     // we handle connext separately because we don't want to attach
     // duplicate listeners in case connext client is associated with
     // multiple currencies
-    if (
-      this.connextClient &&
-      !this.connextClient.isDisabled() &&
-      !this.connextClient.isMisconfigured()
-    ) {
+    if (this.connextClient && !this.connextClient.isDisabled() && !this.connextClient.isMisconfigured()) {
       this.connextClient.on('htlcAccepted', (rHash, amount, currency) => {
         this.emit('htlcAccepted', this.connextClient!, rHash, amount, currency);
       });

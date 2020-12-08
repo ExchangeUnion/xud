@@ -171,9 +171,7 @@ class NodeList extends EventEmitter {
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
       node.addresses = addresses.map((newAddress) => {
-        const oldAddress = node.addresses.find((address) =>
-          addressUtils.areEqual(address, newAddress),
-        );
+        const oldAddress = node.addresses.find((address) => addressUtils.areEqual(address, newAddress));
         if (oldAddress && !newAddress.lastConnected) {
           return oldAddress;
         } else {
@@ -215,10 +213,7 @@ class NodeList extends EventEmitter {
    * Add a reputation event to the node's history
    * @return true if the specified node exists and the event was added, false otherwise
    */
-  public addReputationEvent = async (
-    nodePubKey: string,
-    event: ReputationEvent,
-  ): Promise<boolean> => {
+  public addReputationEvent = async (nodePubKey: string, event: ReputationEvent): Promise<boolean> => {
     const node = this.nodes.get(nodePubKey);
 
     if (node) {
@@ -250,9 +245,7 @@ class NodeList extends EventEmitter {
   public removeAddress = async (nodePubKey: string, address: Address) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
-      const index = node.addresses.findIndex((existingAddress) =>
-        addressUtils.areEqual(address, existingAddress),
-      );
+      const index = node.addresses.findIndex((existingAddress) => addressUtils.areEqual(address, existingAddress));
       if (index > -1) {
         node.addresses = [...node.addresses.slice(0, index), ...node.addresses.slice(index + 1)];
         await node.save();

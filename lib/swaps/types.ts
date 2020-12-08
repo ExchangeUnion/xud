@@ -81,10 +81,7 @@ export type SwapSuccess = Pick<
 };
 
 /** A swap that has been accepted. */
-export type SwapAccepted = Pick<
-  SwapDeal,
-  'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price'
-> & {
+export type SwapAccepted = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price'> & {
   amountReceiving: number;
   amountSending: number;
   currencyReceiving: string;

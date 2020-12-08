@@ -179,10 +179,7 @@ abstract class SwapClient extends EventEmitter {
 
   protected setConnected = async (newIdentifier?: string, newUris?: string[]) => {
     // we wait briefly to update the capacities for this swap client then proceed to set status to connected
-    await Promise.race([
-      this.updateCapacity(),
-      setTimeoutPromise(SwapClient.CAPACITY_REFRESH_INTERVAL),
-    ]);
+    await Promise.race([this.updateCapacity(), setTimeoutPromise(SwapClient.CAPACITY_REFRESH_INTERVAL)]);
     this.setStatus(ClientStatus.ConnectionVerified);
     this.emit('connectionVerified', {
       newIdentifier,
@@ -225,9 +222,7 @@ abstract class SwapClient extends EventEmitter {
       this.logger.info(`new status: ${ClientStatus[newStatus]}`);
       this.status = newStatus;
     } else {
-      this.logger.error(
-        `cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`,
-      );
+      this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
     }
   };
 
@@ -257,16 +252,10 @@ abstract class SwapClient extends EventEmitter {
 
   private setTimers = () => {
     if (!this.updateCapacityTimer) {
-      this.updateCapacityTimer = setInterval(
-        this.updateCapacityTimerCallback,
-        SwapClient.CAPACITY_REFRESH_INTERVAL,
-      );
+      this.updateCapacityTimer = setInterval(this.updateCapacityTimerCallback, SwapClient.CAPACITY_REFRESH_INTERVAL);
     }
     if (!this.reconnectionTimer) {
-      this.reconnectionTimer = setTimeout(
-        this.reconnectionTimerCallback,
-        SwapClient.RECONNECT_INTERVAL,
-      );
+      this.reconnectionTimer = setTimeout(this.reconnectionTimerCallback, SwapClient.RECONNECT_INTERVAL);
     }
   };
 
@@ -287,11 +276,7 @@ abstract class SwapClient extends EventEmitter {
    * Throws an error if the payment fails.
    * @returns the preimage for the payment hash
    */
-  public abstract async sendSmallestAmount(
-    rHash: string,
-    destination: string,
-    currency: string,
-  ): Promise<string>;
+  public abstract async sendSmallestAmount(rHash: string, destination: string, currency: string): Promise<string>;
 
   /**
    * Gets routes for the given currency, amount, and swap identifier.
@@ -332,11 +317,7 @@ abstract class SwapClient extends EventEmitter {
     currency?: string;
   }): Promise<void>;
 
-  public abstract async settleInvoice(
-    rHash: string,
-    rPreimage: string,
-    currency?: string,
-  ): Promise<void>;
+  public abstract async settleInvoice(rHash: string, rPreimage: string, currency?: string): Promise<void>;
 
   public abstract async removeInvoice(rHash: string): Promise<void>;
 
@@ -344,11 +325,7 @@ abstract class SwapClient extends EventEmitter {
    * Checks to see whether we've made a payment using a given rHash.
    * @returns the preimage for the payment, or `undefined` if no payment was made
    */
-  public abstract async lookupPayment(
-    rHash: string,
-    currency?: string,
-    destination?: string,
-  ): Promise<PaymentStatus>;
+  public abstract async lookupPayment(rHash: string, currency?: string, destination?: string): Promise<PaymentStatus>;
 
   /**
    * Gets the block height of the chain backing this swap client.

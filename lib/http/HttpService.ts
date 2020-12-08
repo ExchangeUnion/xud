@@ -28,9 +28,7 @@ class HttpService {
     }
   };
 
-  public incomingTransfer = async (
-    incomingTransferRequest: ConnextIncomingTransferRequest,
-  ): Promise<object> => {
+  public incomingTransfer = async (incomingTransferRequest: ConnextIncomingTransferRequest): Promise<object> => {
     if (incomingTransferRequest.transfer) {
       const transfer = incomingTransferRequest.transfer;
       const { transferState, meta, assetId, balance } = transfer;

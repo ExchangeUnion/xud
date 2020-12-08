@@ -19,10 +19,7 @@ class SwapRepository {
     });
   };
 
-  public saveSwapDeal = async (
-    swapDeal: db.SwapDealCreationAttributes,
-    swapOrder?: db.OrderCreationAttributes,
-  ) => {
+  public saveSwapDeal = async (swapDeal: db.SwapDealCreationAttributes, swapOrder?: db.OrderCreationAttributes) => {
     if (swapOrder) {
       await this.models.Order.upsert(swapOrder);
     }

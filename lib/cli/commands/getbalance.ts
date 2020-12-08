@@ -22,11 +22,7 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
       currency,
       satsToCoinsStr(balance.totalBalance),
       formatBalance(balance.walletBalance, balance.unconfirmedWalletBalance),
-      formatBalance(
-        balance.channelBalance,
-        balance.pendingChannelBalance,
-        balance.inactiveChannelBalance,
-      ),
+      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
     );
     formatted.push(row);
   });
@@ -35,10 +31,8 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
 
 const formatBalance = (availableBalance: number, pendingBalance: number, inactiveBalance = 0) => {
   const availableBalanceStr = satsToCoinsStr(availableBalance);
-  const unconfirmedBalanceStr =
-    pendingBalance > 0 ? `${satsToCoinsStr(pendingBalance)} pending` : undefined;
-  const inactiveBalanceStr =
-    inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
+  const unconfirmedBalanceStr = pendingBalance > 0 ? `${satsToCoinsStr(pendingBalance)} pending` : undefined;
+  const inactiveBalanceStr = inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
   if (unconfirmedBalanceStr || inactiveBalanceStr) {
     let str = availableBalanceStr;
     let paranthetical = '';

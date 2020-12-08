@@ -57,20 +57,14 @@ async function decipher(mnemonic: string[]) {
 }
 
 async function deriveChild(mnemonic: string[], clientType: string) {
-  const { stdout, stderr } = await exec(
-    `${seedutilPath} derivechild -client ${clientType} ${mnemonic.join(' ')}`,
-  );
+  const { stdout, stderr } = await exec(`${seedutilPath} derivechild -client ${clientType} ${mnemonic.join(' ')}`);
 
   if (stderr) {
     throw new Error(stderr);
   }
 
   const childMnenomic = stdout.trim().split(' ');
-  assert.equal(
-    childMnenomic.length,
-    24,
-    'seedutil did not derive child mnemonic of exactly 24 words',
-  );
+  assert.equal(childMnenomic.length, 24, 'seedutil did not derive child mnemonic of exactly 24 words');
   return childMnenomic;
 }
 

@@ -195,9 +195,7 @@ class DB {
       const nodes = defaultNodes(network);
       if (nodes) {
         const existingNodes = await Models.Node(this.sequelize).findAll();
-        const newNodes = nodes.filter(
-          (node) => !existingNodes.find((n) => n.nodePubKey === node.nodePubKey),
-        );
+        const newNodes = nodes.filter((node) => !existingNodes.find((n) => n.nodePubKey === node.nodePubKey));
 
         if (newNodes.length > 0) {
           await Node.bulkCreate(newNodes);
@@ -207,9 +205,7 @@ class DB {
       const currencies = defaultCurrencies(network);
       if (currencies) {
         const existingCurrencies = await Models.Currency(this.sequelize).findAll();
-        const newCurrencies = currencies.filter(
-          (currency) => !existingCurrencies.find((n) => n.id === currency.id),
-        );
+        const newCurrencies = currencies.filter((currency) => !existingCurrencies.find((n) => n.id === currency.id));
 
         if (newCurrencies.length > 0) {
           await Currency.bulkCreate(newCurrencies);
@@ -222,9 +218,7 @@ class DB {
         const existingPairs = await Models.Pair(this.sequelize).findAll();
         const newPairs = pairs.filter(
           (pair) =>
-            !existingPairs.find(
-              (n) => n.baseCurrency === pair.baseCurrency && n.quoteCurrency === pair.quoteCurrency,
-            ),
+            !existingPairs.find((n) => n.baseCurrency === pair.baseCurrency && n.quoteCurrency === pair.quoteCurrency),
         );
 
         if (newPairs.length > 0) {

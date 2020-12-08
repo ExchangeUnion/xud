@@ -19,9 +19,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
     return PacketType.Orders;
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): GetOrdersPacket | pb.GetOrdersPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): GetOrdersPacket | pb.GetOrdersPacket.AsObject => {
     const obj = pb.GetOrdersPacket.deserializeBinary(binary).toObject();
     return GetOrdersPacket.validate(obj) ? GetOrdersPacket.convert(obj) : obj;
   };

@@ -47,9 +47,7 @@ class Framer {
       packetRaw.copy(msg, 8);
 
       const ciphertext = await this.encrypt(msg, encryptionKey);
-      const encryptedMsg = Buffer.allocUnsafe(
-        Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length,
-      );
+      const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
 
       // length
       encryptedMsg.writeUInt32LE(ciphertext.length, 0);
@@ -143,10 +141,7 @@ class Framer {
    */
   public parseHeader = (msg: Buffer, encrypted: boolean): WireMsgHeader => {
     if (encrypted) {
-      assert(
-        msg.length >= Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH,
-        'invalid msg header length: data is missing',
-      );
+      assert(msg.length >= Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH, 'invalid msg header length: data is missing');
 
       // length
       const length = msg.readUInt32LE(0);

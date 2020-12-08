@@ -29,11 +29,9 @@ const SECONDARY_HEADER = [
 const addOrderToSide = (orderSide: Order.AsObject[]): string[] => {
   const order = orderSide.pop();
   if (order) {
-    return [
-      satsToCoinsStr(order.quantity),
-      order.price.toString(),
-      order.nodeIdentifier!.alias,
-    ].map((i) => (order.isOwnOrder ? colors.cyan(i) : i));
+    return [satsToCoinsStr(order.quantity), order.price.toString(), order.nodeIdentifier!.alias].map((i) =>
+      order.isOwnOrder ? colors.cyan(i) : i,
+    );
   } else {
     return Array.from(Array(COLUMNS_IN_ORDER_SIDE)).map(() => '');
   }

@@ -189,9 +189,7 @@ describe('Swaps.SwapClientManager', () => {
     beforeEach(async () => {
       swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
       await swapClientManager.init();
-      swapClientManager.swapClients.get(
-        currency,
-      )!.setReservedInboundAmount = setReservedInboundBtcAmount;
+      swapClientManager.swapClients.get(currency)!.setReservedInboundAmount = setReservedInboundBtcAmount;
     });
 
     afterEach(() => {

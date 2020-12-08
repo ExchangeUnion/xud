@@ -15,22 +15,15 @@ const formatOutput = (response: RemoveAllOrdersResponse.AsObject) => {
   }
 
   if (response.removedOrderIdsList.length) {
-    response.removedOrderIdsList.forEach((removedOrder) =>
-      console.log(`Removed order with id ${removedOrder}`),
-    );
+    response.removedOrderIdsList.forEach((removedOrder) => console.log(`Removed order with id ${removedOrder}`));
   }
   if (response.onHoldOrderIdsList.length) {
     response.onHoldOrderIdsList.forEach((id) =>
-      console.log(
-        `Order with id ${id} has a hold for a pending swap and will be removed afterwards`,
-      ),
+      console.log(`Order with id ${id} has a hold for a pending swap and will be removed afterwards`),
     );
   }
 };
 
 export const handler = async (argv: Arguments<any>) => {
-  (await loadXudClient(argv)).removeAllOrders(
-    new RemoveAllOrdersRequest(),
-    callback(argv, formatOutput),
-  );
+  (await loadXudClient(argv)).removeAllOrders(new RemoveAllOrdersRequest(), callback(argv, formatOutput));
 };

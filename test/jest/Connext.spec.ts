@@ -405,8 +405,7 @@ describe('ConnextClient', () => {
     });
 
     it('requests the hardcoded minimum if the collateral shortage is below it', async () => {
-      const minCollateralRequestUnits =
-        ConnextClient['MIN_COLLATERAL_REQUEST_SIZES']['ETH']! * 10 ** 10;
+      const minCollateralRequestUnits = ConnextClient['MIN_COLLATERAL_REQUEST_SIZES']['ETH']! * 10 ** 10;
 
       expect(() => connext.checkInboundCapacity(smallQuantity, 'ETH')).toThrowError(
         'channel collateralization in progress, please try again in ~1 minute',

@@ -96,9 +96,7 @@ class Parser extends EventEmitter {
   };
 
   private getTotalSize = (chunk: Buffer): number => {
-    const current = this.pending
-      .map((buffer) => buffer.length)
-      .reduce((acc, curr) => acc + curr, 0);
+    const current = this.pending.map((buffer) => buffer.length).reduce((acc, curr) => acc + curr, 0);
 
     return current + chunk.length;
   };
@@ -188,16 +186,12 @@ class Parser extends EventEmitter {
     }
 
     if (!isPacket(packetOrPbObj)) {
-      throw errors.PARSER_INVALID_PACKET(
-        `${PacketType[header.type]} ${JSON.stringify(packetOrPbObj)}`,
-      );
+      throw errors.PARSER_INVALID_PACKET(`${PacketType[header.type]} ${JSON.stringify(packetOrPbObj)}`);
     }
 
     const packet = packetOrPbObj;
     if (header.checksum && header.checksum !== packet.checksum()) {
-      throw errors.PARSER_DATA_INTEGRITY_ERR(
-        `${PacketType[header.type]} ${JSON.stringify(packet)}`,
-      );
+      throw errors.PARSER_DATA_INTEGRITY_ERR(`${PacketType[header.type]} ${JSON.stringify(packet)}`);
     }
 
     return packet;

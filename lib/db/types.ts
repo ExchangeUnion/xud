@@ -19,17 +19,12 @@ export type CurrencyCreationAttributes = Currency;
 
 export type CurrencyAttributes = CurrencyCreationAttributes;
 
-export interface CurrencyInstance
-  extends Model<CurrencyAttributes, CurrencyCreationAttributes>,
-    CurrencyAttributes {}
+export interface CurrencyInstance extends Model<CurrencyAttributes, CurrencyCreationAttributes>, CurrencyAttributes {}
 
 /* SwapDeal */
 export type SwapDealCreationAttributes = Pick<
   SwapDeal,
-  Exclude<
-    keyof SwapDeal,
-    'takerMaxTimeLock' | 'price' | 'pairId' | 'isBuy' | 'takerUnits' | 'makerUnits'
-  >
+  Exclude<keyof SwapDeal, 'takerMaxTimeLock' | 'price' | 'pairId' | 'isBuy' | 'takerUnits' | 'makerUnits'>
 >;
 
 export type SwapDealAttributes = SwapDealCreationAttributes & {
@@ -37,19 +32,14 @@ export type SwapDealAttributes = SwapDealCreationAttributes & {
   nodeId: number;
 };
 
-export interface SwapDealInstance
-  extends Model<SwapDealAttributes, SwapDealCreationAttributes>,
-    SwapDealAttributes {
+export interface SwapDealInstance extends Model<SwapDealAttributes, SwapDealCreationAttributes>, SwapDealAttributes {
   getNode: BelongsToGetAssociationMixin<NodeInstance>;
   getOrder: BelongsToGetAssociationMixin<OrderInstance>;
   Node?: NodeInstance;
   Order?: OrderInstance;
 }
 
-export type OrderCreationAttributes = Pick<
-  Order,
-  Exclude<keyof Order, 'quantity' | 'hold' | 'price'>
-> & {
+export type OrderCreationAttributes = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' | 'price'>> & {
   /** The internal db node id of the peer that created this order. */
   nodeId?: number;
   localId?: string;
@@ -59,9 +49,7 @@ export type OrderCreationAttributes = Pick<
 
 export type OrderAttributes = OrderCreationAttributes & {};
 
-export interface OrderInstance
-  extends Model<OrderAttributes, OrderCreationAttributes>,
-    OrderAttributes {}
+export interface OrderInstance extends Model<OrderAttributes, OrderCreationAttributes>, OrderAttributes {}
 
 export type TradeCreationAttributes = {
   /** The order id of the maker order involved in this trade. */
@@ -76,9 +64,7 @@ export type TradeCreationAttributes = {
 
 export type TradeAttributes = TradeCreationAttributes & {};
 
-export interface TradeInstance
-  extends Model<TradeAttributes, TradeCreationAttributes>,
-    TradeAttributes {
+export interface TradeInstance extends Model<TradeAttributes, TradeCreationAttributes>, TradeAttributes {
   getMakerOrder: BelongsToGetAssociationMixin<OrderInstance>;
   getTakerOrder: BelongsToGetAssociationMixin<OrderInstance>;
   getSwapDeal: BelongsToGetAssociationMixin<SwapDealInstance>;
@@ -99,9 +85,7 @@ export type NodeAttributes = NodeCreationAttributes & {
   lastAddress: Address;
 };
 
-export interface NodeInstance
-  extends Model<NodeAttributes, NodeCreationAttributes>,
-    NodeAttributes {
+export interface NodeInstance extends Model<NodeAttributes, NodeCreationAttributes>, NodeAttributes {
   reputationScore: number;
 }
 
@@ -112,9 +96,7 @@ export type PairAttributes = PairCreationAttributes & {
   id: string;
 };
 
-export interface PairInstance
-  extends Model<PairAttributes, PairCreationAttributes>,
-    PairAttributes {}
+export interface PairInstance extends Model<PairAttributes, PairCreationAttributes>, PairAttributes {}
 
 /* Reputation events */
 export type ReputationEventCreationAttributes = {
@@ -143,6 +125,4 @@ export type PasswordAttributes = PasswordCreationAttributes & {
   id: number;
 };
 
-export interface PasswordInstance
-  extends Model<PasswordAttributes, PasswordCreationAttributes>,
-    PasswordAttributes {}
+export interface PasswordInstance extends Model<PasswordAttributes, PasswordCreationAttributes>, PasswordAttributes {}

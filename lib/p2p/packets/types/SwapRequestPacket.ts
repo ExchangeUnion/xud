@@ -23,22 +23,13 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
     return [PacketType.SwapAccepted, PacketType.SwapFailed];
   }
 
-  public static deserialize = (
-    binary: Uint8Array,
-  ): SwapRequestPacket | pb.SwapRequestPacket.AsObject => {
+  public static deserialize = (binary: Uint8Array): SwapRequestPacket | pb.SwapRequestPacket.AsObject => {
     const obj = pb.SwapRequestPacket.deserializeBinary(binary).toObject();
     return SwapRequestPacket.validate(obj) ? SwapRequestPacket.convert(obj) : obj;
   };
 
   private static validate = (obj: pb.SwapRequestPacket.AsObject): boolean => {
-    return !!(
-      obj.id &&
-      obj.proposedQuantity &&
-      obj.pairId &&
-      obj.orderId &&
-      obj.rHash &&
-      obj.takerCltvDelta
-    );
+    return !!(obj.id && obj.proposedQuantity && obj.pairId && obj.orderId && obj.rHash && obj.takerCltvDelta);
   };
 
   private static convert = (obj: pb.SwapRequestPacket.AsObject): SwapRequestPacket => {

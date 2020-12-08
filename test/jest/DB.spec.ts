@@ -1,10 +1,4 @@
-import {
-  SwapClientType,
-  SwapPhase,
-  SwapRole,
-  SwapState,
-  XuNetwork,
-} from '../../lib/constants/enums';
+import { SwapClientType, SwapPhase, SwapRole, SwapState, XuNetwork } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import { defaultCurrencies, defaultNodes, defaultPairs } from '../../lib/db/seeds';
 import { TradeCreationAttributes } from '../../lib/db/types';
@@ -263,10 +257,7 @@ describe('Database', () => {
       const tradeQuantity = 10000000;
       const maker = createOwnOrder(price, tradeQuantity, true);
       const taker = createOwnOrder(price, tradeQuantity, false);
-      await Promise.all([
-        orderBookRepo.addOrderIfNotExists(maker),
-        orderBookRepo.addOrderIfNotExists(taker),
-      ]);
+      await Promise.all([orderBookRepo.addOrderIfNotExists(maker), orderBookRepo.addOrderIfNotExists(taker)]);
       const trade: TradeCreationAttributes = {
         quantity: tradeQuantity,
         makerOrderId: maker.id,

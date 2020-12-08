@@ -127,12 +127,7 @@ class Xud extends EventEmitter {
         .then(() => true)
         .catch(() => false);
 
-      this.swapClientManager = new SwapClientManager(
-        this.config,
-        loggers,
-        this.unitConverter,
-        this.db.models,
-      );
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter, this.db.models);
       await this.swapClientManager.init();
 
       let nodeKey: NodeKey | undefined;
@@ -149,17 +144,10 @@ class Xud extends EventEmitter {
         await this.swapClientManager.initConnext(nodeKey.childSeed(SwapClientType.Connext));
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
-        const initService = new InitService(
-          this.swapClientManager,
-          nodeKeyPath,
-          nodeKeyExists,
-          this.config.dbpath,
-        );
+        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
 
         this.rpcServer.grpcInitService.setInitService(initService);
-        this.logger.info(
-          "Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'",
-        );
+        this.logger.info("Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'");
         nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
           initService.once('nodekey', resolve);
           this.on('shutdown', () => {
@@ -247,10 +235,7 @@ class Xud extends EventEmitter {
       // if we're running in simnet mode and Connext is enabled we'll
       // attempt to request funds from the faucet and open a channel
       // to the node once we have received the on-chain funds
-      if (
-        this.config.network === XuNetwork.SimNet &&
-        this.swapClientManager.connextClient?.isOperational()
-      ) {
+      if (this.config.network === XuNetwork.SimNet && this.swapClientManager.connextClient?.isOperational()) {
         this.simnetChannels$ = createSimnetChannels({
           channels: [
             {
@@ -270,9 +255,7 @@ class Xud extends EventEmitter {
             this.logger.error(`Failed to fund Connext wallet and open a channel: ${e}`);
           },
           complete: () => {
-            this.logger.info(
-              'Stopped monitoring Connext balances for automatic funding and channel creation',
-            );
+            this.logger.info('Stopped monitoring Connext balances for automatic funding and channel creation');
           },
         });
       }

@@ -29,10 +29,7 @@ class SwapRecovery extends EventEmitter {
 
   public beginTimer = () => {
     if (!this.pendingSwapsTimer) {
-      this.pendingSwapsTimer = setInterval(
-        this.checkPendingSwaps,
-        SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL,
-      );
+      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL);
     }
   };
 
@@ -48,9 +45,7 @@ class SwapRecovery extends EventEmitter {
   };
 
   private checkPendingSwaps = () => {
-    this.pendingSwaps.forEach((pendingSwap) =>
-      this.checkPaymentStatus(pendingSwap).catch(this.logger.error),
-    );
+    this.pendingSwaps.forEach((pendingSwap) => this.checkPaymentStatus(pendingSwap).catch(this.logger.error));
   };
 
   private failDeal = async (deal: SwapDealInstance, receivingSwapClient?: SwapClient) => {
@@ -98,10 +93,7 @@ class SwapRecovery extends EventEmitter {
       await deal.save();
       this.emit('recovered', deal);
     } catch (err) {
-      this.logger.error(
-        `could not settle ${deal.makerCurrency} invoice for payment ${deal.rHash}`,
-        err,
-      );
+      this.logger.error(`could not settle ${deal.makerCurrency} invoice for payment ${deal.rHash}`, err);
       this.logger.alert(
         `incoming ${deal.makerCurrency} payment with hash ${deal.rHash} could not be settled with preimage ${deal.rPreimage}, **funds may be lost and this must be investigated manually**`,
       );
@@ -129,9 +121,7 @@ class SwapRecovery extends EventEmitter {
 
     const takerSwapClient = this.swapClientManager.get(deal.takerCurrency);
     if (!takerSwapClient || !takerSwapClient.isConnected()) {
-      this.logger.warn(
-        `could not recover deal ${deal.rHash} because ${deal.takerCurrency} swap client is offline`,
-      );
+      this.logger.warn(`could not recover deal ${deal.rHash} because ${deal.takerCurrency} swap client is offline`);
       return;
     }
 
@@ -140,9 +130,7 @@ class SwapRecovery extends EventEmitter {
       // if it did, we can claim payment with the preimage for our side of the swap
       const makerSwapClient = this.swapClientManager.get(deal.makerCurrency);
       if (!makerSwapClient || !makerSwapClient.isConnected()) {
-        this.logger.warn(
-          `could not recover deal ${deal.rHash} because ${deal.makerCurrency} swap client is offline`,
-        );
+        this.logger.warn(`could not recover deal ${deal.rHash} because ${deal.makerCurrency} swap client is offline`);
         return;
       }
 
@@ -157,9 +145,7 @@ class SwapRecovery extends EventEmitter {
         await this.failDeal(deal, makerSwapClient);
       } else {
         // the payment is pending, we will need to follow up on this
-        this.logger.debug(
-          `swap for ${deal.rHash} still has pending payments and will be monitored`,
-        );
+        this.logger.debug(`swap for ${deal.rHash} still has pending payments and will be monitored`);
       }
     } else if (deal.role === SwapRole.Taker) {
       // we are not at risk of losing funds, but we should cancel any open invoices

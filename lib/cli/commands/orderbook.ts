@@ -28,12 +28,7 @@ const HEADER = [
   { content: colors.green('Buy'), colSpan: 2 },
   { content: colors.red('Sell'), colSpan: 2 },
 ];
-const SECONDARY_HEADER = [
-  colors.green('Quantity'),
-  colors.green('Price'),
-  colors.red('Price'),
-  colors.red('Quantity'),
-];
+const SECONDARY_HEADER = [colors.green('Quantity'), colors.green('Price'), colors.red('Price'), colors.red('Quantity')];
 
 const addSide = (buckets: Bucket[], isBuy = false): string[] => {
   const bucket = buckets.pop();
@@ -145,10 +140,7 @@ export const builder = (argv: Argv) =>
     .example('$0 orderbook', 'display the order books for all trading pairs')
     .example('$0 orderbook LTC/BTC', 'display the LTC/BTC order book')
     .example('$0 orderbook LTC/BTC 2', 'display the LTC/BTC order book with 2 decimal precision')
-    .example(
-      '$0 orderbook --precision 2',
-      'display the order books for all trading pairs with 2 decimal precision',
-    );
+    .example('$0 orderbook --precision 2', 'display the order books for all trading pairs with 2 decimal precision');
 
 const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   const jsonOrderbooks: OrderbookJson[] = [];

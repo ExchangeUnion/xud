@@ -83,9 +83,7 @@ describe('P2P Pool Tests', async () => {
   it('should throw error when connecting to tor node with tor disabled', async () => {
     const address = addressUtils.fromString('3g2upl4pq6kufc4m.onion');
     const addPromise = pool.addOutbound(address, nodeKeyOne.pubKey, false, false);
-    await expect(addPromise).to.be.rejectedWith(
-      errors.NODE_TOR_ADDRESS(nodeKeyOne.pubKey, address).message,
-    );
+    await expect(addPromise).to.be.rejectedWith(errors.NODE_TOR_ADDRESS(nodeKeyOne.pubKey, address).message);
   });
 
   it('should update a node on new handshake', async () => {

@@ -191,9 +191,10 @@ describe('P2P Pool', () => {
     await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
     await awaitInboundPeer(pool2);
 
-    await expect(
-      pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false),
-    ).rejects.toHaveProperty('code', errorCodes.NODE_ALREADY_CONNECTED);
+    await expect(pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false)).rejects.toHaveProperty(
+      'code',
+      errorCodes.NODE_ALREADY_CONNECTED,
+    );
     expect(pool.peerCount).toEqual(1);
     expect(pool2.peerCount).toEqual(1);
   });
@@ -210,18 +211,14 @@ describe('P2P Pool', () => {
       expect(pool.peerCount).toEqual(1);
     } catch (err) {
       // if an addOutbound call errors, it should be due to AlreadyConnected
-      expect(
-        err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'),
-      );
+      expect(err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'));
     }
 
     try {
       await pool2Promise;
     } catch (err) {
       // if an addOutbound call errors, it should be due to AlreadyConnected
-      expect(
-        err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'),
-      );
+      expect(err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'));
     }
 
     if (!pool.peerCount) {
@@ -240,10 +237,7 @@ describe('P2P Pool', () => {
     const firstOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
     const secondOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
 
-    await expect(secondOutboundAttempt).rejects.toHaveProperty(
-      'code',
-      errorCodes.ALREADY_CONNECTING,
-    );
+    await expect(secondOutboundAttempt).rejects.toHaveProperty('code', errorCodes.ALREADY_CONNECTING);
     await firstOutboundAttempt;
 
     expect(pool['pendingOutboundPeers'].size).toEqual(0);

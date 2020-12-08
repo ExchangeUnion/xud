@@ -23,9 +23,9 @@ describe('P2P Networks Tests', () => {
       const nodeTwoUri = toUri({ host, port, nodePubKey });
 
       const rejectionMsg = `Peer ${nodePubKey}@${host}:${port} closed due to WireProtocolErr framer: incompatible msg origin network (expected: ${srcNodeNetwork}, found: ${destNodeNetwork})`;
-      await expect(
-        srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }),
-      ).to.be.rejectedWith(rejectionMsg);
+      await expect(srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.rejectedWith(
+        rejectionMsg,
+      );
 
       expect(await srcNode.service.listPeers().length).to.equal(0);
       expect(await destNode.service.listPeers().length).to.equal(0);
@@ -48,8 +48,7 @@ describe('P2P Networks Tests', () => {
       const port = destNode['pool']['listenPort']!;
       const nodeTwoUri = toUri({ host, port, nodePubKey: destNodePubKey });
 
-      await expect(srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be
-        .fulfilled;
+      await expect(srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.fulfilled;
 
       const peers = srcNode.service.listPeers();
       expect(peers.length).to.equal(1);

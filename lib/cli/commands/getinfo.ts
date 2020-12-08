@@ -15,12 +15,9 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
 
   const pendingChannelText =
     info.channels && info.channels['pending'] > 0 ? ` | Pending: ${info.channels['pending']}` : '';
-  const closedChannelText =
-    info.channels && info.channels['closed'] > 0 ? ` | Closed: ${info.channels['closed']}` : '';
+  const closedChannelText = info.channels && info.channels['closed'] > 0 ? ` | Closed: ${info.channels['closed']}` : '';
   const inactiveChannelText =
-    info.channels && info.channels['inactive'] > 0
-      ? ` | Inactive: ${info.channels['inactive']}`
-      : '';
+    info.channels && info.channels['inactive'] > 0 ? ` | Inactive: ${info.channels['inactive']}` : '';
 
   basicInfotable.push(
     { [colors.blue('Version')]: info.version || '' },

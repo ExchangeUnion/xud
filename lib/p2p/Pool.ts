@@ -2,12 +2,7 @@ import assert from 'assert';
 import { EventEmitter } from 'events';
 import net, { Server, Socket } from 'net';
 import semver from 'semver';
-import {
-  DisconnectionReason,
-  ReputationEvent,
-  SwapFailureReason,
-  XuNetwork,
-} from '../constants/enums';
+import { DisconnectionReason, ReputationEvent, SwapFailureReason, XuNetwork } from '../constants/enums';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
@@ -31,14 +26,8 @@ type NodeReputationInfo = {
 
 interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
-  on(
-    event: 'packet.getOrders',
-    listener: (peer: Peer, reqId: string, pairIds: string[]) => void,
-  ): this;
-  on(
-    event: 'packet.orderInvalidation',
-    listener: (orderInvalidation: OrderInvalidation, peer: string) => void,
-  ): this;
+  on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderInvalidation, peer: string) => void): this;
   on(event: 'peer.active', listener: (peerPubKey: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
   /** Adds a listener to be called when a peer's advertised but inactive pairs should be verified. */
@@ -46,26 +35,13 @@ interface Pool {
   /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'peer.nodeStateUpdate', listener: (peer: Peer) => void): this;
-  on(
-    event: 'packet.sanitySwapInit',
-    listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void,
-  ): this;
-  on(
-    event: 'packet.swapRequest',
-    listener: (packet: packets.SwapRequestPacket, peer: Peer) => void,
-  ): this;
-  on(
-    event: 'packet.swapAccepted',
-    listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void,
-  ): this;
+  on(event: 'packet.sanitySwapInit', listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void): this;
+  on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
+  on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapFailed', listener: (packet: packets.SwapFailedPacket) => void): this;
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
-  emit(
-    event: 'packet.orderInvalidation',
-    orderInvalidation: OrderInvalidation,
-    peer: string,
-  ): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderInvalidation, peer: string): boolean;
   emit(event: 'peer.active', peerPubKey: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
   /** Notifies listeners that a peer's advertised but inactive pairs should be verified. */
@@ -157,8 +133,7 @@ class Pool extends EventEmitter {
     // we use the provided minCompatibleVersion if one is specified
     // otherwise we attempt to read the minCompatibleVersion from package.json
     // otherwise we use our own version as the minimum
-    this.minCompatibleVersion =
-      minCompatibleVersion ?? require('../../package.json').minCompatibleVersion ?? version;
+    this.minCompatibleVersion = minCompatibleVersion ?? require('../../package.json').minCompatibleVersion ?? version;
 
     this.nodeState = {
       addresses: [],
@@ -375,9 +350,7 @@ class Pool extends EventEmitter {
         ) {
           this.logger.verbose(`Verified reachability of advertised address: ${externalAddress}`);
         } else {
-          this.logger.warn(
-            `Could not verify reachability of advertised address: ${externalAddress}`,
-          );
+          this.logger.warn(`Could not verify reachability of advertised address: ${externalAddress}`);
         }
       }
     });
@@ -392,11 +365,7 @@ class Pool extends EventEmitter {
    * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
-  private connectNodes = async (
-    nodes: NodeConnectionIterator,
-    allowKnown = true,
-    retryConnecting = false,
-  ) => {
+  private connectNodes = async (nodes: NodeConnectionIterator, allowKnown = true, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves
@@ -573,11 +542,7 @@ class Pool extends EventEmitter {
     return false;
   };
 
-  private tryOpenPeer = async (
-    peer: Peer,
-    peerPubKey?: string,
-    retryConnecting = false,
-  ): Promise<void> => {
+  private tryOpenPeer = async (peer: Peer, peerPubKey?: string, retryConnecting = false): Promise<void> => {
     try {
       await this.openPeer(peer, peerPubKey, retryConnecting);
     } catch (err) {}
@@ -589,11 +554,7 @@ class Pool extends EventEmitter {
    * @returns a promise that resolves once the connection has opened and the newly opened peer
    * routine is complete
    */
-  private openPeer = async (
-    peer: Peer,
-    expectedNodePubKey?: string,
-    retryConnecting = false,
-  ): Promise<void> => {
+  private openPeer = async (peer: Peer, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
     if (this.disconnecting || !this.connected) {
       // if we are disconnected or disconnecting, don't open new connections
       throw errors.POOL_CLOSED;
@@ -658,9 +619,7 @@ class Pool extends EventEmitter {
 
     this.peers.set(peerPubKey, peer);
     peer.active = true;
-    this.logger.verbose(
-      `opened connection to ${peer.label} at ${addressUtils.toString(peer.address)}`,
-    );
+    this.logger.verbose(`opened connection to ${peer.label} at ${addressUtils.toString(peer.address)}`);
 
     // begin the process to handle a just opened peer, but return from this method immediately
     this.handleOpenedPeer(peer)
@@ -681,10 +640,7 @@ class Pool extends EventEmitter {
         peer.discoverTimer = undefined; // defensive programming
       } else {
         // timer is enabled
-        peer.discoverTimer = setInterval(
-          peer.sendGetNodes,
-          this.config.discoverminutes * 1000 * 60,
-        );
+        peer.discoverTimer = setInterval(peer.sendGetNodes, this.config.discoverminutes * 1000 * 60);
       }
     }
 
@@ -708,27 +664,15 @@ class Pool extends EventEmitter {
       });
     } else {
       // the node is known, update its listening addresses
-      await this.nodes.updateAddresses(
-        peer.nodePubKey!,
-        addresses,
-        peer.inbound ? undefined : peer.address,
-      );
+      await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
     }
   };
 
-  public closePeer = async (
-    nodePubKey: string,
-    reason?: DisconnectionReason,
-    reasonPayload?: string,
-  ) => {
+  public closePeer = async (nodePubKey: string, reason?: DisconnectionReason, reasonPayload?: string) => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
       await peer.close(reason, reasonPayload);
-      this.logger.info(
-        `Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)} (${
-          peer.alias
-        })`,
-      );
+      this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)} (${peer.alias})`);
     } else {
       throw errors.NOT_CONNECTED(nodePubKey);
     }
@@ -837,10 +781,7 @@ class Pool extends EventEmitter {
    * Broadcasts an [[OrderInvalidationPacket]] to all currently connected peers.
    * @param nodeToExclude the node pub key of a node to exclude from the packet broadcast
    */
-  public broadcastOrderInvalidation = (
-    { id, pairId, quantity }: OrderPortion,
-    nodeToExclude?: string,
-  ) => {
+  public broadcastOrderInvalidation = ({ id, pairId, quantity }: OrderPortion, nodeToExclude?: string) => {
     const orderInvalidationPacket = new packets.OrderInvalidationPacket({
       id,
       pairId,
@@ -913,15 +854,11 @@ class Pool extends EventEmitter {
       case PacketType.OrderInvalidation: {
         const orderInvalidation = (packet as packets.OrderInvalidationPacket).body!;
         if (peer.isPairActive(orderInvalidation.pairId)) {
-          this.logger.trace(
-            `received order invalidation from ${peer.label}: ${JSON.stringify(orderInvalidation)}`,
-          );
+          this.logger.trace(`received order invalidation from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
           this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey as string);
         } else {
           this.logger.trace(
-            `received order invalidation for inactive pair from ${peer.label}: ${JSON.stringify(
-              orderInvalidation,
-            )}`,
+            `received order invalidation for inactive pair from ${peer.label}: ${JSON.stringify(orderInvalidation)}`,
           );
         }
         break;
@@ -962,9 +899,7 @@ class Pool extends EventEmitter {
             newNodesCount += 1;
           }
         });
-        this.logger.verbose(
-          `received ${nodes.length} nodes (${newNodesCount} new) from ${peer.label}`,
-        );
+        this.logger.verbose(`received ${nodes.length} nodes (${newNodesCount} new) from ${peer.label}`);
         await this.connectNodes(nodes);
         break;
       }
@@ -974,25 +909,21 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.SwapRequest: {
-        this.logger.debug(
-          `received swapRequest from ${peer.label}: ${JSON.stringify(packet.body)}`,
-        );
+        this.logger.debug(`received swapRequest from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapRequest', packet, peer);
         break;
       }
       case PacketType.SwapAccepted: {
-        this.logger.debug(
-          `received swapAccepted from ${peer.label}: ${JSON.stringify(packet.body)}`,
-        );
+        this.logger.debug(`received swapAccepted from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapAccepted', packet, peer);
         break;
       }
       case PacketType.SwapFailed: {
         const { body } = packet as packets.SwapFailedPacket;
         this.logger.debug(
-          `received swapFailed due to ${SwapFailureReason[body!.failureReason]} from ${
-            peer.label
-          }: ${JSON.stringify(body)}`,
+          `received swapFailed due to ${SwapFailureReason[body!.failureReason]} from ${peer.label}: ${JSON.stringify(
+            body,
+          )}`,
         );
         this.emit('packet.swapFailed', packet);
         break;
@@ -1018,11 +949,7 @@ class Pool extends EventEmitter {
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
     if (semver.compare(peer.version, this.minCompatibleVersion) === -1) {
       await peer.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(
-        addressUtils.toString(peer.address),
-        this.minCompatibleVersion,
-        peer.version,
-      );
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(peer.address), this.minCompatibleVersion, peer.version);
     }
 
     if (!this.connected) {

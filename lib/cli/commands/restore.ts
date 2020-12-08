@@ -28,8 +28,7 @@ const formatOutput = (response: RestoreNodeResponse.AsObject) => {
   let walletRestoredMessage = 'The following wallets were restored: ';
 
   if (response.restoredLndsList.length) {
-    walletRestoredMessage +=
-      response.restoredLndsList.join(', ') + (response.restoredConnext ? ', ETH' : '');
+    walletRestoredMessage += response.restoredLndsList.join(', ') + (response.restoredConnext ? ', ETH' : '');
   } else if (response.restoredConnext) {
     walletRestoredMessage += 'ETH';
   }

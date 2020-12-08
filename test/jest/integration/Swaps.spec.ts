@@ -363,8 +363,7 @@ describe('Swaps Integration', () => {
     test('it sets the phase to PreimageResolved but punishes the peer if it is late', async () => {
       const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
 
-      deal.executeTime =
-        Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_COMPLETE_MAKER_BUFFER'] - 1;
+      deal.executeTime = Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_COMPLETE_MAKER_BUFFER'] - 1;
       const swapPaidCallback = jest.fn();
       swaps.on('swap.paid', swapPaidCallback);
 
@@ -379,8 +378,7 @@ describe('Swaps Integration', () => {
     test('it sets the phase to PreimageResolved but bans the peer if it is very late', async () => {
       const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
 
-      deal.executeTime =
-        Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_ABUSE_TIME_LIMIT'] - 1;
+      deal.executeTime = Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_ABUSE_TIME_LIMIT'] - 1;
       const swapPaidCallback = jest.fn();
       swaps.on('swap.paid', swapPaidCallback);
 

@@ -17,11 +17,7 @@ class NodeKey {
    * @param privKey The 32 byte private key
    * @param pubKey The public key in hex string format.
    */
-  constructor(
-    public readonly privKey: Buffer,
-    public readonly pubKey: string,
-    private readonly path: string,
-  ) {}
+  constructor(public readonly privKey: Buffer, public readonly pubKey: string, private readonly path: string) {}
 
   /**
    * Generates a random NodeKey.

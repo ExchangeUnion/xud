@@ -48,9 +48,7 @@ describe('NodeKey', () => {
   });
 
   test('it should error when creating a nodekey from a 32 zeroed bytes', () => {
-    expect(() => NodeKey.fromBytes(Buffer.alloc(32))).toThrowError(
-      'private was invalid, try again',
-    );
+    expect(() => NodeKey.fromBytes(Buffer.alloc(32))).toThrowError('private was invalid, try again');
   });
 
   test('it should create a valid nodekey from a greater than 32 byte buffer', async () => {

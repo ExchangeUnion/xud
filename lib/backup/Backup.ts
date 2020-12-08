@@ -116,9 +116,7 @@ class Backup extends EventEmitter {
 
         const backupPath = this.getBackupPath('lnd', lndClient.currency);
 
-        this.logger.verbose(
-          `Writing initial ${lndClient.currency} LND channel backup to: ${backupPath}`,
-        );
+        this.logger.verbose(`Writing initial ${lndClient.currency} LND channel backup to: ${backupPath}`);
 
         const channelBackup = await lndClient.exportAllChannelBackup();
         this.writeBackup(backupPath, channelBackup);
@@ -131,9 +129,7 @@ class Backup extends EventEmitter {
           this.writeBackup(backupPath, channelBackup);
         });
         lndClient.on('channelBackupEnd', async () => {
-          this.logger.warn(
-            `Lost subscription to ${lndClient.currency} channel backups - attempting to restore`,
-          );
+          this.logger.warn(`Lost subscription to ${lndClient.currency} channel backups - attempting to restore`);
           // attempt to re-subscribe to lnd backups
           await this.waitForLndConnected(lndClient);
           lndClient.subscribeChannelBackups();
@@ -158,9 +154,7 @@ class Backup extends EventEmitter {
 
       this.writeBackup(backupPath, content);
     } else {
-      this.logger.warn(
-        `Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`,
-      );
+      this.logger.warn(`Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`);
       const dbDir = path.dirname(dbPath);
       const dbFilename = path.basename(dbPath);
       await new Promise((resolve) => {

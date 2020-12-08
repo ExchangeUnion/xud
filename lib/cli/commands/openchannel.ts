@@ -45,10 +45,7 @@ export const builder = (argv: Argv) =>
       '$0 openchannel BTC 0.1 CheeseMonkey 0.05 1',
       'open an 0.1 BTC channel by alias, push 0.05 to remote side with 1 sat per byte',
     )
-    .example(
-      '$0 openchannel ETH 0.5',
-      'deposit 0.5 into an ETH Connext channel without specifying a remote node',
-    );
+    .example('$0 openchannel ETH 0.5', 'deposit 0.5 into an ETH Connext channel without specifying a remote node');
 
 export const handler = async (argv: Arguments<any>) => {
   if (isNaN(argv.amount)) {

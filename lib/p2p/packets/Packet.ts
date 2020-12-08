@@ -126,12 +126,4 @@ function isPacket(val: any): val is Packet {
 }
 
 export default Packet;
-export {
-  PacketHeader,
-  PacketDirection,
-  ResponseType,
-  PacketInterface,
-  isPacket,
-  isPacketType,
-  isPacketTypeArray,
-};
+export { PacketHeader, PacketDirection, ResponseType, PacketInterface, isPacket, isPacketType, isPacketTypeArray };

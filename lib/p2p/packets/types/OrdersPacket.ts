@@ -27,9 +27,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     return !!(
       obj.id &&
       obj.reqId &&
-      obj.ordersList.every(
-        (order) => !!order.id && !!order.pairId && order.price > 0 && order.quantity > 0,
-      )
+      obj.ordersList.every((order) => !!order.id && !!order.pairId && order.price > 0 && order.quantity > 0)
     );
   };
 
