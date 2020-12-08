@@ -1212,14 +1212,16 @@ class OrderBook extends EventEmitter {
       currenciesToVerify.forEach((swappable, currency) => {
         if (swappable && this.currencyInstances.has(currency)) {
           // perform sanity swaps for each of the currencies that we support
-          const sanitySwapPromise = new Promise<void>(async (resolve) => {
+          const sanitySwapPromise = Promise.race([
+            this.swaps.executeSanitySwap(currency, peer),
+            sanitySwapTimeout,
+          ]).then((success) => {
             // success resolves to true if the sanity swap succeeds before the timeout
-            const success = await Promise.race([this.swaps.executeSanitySwap(currency, peer), sanitySwapTimeout]);
             if (!success) {
               currenciesToVerify.set(currency, false);
             }
-            resolve();
           });
+
           sanitySwapPromises.push(sanitySwapPromise);
         }
       });

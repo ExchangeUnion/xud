@@ -161,12 +161,11 @@ class DB {
 
     // version is useful for tracking migrations & upgrades to the xud database when
     // the database schema is modified or restructured
-    let version: number;
     const userVersionPragma = await this.sequelize.query('PRAGMA user_version;');
     assert(Array.isArray(userVersionPragma) && Array.isArray(userVersionPragma[0]));
     const userVersion = userVersionPragma[0][0].user_version;
     assert(typeof userVersion === 'number');
-    version = userVersion;
+    const version = userVersion;
     this.logger.trace(`db version is ${version}`);
 
     if (version <= DB.VERSION) {

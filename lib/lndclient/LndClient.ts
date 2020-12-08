@@ -1142,9 +1142,10 @@ class LndClient extends SwapClient {
       for (const payment of payments.getPaymentsList()) {
         if (payment.getPaymentHash() === rHash) {
           switch (payment.getStatus()) {
-            case lndrpc.Payment.PaymentStatus.SUCCEEDED:
+            case lndrpc.Payment.PaymentStatus.SUCCEEDED: {
               const preimage = payment.getPaymentPreimage();
               return { preimage, state: PaymentState.Succeeded };
+            }
             default:
               this.logger.warn(`unexpected payment state for payment with hash ${rHash}`);
             /* falls through */

@@ -164,12 +164,13 @@ class SwapRecovery extends EventEmitter {
 
     this.logger.info(`recovering swap deal ${deal.rHash}`);
     switch (deal.phase) {
-      case SwapPhase.SwapAccepted:
+      case SwapPhase.SwapAccepted: {
         // we accepted the deal but stopped before sending payment
         // cancel the open invoice if we have one
         const makerSwapClient = this.swapClientManager.get(deal.makerCurrency);
         await this.failDeal(deal, makerSwapClient);
         break;
+      }
       case SwapPhase.SendingPayment:
       case SwapPhase.PreimageResolved:
         // we started sending payment but didn't claim our payment

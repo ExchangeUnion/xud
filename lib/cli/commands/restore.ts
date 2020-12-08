@@ -64,23 +64,12 @@ export const handler = async (argv: Arguments<any>) => {
     const backupDirectory = await fs.readdir(backupDir);
     backupDirectory.forEach((filename) => {
       readDbBackupPromises.push(
-        new Promise(async (resolve) => {
-          const fileContent = await fs.readFile(join(backupDir, filename));
-
+        fs.readFile(join(backupDir, filename)).then((fileContent) => {
           if (filename.startsWith('lnd-')) {
             request.getLndBackupsMap().set(filename.substr(4), fileContent);
-
-            resolve();
-            return;
+          } else if (filename === 'xud') {
+            request.setXudDatabase(fileContent);
           }
-
-          switch (filename) {
-            case 'xud':
-              request.setXudDatabase(fileContent);
-              break;
-          }
-
-          resolve();
         }),
       );
     });

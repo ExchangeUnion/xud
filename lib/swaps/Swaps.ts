@@ -973,7 +973,7 @@ class Swaps extends EventEmitter {
     let source: string;
     let destination: string;
     switch (deal.role) {
-      case SwapRole.Maker:
+      case SwapRole.Maker: {
         expectedAmount = deal.makerUnits;
         expectedCurrency = deal.makerCurrency;
         expectedTokenAddress = this.swapClientManager.connextClient?.tokenAddresses.get(deal.makerCurrency);
@@ -1001,6 +1001,7 @@ class Swaps extends EventEmitter {
           return false;
         }
         break;
+      }
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
         expectedCurrency = deal.takerCurrency;
@@ -1518,7 +1519,7 @@ class Swaps extends EventEmitter {
 
         this.logger.debug(`Setting SendingPayment phase for deal ${rHash}`);
         break;
-      case SwapPhase.PreimageResolved:
+      case SwapPhase.PreimageResolved: {
         assert(deal.role === SwapRole.Maker, 'PreimageResolved can only be set by the maker');
         assert(deal.phase === SwapPhase.SendingPayment, 'PreimageResolved can only be set after SendingPayment');
 
@@ -1549,6 +1550,7 @@ class Swaps extends EventEmitter {
 
         this.logger.debug(`Setting PreimageResolved phase for deal ${rHash}`);
         break;
+      }
       case SwapPhase.PaymentReceived:
         assert(
           deal.phase === SwapPhase.SendingPayment || deal.phase === SwapPhase.PreimageResolved,

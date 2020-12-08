@@ -713,7 +713,7 @@ class ConnextClient extends SwapClient {
             state: PaymentState.Succeeded,
             preimage: transferStatusResponse.transferResolver.preImage.slice(2),
           };
-        case 'EXPIRED':
+        case 'EXPIRED': {
           const expiredTransferUnlocked$ = defer(() =>
             from(
               // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
@@ -739,6 +739,7 @@ class ConnextClient extends SwapClient {
           // TODO: user funds can remain locked if the above code fails and xud is restarted. In that case the transfer
           // is marked as failed and it will not attempt to unlock again.
           return { state: PaymentState.Failed };
+        }
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
@@ -1123,8 +1124,7 @@ class ConnextClient extends SwapClient {
 
       this.logger.trace(`sending request to ${endpoint}${payloadStr ? `: ${payloadStr}` : ''}`);
 
-      let req: http.ClientRequest;
-      req = http.request(options, async (res) => {
+      const req = http.request(options, async (res) => {
         this.pendingRequests.delete(req);
 
         let err: XudError | undefined;
