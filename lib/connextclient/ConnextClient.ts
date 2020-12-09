@@ -41,7 +41,7 @@ import {
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent, from, defer, Subscription, throwError, interval, timer, combineLatest, of } from 'rxjs';
-import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
+import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo, distinctUntilChanged } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
@@ -398,18 +398,23 @@ class ConnextClient extends SwapClient {
     if (this._reconcileDepositSubscriber) {
       this._reconcileDepositSubscriber.unsubscribe();
     }
-    // TODO: increase interval after testing to 30+ sec
-    this._reconcileDepositSubscriber = interval(5000)
+    const ethBalance$ = interval(30000).pipe(
+      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!))),
+      // only emit new ETH balance events when the balance changes
+      distinctUntilChanged(),
+    );
+    this._reconcileDepositSubscriber = ethBalance$
+      // when ETH balance changes
       .pipe(
         mergeMap(() => {
           if (this.status === ClientStatus.ConnectionVerified) {
             return defer(() => {
-              // TODO: reconcile deposit for all supported currencies
+              // create new commitment transaction
               return from(
                 this.sendRequest('/deposit', 'POST', {
                   channelAddress: this.channelAddress,
                   publicIdentifier: this.publicIdentifier,
-                  assetId: '0x0000000000000000000000000000000000000000',
+                  assetId: '0x0000000000000000000000000000000000000000', // TODO: multi currency support
                 }),
               );
             });
