@@ -18,14 +18,19 @@ describe('displayBalances', () => {
 
   it('should print a table', () => {
     displayBalances({
-      balancesMap: [['BTC', {
-        totalBalance: 500000,
-        channelBalance: 400000,
-        pendingChannelBalance: 0,
-        inactiveChannelBalance: 0,
-        walletBalance: 100000,
-        unconfirmedWalletBalance: 0,
-      }]],
+      balancesMap: [
+        [
+          'BTC',
+          {
+            totalBalance: 500000,
+            channelBalance: 400000,
+            pendingChannelBalance: 0,
+            inactiveChannelBalance: 0,
+            walletBalance: 100000,
+            unconfirmedWalletBalance: 0,
+          },
+        ],
+      ],
     });
 
     expect(mockLog.mock.calls).toMatchSnapshot();
@@ -33,28 +38,38 @@ describe('displayBalances', () => {
 
   it('should print a table with pending balances', () => {
     displayBalances({
-      balancesMap: [['BTC', {
-        totalBalance: 500000,
-        channelBalance: 400000,
-        pendingChannelBalance: 75000,
-        inactiveChannelBalance: 0,
-        walletBalance: 100000,
-        unconfirmedWalletBalance: 25000,
-      }]],
+      balancesMap: [
+        [
+          'BTC',
+          {
+            totalBalance: 500000,
+            channelBalance: 400000,
+            pendingChannelBalance: 75000,
+            inactiveChannelBalance: 0,
+            walletBalance: 100000,
+            unconfirmedWalletBalance: 25000,
+          },
+        ],
+      ],
     });
     expect(mockLog.mock.calls).toMatchSnapshot();
   });
 
   it('should print a table with pending and inactive balances', () => {
     displayBalances({
-      balancesMap: [['BTC', {
-        totalBalance: 500000,
-        channelBalance: 400000,
-        pendingChannelBalance: 75000,
-        inactiveChannelBalance: 100000,
-        walletBalance: 100000,
-        unconfirmedWalletBalance: 25000,
-      }]],
+      balancesMap: [
+        [
+          'BTC',
+          {
+            totalBalance: 500000,
+            channelBalance: 400000,
+            pendingChannelBalance: 75000,
+            inactiveChannelBalance: 100000,
+            walletBalance: 100000,
+            unconfirmedWalletBalance: 25000,
+          },
+        ],
+      ],
     });
 
     expect(mockLog.mock.calls).toMatchSnapshot();

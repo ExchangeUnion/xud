@@ -36,7 +36,6 @@ jest.mock('../../lib/db/DB', () => {
                 quoteCurrency: 'USDT',
               },
             ];
-
           },
         },
         Currency: {
@@ -101,13 +100,15 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
       canRouteToPeer: jest.fn().mockReturnValue(true),
       isConnected: jest.fn().mockReturnValue(true),
       checkSwapCapacities: jest.fn(),
-      get: jest.fn().mockReturnValue({ maximumOutboundCapacity: () => Number.MAX_SAFE_INTEGER }),
+      get: jest.fn().mockReturnValue({
+        maximumOutboundCapacity: () => Number.MAX_SAFE_INTEGER,
+      }),
     };
   });
 });
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/nodekey/NodeKey');
-const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
+const mockedNodeKey = <jest.Mock<NodeKey>>(<any>NodeKey);
 
 const logger = new Logger({});
 logger.trace = jest.fn();
@@ -145,10 +146,14 @@ describe('OrderBook', () => {
   beforeEach(async () => {
     config = new Config();
     network = new Network(XuNetwork.TestNet);
-    peer = new Peer(loggers.p2p, {
-      host: 'localhost',
-      port: 9735,
-    }, network);
+    peer = new Peer(
+      loggers.p2p,
+      {
+        host: 'localhost',
+        port: 9735,
+      },
+      network,
+    );
     peer['nodeState'] = {} as any;
     db = new DB(loggers.db, config.dbpath);
     pool = new Pool({

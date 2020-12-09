@@ -12,40 +12,55 @@ class GrpcInitService {
 
   public setInitService = (initService: InitService) => {
     this.initService = initService;
-  }
+  };
 
   /** Disables the grpc initialization service once xud has been intialized. */
   public disable = () => {
     this.disabled = true;
     this.initService = undefined;
-  }
+  };
 
   /**
    * Checks whether this service is ready to handle calls and sends an error to the client
    * caller if not ready.
    * @returns `true` if the service is ready, otherwise `false`
    */
-  private isReady = (initService: InitService | undefined, callback: grpc.sendUnaryData<any>)
-    : initService is InitService => {
+  private isReady = (
+    initService: InitService | undefined,
+    callback: grpc.sendUnaryData<any>,
+  ): initService is InitService => {
     if (!initService) {
-      const err = this.disabled ?
-        { code: status.UNIMPLEMENTED, message: 'xud init service is disabled', name: 'DisabledError' } :
-        { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' };
+      const err = this.disabled
+        ? {
+            code: status.UNIMPLEMENTED,
+            message: 'xud init service is disabled',
+            name: 'DisabledError',
+          }
+        : {
+            code: status.UNAVAILABLE,
+            message: 'xud is starting',
+            name: 'NotReadyError',
+          };
       callback(err, null);
       return false;
     }
     return true;
-  }
+  };
 
   /**
    * See [[InitService.createNode]]
    */
-  public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (call, callback) => {
+  public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.initService, callback)) {
       return;
     }
     try {
-      const { mnemonic, initializedLndWallets, initializedConnext } = await this.initService.createNode(call.request.toObject());
+      const { mnemonic, initializedLndWallets, initializedConnext } = await this.initService.createNode(
+        call.request.toObject(),
+      );
       const response = new xudrpc.CreateNodeResponse();
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
@@ -58,12 +73,15 @@ class GrpcInitService {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-  }
+  };
 
   /**
    * See [[InitService.unlockNode]]
    */
-  public unlockNode: grpc.handleUnaryCall<xudrpc.UnlockNodeRequest, xudrpc.UnlockNodeResponse> = async (call, callback) => {
+  public unlockNode: grpc.handleUnaryCall<xudrpc.UnlockNodeRequest, xudrpc.UnlockNodeResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.initService, callback)) {
       return;
     }
@@ -77,12 +95,15 @@ class GrpcInitService {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-  }
+  };
 
   /**
    * See [[InitService.restoreNode]]
    */
-  public restoreNode: grpc.handleUnaryCall<xudrpc.RestoreNodeRequest, xudrpc.RestoreNodeResponse> = async (call, callback) => {
+  public restoreNode: grpc.handleUnaryCall<xudrpc.RestoreNodeRequest, xudrpc.RestoreNodeResponse> = async (
+    call,
+    callback,
+  ) => {
     if (!this.isReady(this.initService, callback)) {
       return;
     }
@@ -106,7 +127,7 @@ class GrpcInitService {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-  }
+  };
 }
 
 export default GrpcInitService;

@@ -7,13 +7,13 @@ import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import SwapRecovery from '../../lib/swaps/SwapRecovery';
 
 jest.mock('../../lib/Logger');
-const mockedLogger = <jest.Mock<Logger>><any>Logger;
+const mockedLogger = <jest.Mock<Logger>>(<any>Logger);
 jest.mock('../../lib/swaps/SwapClientManager');
-const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
+const mockedSwapClientManager = <jest.Mock<SwapClientManager>>(<any>SwapClientManager);
 jest.mock('../../lib/p2p/Peer');
-const mockedPeer = <jest.Mock<Peer>><any>Peer;
+const mockedPeer = <jest.Mock<Peer>>(<any>Peer);
 jest.mock('../../lib/lndclient/LndClient');
-const mockedLnd = <jest.Mock<LndClient>><any>LndClient;
+const mockedLnd = <jest.Mock<LndClient>>(<any>LndClient);
 const getMockedLnd = (lockBuffer: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
@@ -199,5 +199,4 @@ describe('SwapRecovery', () => {
     expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
     expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeTruthy();
   });
-
 });

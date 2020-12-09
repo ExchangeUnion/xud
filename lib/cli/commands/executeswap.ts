@@ -20,17 +20,18 @@ export const command = 'executeswap <pair_id> <order_id> [quantity]';
 // export const describe = 'execute a swap on a peer order (nomatching mode only)';
 export const describe = undefined;
 
-export const builder = (argv: Argv) => argv
-  .positional('order_id', {
-    type: 'string',
-  })
-  .positional('pair_id', {
-    type: 'string',
-  })
-  .option('quantity', {
-    type: 'number',
-    description: 'the quantity to swap; the whole order will be swapped if unspecified',
-  });
+export const builder = (argv: Argv) =>
+  argv
+    .positional('order_id', {
+      type: 'string',
+    })
+    .positional('pair_id', {
+      type: 'string',
+    })
+    .option('quantity', {
+      type: 'number',
+      description: 'the quantity to swap; the whole order will be swapped if unspecified',
+    });
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new ExecuteSwapRequest();

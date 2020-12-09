@@ -17,7 +17,7 @@ class NodeKey {
    * @param privKey The 32 byte private key
    * @param pubKey The public key in hex string format.
    */
-  constructor(public readonly privKey: Buffer, public readonly pubKey: string, private readonly path: string) { }
+  constructor(public readonly privKey: Buffer, public readonly pubKey: string, private readonly path: string) {}
 
   /**
    * Generates a random NodeKey.
@@ -29,7 +29,7 @@ class NodeKey {
     } while (!secp256k1.privateKeyVerify(privKey));
 
     return NodeKey.fromBytes(privKey, path);
-  }
+  };
 
   /**
    * Converts a buffer of bytes to a NodeKey. Uses the first 32 bytes from the buffer to generate
@@ -49,7 +49,7 @@ class NodeKey {
     const pubKey = pubKeyBytes.toString('hex');
 
     return new NodeKey(privKey, pubKey, path ?? '');
-  }
+  };
 
   /**
    * Load a NodeKey from a file.
@@ -74,13 +74,11 @@ class NodeKey {
     } else {
       throw new Error(`${path} does not contain a valid ECDSA private key`);
     }
-  }
+  };
 
   public static getPath = (xudir: string, instanceId = 0) => {
-    return instanceId > 0
-      ? `${xudir}/nodekey_${instanceId}.dat`
-      : `${xudir}/nodekey.dat`;
-  }
+    return instanceId > 0 ? `${xudir}/nodekey_${instanceId}.dat` : `${xudir}/nodekey.dat`;
+  };
 
   /**
    * Signs a message with the private key.
@@ -89,7 +87,7 @@ class NodeKey {
    */
   public sign = (msg: Buffer): Buffer => {
     return secp256k1.sign(msg, this.privKey).signature;
-  }
+  };
 
   /**
    * Saves the private key to a file, optionally encrypted by a password.
@@ -105,7 +103,7 @@ class NodeKey {
       buf = this.privKey;
     }
     await fs.writeFile(this.path, buf);
-  }
+  };
 
   /**
    * Derives a child mnemonic seed from the private key for the swap client.
@@ -114,11 +112,9 @@ class NodeKey {
    */
   public childSeed = (swapClient: SwapClientType) => {
     const privKeyHex = this.privKey.toString('hex');
-    const childSeedEntropy = createHash('sha256')
-      .update(`${privKeyHex}-${swapClient}`)
-      .digest();
+    const childSeedEntropy = createHash('sha256').update(`${privKeyHex}-${swapClient}`).digest();
     return entropyToMnemonic(childSeedEntropy);
-  }
+  };
 
   public getMnemonic = async () => {
     const decipheredSeed = this.privKey.slice(0, 19);
@@ -126,7 +122,7 @@ class NodeKey {
     const seedMnemonic = await encipher(decipheredSeedHex);
 
     return seedMnemonic;
-  }
+  };
 }
 
 export default NodeKey;

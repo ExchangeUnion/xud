@@ -6,8 +6,7 @@ export const command = 'removeallorders';
 
 export const describe = 'removes all orders';
 
-export const builder = (argv: Argv) => argv
-    .example('$0 removeallorders', describe);
+export const builder = (argv: Argv) => argv.example('$0 removeallorders', describe);
 
 const formatOutput = (response: RemoveAllOrdersResponse.AsObject) => {
   if (response.removedOrderIdsList.length <= 0 && response.onHoldOrderIdsList.length <= 0) {
@@ -16,12 +15,13 @@ const formatOutput = (response: RemoveAllOrdersResponse.AsObject) => {
   }
 
   if (response.removedOrderIdsList.length) {
-    response.removedOrderIdsList.forEach((removedOrder => console.log(`Removed order with id ${removedOrder}`)));
+    response.removedOrderIdsList.forEach((removedOrder) => console.log(`Removed order with id ${removedOrder}`));
   }
   if (response.onHoldOrderIdsList.length) {
-    response.onHoldOrderIdsList.forEach((id => console.log(`Order with id ${id} has a hold for a pending swap and will be removed afterwards`)));
+    response.onHoldOrderIdsList.forEach((id) =>
+      console.log(`Order with id ${id} has a hold for a pending swap and will be removed afterwards`),
+    );
   }
-
 };
 
 export const handler = async (argv: Arguments<any>) => {

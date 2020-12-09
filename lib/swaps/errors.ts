@@ -73,7 +73,10 @@ const errors = {
     code: errorCodes.INSUFFICIENT_BALANCE,
   },
   INSUFFICIENT_OUTBOUND_CAPACITY: (currency: string, amount: number, capacity: number) => ({
-    message: `${currency} outbound capacity of ${Math.max(0, capacity)} is not sufficient for order amount of ${amount}`,
+    message: `${currency} outbound capacity of ${Math.max(
+      0,
+      capacity,
+    )} is not sufficient for order amount of ${amount}`,
     code: errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
   }),
   INSUFFICIENT_INBOUND_CAPACITY: (currency: string, amount: number, capacity: number) => ({

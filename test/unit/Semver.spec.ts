@@ -73,5 +73,4 @@ describe('Semver', () => {
   it('should throw error for non-semantic second', async () => {
     expect(semver.compare.bind(undefined, '1.0.0-beta.2', '1._3')).to.throw('Invalid Version: 1._3');
   });
-
 });
