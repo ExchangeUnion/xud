@@ -20,7 +20,7 @@
     "dev": "npm run compile:dev && npm start",
     "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "dev:watch:inspect": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch:inspect\"",
-    "lint": "eslint --fix . && prettier --write lib/ test/",
+    "lint": "eslint --fix . && prettier --write lib/ test/ --loglevel warn",
     "lintNoFix": "eslint . && prettier --check lib/ test/",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
     "nodemon:watch:inspect": "nodemon --inspect-brk --watch dist -e js dist/Xud.js",
