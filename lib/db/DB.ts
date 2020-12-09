@@ -125,7 +125,7 @@ class DB {
   public sequelize: Sequelize;
   public models: Models;
 
-  private static VERSION = 1;
+  private static VERSION = 2;
 
   /**
    * @param storage the file path for the sqlite database file, if ':memory:' or not specified the db is stored in memory
