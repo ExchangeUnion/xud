@@ -7,19 +7,19 @@ import { callback, loadXudClient } from '../command';
 import { satsToCoinsStr } from '../utils';
 
 type FormattedOrderbook = {
-  pairId: string,
-  rows: string[][],
+  pairId: string;
+  rows: string[][];
 };
 
 type Bucket = {
-  price: number,
+  price: number;
   quantity: number;
 };
 
 type OrderbookJson = {
-  pairId: string,
-  sell: Bucket[],
-  buy: Bucket[],
+  pairId: string;
+  sell: Bucket[];
+  buy: Bucket[];
 };
 
 const COLUMNS = [19, 19, 19, 19];
@@ -28,26 +28,15 @@ const HEADER = [
   { content: colors.green('Buy'), colSpan: 2 },
   { content: colors.red('Sell'), colSpan: 2 },
 ];
-const SECONDARY_HEADER = [
-  colors.green('Quantity'),
-  colors.green('Price'),
-  colors.red('Price'),
-  colors.red('Quantity'),
-];
+const SECONDARY_HEADER = [colors.green('Quantity'), colors.green('Price'), colors.red('Price'), colors.red('Quantity')];
 
 const addSide = (buckets: Bucket[], isBuy = false): string[] => {
   const bucket = buckets.pop();
   if (bucket) {
     if (isBuy) {
-      return [
-        satsToCoinsStr(bucket.quantity),
-        bucket.price.toString(),
-      ];
+      return [satsToCoinsStr(bucket.quantity), bucket.price.toString()];
     } else {
-      return [
-        bucket.price.toString(),
-        satsToCoinsStr(bucket.quantity),
-      ];
+      return [bucket.price.toString(), satsToCoinsStr(bucket.quantity)];
     }
   } else {
     return Array.from(Array(COLUMNS_IN_ORDER_SIDE)).map(() => '');
@@ -59,12 +48,10 @@ export const createOrderbook = (orders: ListOrdersResponse.AsObject, precision: 
   orders.ordersMap.forEach((tradingPair) => {
     const buy = createOrderbookSide(tradingPair[1].buyOrdersList, precision);
     const sell = createOrderbookSide(tradingPair[1].sellOrdersList, precision);
-    const totalRows = buy.length < sell.length
-      ? sell.length : buy.length;
-    const orderbookRows = Array.from(Array(totalRows))
-      .map(() => {
-        return addSide(buy, true).concat(addSide(sell));
-      });
+    const totalRows = buy.length < sell.length ? sell.length : buy.length;
+    const orderbookRows = Array.from(Array(totalRows)).map(() => {
+      return addSide(buy, true).concat(addSide(sell));
+    });
     formattedOrderbooks.push({
       pairId: tradingPair[0],
       rows: orderbookRows,
@@ -84,7 +71,7 @@ const createTable = () => {
 
 const displayOrderbook = (orderbook: FormattedOrderbook) => {
   const table = createTable();
-  orderbook.rows.forEach(row => table.push(row));
+  orderbook.rows.forEach((row) => table.push(row));
   console.log(colors.underline(colors.bold(`\nTrading pair: ${orderbook.pairId}`)));
   console.log(table.toString());
 };
@@ -94,11 +81,7 @@ const displayTables = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>
 };
 
 const getPriceBuckets = (orders: Order.AsObject[], count = 8): number[] => {
-  const uniquePrices = [
-    ...new Set(
-      orders.map(order => order.price),
-    ),
-  ];
+  const uniquePrices = [...new Set(orders.map((order) => order.price))];
   return uniquePrices.splice(0, count);
 };
 
@@ -116,17 +99,15 @@ const getQuantityForBuckets = (
   let filteredOrders = orders;
   // filter to specific bucket when the next one exists
   if (priceBuckets.length !== 0) {
-    filteredOrders = orders
-      .filter(order => order.price === price);
+    filteredOrders = orders.filter((order) => order.price === price);
   }
   // calculate quantity of the bucket
-  const quantity = filteredOrders
-    .reduce((total, order) => {
-      return total + order.quantity;
-    }, 0);
+  const quantity = filteredOrders.reduce((total, order) => {
+    return total + order.quantity;
+  }, 0);
   filledBuckets.push({ price, quantity });
   // filter orders for the next cycle
-  const restOfOrders = orders.filter(order => order.price !== price);
+  const restOfOrders = orders.filter((order) => order.price !== price);
   return getQuantityForBuckets(restOfOrders, priceBuckets, filledBuckets);
 };
 
@@ -145,27 +126,26 @@ export const command = 'orderbook [pair_id] [precision]';
 
 export const describe = 'display the order book, with orders aggregated per price point';
 
-export const builder = (argv: Argv) => argv
-  .option('pair_id', {
-    describe: 'trading pair for which to retrieve the order book',
-    type: 'string',
-  })
-  .option('precision', {
-    describe: 'the number of digits following the decimal point',
-    type: 'number',
-    default: 8,
-  })
-  .example('$0 orderbook', 'display the order books for all trading pairs')
-  .example('$0 orderbook LTC/BTC', 'display the LTC/BTC order book')
-  .example('$0 orderbook LTC/BTC 2', 'display the LTC/BTC order book with 2 decimal precision')
-  .example('$0 orderbook --precision 2', 'display the order books for all trading pairs with 2 decimal precision');
+export const builder = (argv: Argv) =>
+  argv
+    .option('pair_id', {
+      describe: 'trading pair for which to retrieve the order book',
+      type: 'string',
+    })
+    .option('precision', {
+      describe: 'the number of digits following the decimal point',
+      type: 'number',
+      default: 8,
+    })
+    .example('$0 orderbook', 'display the order books for all trading pairs')
+    .example('$0 orderbook LTC/BTC', 'display the LTC/BTC order book')
+    .example('$0 orderbook LTC/BTC 2', 'display the LTC/BTC order book with 2 decimal precision')
+    .example('$0 orderbook --precision 2', 'display the order books for all trading pairs with 2 decimal precision');
 
 const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   const jsonOrderbooks: OrderbookJson[] = [];
   const quantityInSatoshisPerCoin = (bucket: Bucket) => {
-    bucket.quantity = parseFloat(
-      satsToCoinsStr(bucket.quantity),
-    );
+    bucket.quantity = parseFloat(satsToCoinsStr(bucket.quantity));
   };
   orders.ordersMap.forEach((tradingPair) => {
     const buy = createOrderbookSide(tradingPair[1].buyOrdersList, argv.precision);

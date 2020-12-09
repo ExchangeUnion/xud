@@ -26,17 +26,11 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
   public static deserialize = (binary: Uint8Array): SwapRequestPacket | pb.SwapRequestPacket.AsObject => {
     const obj = pb.SwapRequestPacket.deserializeBinary(binary).toObject();
     return SwapRequestPacket.validate(obj) ? SwapRequestPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.SwapRequestPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.proposedQuantity
-      && obj.pairId
-      && obj.orderId
-      && obj.rHash
-      && obj.takerCltvDelta
-    );
-  }
+    return !!(obj.id && obj.proposedQuantity && obj.pairId && obj.orderId && obj.rHash && obj.takerCltvDelta);
+  };
 
   private static convert = (obj: pb.SwapRequestPacket.AsObject): SwapRequestPacket => {
     return new SwapRequestPacket({
@@ -51,7 +45,7 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
         takerCltvDelta: obj.takerCltvDelta,
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SwapRequestPacket();
@@ -63,7 +57,7 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
     msg.setTakerCltvDelta(this.body!.takerCltvDelta);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SwapRequestPacket;

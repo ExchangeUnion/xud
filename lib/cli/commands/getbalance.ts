@@ -58,7 +58,7 @@ const createTable = () => {
 export const displayBalances = (balances: GetBalanceResponse.AsObject) => {
   const table = createTable();
   const formatted = formatBalances(balances);
-  formatted.forEach(balance => table.push(balance));
+  formatted.forEach((balance) => table.push(balance));
   console.log(colors.underline(colors.bold('\nBalance:')));
   console.log(table.toString());
 };
@@ -67,13 +67,14 @@ export const command = 'getbalance [currency]';
 
 export const describe = 'get total balance for a given currency';
 
-export const builder = (argv: Argv) => argv
-  .option('currency', {
-    describe: 'the currency to query for',
-    type: 'string',
-  })
-  .example('$0 getbalance', 'get balance for all currencies')
-  .example('$0 getbalance BTC', 'get BTC balance');
+export const builder = (argv: Argv) =>
+  argv
+    .option('currency', {
+      describe: 'the currency to query for',
+      type: 'string',
+    })
+    .example('$0 getbalance', 'get balance for all currencies')
+    .example('$0 getbalance BTC', 'get BTC balance');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new GetBalanceRequest();

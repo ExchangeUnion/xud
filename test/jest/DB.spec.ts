@@ -210,11 +210,17 @@ describe('Database', () => {
     it('should add a swap and a trade for the order', async () => {
       await orderBookRepo.addOrderIfNotExists(order);
       const { rHash } = deal;
-      const trade: TradeCreationAttributes = { rHash, quantity: deal.quantity!, makerOrderId: order.id };
+      const trade: TradeCreationAttributes = {
+        rHash,
+        quantity: deal.quantity!,
+        makerOrderId: order.id,
+      };
       await orderBookRepo.addTrade(trade);
       await swapRepo.saveSwapDeal(deal);
 
-      const swapInstance = await db.models.SwapDeal.findOne({ where: { rHash } });
+      const swapInstance = await db.models.SwapDeal.findOne({
+        where: { rHash },
+      });
       expect(swapInstance!.orderId).toEqual(order.id);
       const tradeInstance = await db.models.Trade.findOne({ where: { rHash } });
       expect(tradeInstance!.makerOrderId).toEqual(order.id);
@@ -252,7 +258,11 @@ describe('Database', () => {
       const maker = createOwnOrder(price, tradeQuantity, true);
       const taker = createOwnOrder(price, tradeQuantity, false);
       await Promise.all([orderBookRepo.addOrderIfNotExists(maker), orderBookRepo.addOrderIfNotExists(taker)]);
-      const trade: TradeCreationAttributes = { quantity: tradeQuantity, makerOrderId: maker.id, takerOrderId: taker.id };
+      const trade: TradeCreationAttributes = {
+        quantity: tradeQuantity,
+        makerOrderId: maker.id,
+        takerOrderId: taker.id,
+      };
       await orderBookRepo.addTrade(trade);
     });
 
@@ -260,5 +270,4 @@ describe('Database', () => {
       await db.close();
     });
   });
-
 });

@@ -10,7 +10,7 @@ const nodeConnectionInfo: NodeConnectionInfo = {
 };
 
 jest.mock('../../lib/p2p/P2PRepository');
-const mockedP2pRepo = <jest.Mock<P2PRepository>><any>P2PRepository;
+const mockedP2pRepo = <jest.Mock<P2PRepository>>(<any>P2PRepository);
 
 describe('NodeList', () => {
   let nodeList: NodeList;
@@ -43,13 +43,19 @@ describe('NodeList', () => {
     expect(nodeList.get(nodePubKey)!.banned).toEqual(true);
     expect(p2pRepo.addReputationEvent).toBeCalledTimes(1);
     expect(save).toBeCalledTimes(1);
-    expect(p2pRepo.addReputationEvent).toBeCalledWith({ nodeId, event: ReputationEvent.ManualBan });
+    expect(p2pRepo.addReputationEvent).toBeCalledWith({
+      nodeId,
+      event: ReputationEvent.ManualBan,
+    });
 
     await nodeList.unBan(nodePubKey);
     expect(nodeList.get(nodePubKey)!.banned).toEqual(false);
     expect(p2pRepo.addReputationEvent).toBeCalledTimes(2);
     expect(save).toBeCalledTimes(2);
-    expect(p2pRepo.addReputationEvent).toBeCalledWith({ nodeId, event: ReputationEvent.ManualUnban });
+    expect(p2pRepo.addReputationEvent).toBeCalledWith({
+      nodeId,
+      event: ReputationEvent.ManualUnban,
+    });
   });
 
   describe('getNegativeReputationEvents', () => {
@@ -76,8 +82,15 @@ describe('NodeList', () => {
         { event: ReputationEvent.PacketTimeout, nodeId: 1 },
         { event: ReputationEvent.SwapFailure, nodeId: 1 },
       ]);
-      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](nodeInstance, ReputationEvent.SwapDelay);
-      expect(negativeReputationEvents).toEqual([ReputationEvent.SwapDelay, ReputationEvent.PacketTimeout, ReputationEvent.SwapFailure]);
+      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](
+        nodeInstance,
+        ReputationEvent.SwapDelay,
+      );
+      expect(negativeReputationEvents).toEqual([
+        ReputationEvent.SwapDelay,
+        ReputationEvent.PacketTimeout,
+        ReputationEvent.SwapFailure,
+      ]);
     });
 
     test('it should return no more than 10 events', async () => {
@@ -95,7 +108,10 @@ describe('NodeList', () => {
         { event: ReputationEvent.PacketTimeout, nodeId: 1 },
         { event: ReputationEvent.SwapFailure, nodeId: 1 },
       ]);
-      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](nodeInstance, ReputationEvent.SwapDelay);
+      const negativeReputationEvents = await nodeList['getNegativeReputationEvents'](
+        nodeInstance,
+        ReputationEvent.SwapDelay,
+      );
       expect(negativeReputationEvents.length).toEqual(10);
     });
   });

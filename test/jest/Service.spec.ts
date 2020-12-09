@@ -11,11 +11,11 @@ import Swaps from '../../lib/swaps/Swaps';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
 jest.mock('../../lib/nodekey/NodeKey');
-const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
+const mockedNodeKey = <jest.Mock<NodeKey>>(<any>NodeKey);
 jest.mock('../../lib/orderbook/OrderBook');
-const mockedOrderbook = <jest.Mock<Orderbook>><any>Orderbook;
+const mockedOrderbook = <jest.Mock<Orderbook>>(<any>Orderbook);
 jest.mock('../../lib/swaps/Swaps');
-const mockedSwaps = <jest.Mock<Swaps>><any>Swaps;
+const mockedSwaps = <jest.Mock<Swaps>>(<any>Swaps);
 jest.mock('../../lib/swaps/SwapClientManager', () => {
   return jest.fn().mockImplementation(() => {
     return {
@@ -24,11 +24,11 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
     };
   });
 });
-const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
+const mockedSwapClientManager = <jest.Mock<SwapClientManager>>(<any>SwapClientManager);
 jest.mock('../../lib/swaps/SwapClient');
-const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
+const mockedSwapClient = <jest.Mock<SwapClient>>(<any>SwapClient);
 jest.mock('../../lib/p2p/Pool');
-const mockedPool = <jest.Mock<Pool>><any>Pool;
+const mockedPool = <jest.Mock<Pool>>(<any>Pool);
 jest.mock('../../lib/p2p/Peer');
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
@@ -39,9 +39,9 @@ jest.mock('../../lib/p2p/Peer', () => {
     };
   });
 });
-const mockedPeer = <jest.Mock<Peer>><any>Peer;
+const mockedPeer = <jest.Mock<Peer>>(<any>Peer);
 jest.mock('../../lib/Logger');
-const mockedLogger = <jest.Mock<Logger>><any>Logger;
+const mockedLogger = <jest.Mock<Logger>>(<any>Logger);
 
 const lndPubKey = 'lndpubkey';
 
@@ -82,14 +82,12 @@ describe('Service', () => {
       service = new Service(components);
       const args = getArgs();
       await service.openChannel(args);
-      expect(components.pool.getPeer)
-        .toHaveBeenCalledWith(args.nodeIdentifier);
-      expect(components.swapClientManager.openChannel)
-        .toHaveBeenCalledWith({
-          remoteIdentifier: lndPubKey,
-          amount: args.amount,
-          currency: args.currency,
-        });
+      expect(components.pool.getPeer).toHaveBeenCalledWith(args.nodeIdentifier);
+      expect(components.swapClientManager.openChannel).toHaveBeenCalledWith({
+        remoteIdentifier: lndPubKey,
+        amount: args.amount,
+        currency: args.currency,
+      });
     });
 
     test('throws when peer not found', async () => {
@@ -133,20 +131,36 @@ describe('Service', () => {
       const btcClient = new mockedSwapClient();
       btcClient.isConnected = jest.fn().mockImplementation(() => true);
       btcClient.channelBalance = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ balance: 70000, inactiveBalance: 18817, pendingOpenBalance: 190191 });
+        return Promise.resolve({
+          balance: 70000,
+          inactiveBalance: 18817,
+          pendingOpenBalance: 190191,
+        });
       });
       btcClient.walletBalance = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ totalBalance: 10000, confirmedBalance: 10000, unconfirmedBalance: 0 });
+        return Promise.resolve({
+          totalBalance: 10000,
+          confirmedBalance: 10000,
+          unconfirmedBalance: 0,
+        });
       });
       components.swapClientManager.swapClients.set('BTC', btcClient);
 
       const ltcClient = new mockedSwapClient();
       ltcClient.isConnected = jest.fn().mockImplementation(() => true);
       ltcClient.channelBalance = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ balance: 0, inactiveBalance: 12345, pendingOpenBalance: 0 });
+        return Promise.resolve({
+          balance: 0,
+          inactiveBalance: 12345,
+          pendingOpenBalance: 0,
+        });
       });
       ltcClient.walletBalance = jest.fn().mockImplementation(() => {
-        return Promise.resolve({ totalBalance: 2000, confirmedBalance: 1500, unconfirmedBalance: 500 });
+        return Promise.resolve({
+          totalBalance: 2000,
+          confirmedBalance: 1500,
+          unconfirmedBalance: 500,
+        });
       });
       components.swapClientManager.swapClients.set('LTC', ltcClient);
 
@@ -275,7 +289,9 @@ describe('Service', () => {
     const pairIds = ['BTC/LTC', 'WETH/BTC'];
 
     const setup = (peersOrders: any, ownOrders: any) => {
-      Object.defineProperty(components.orderBook, 'pairIds', { value: pairIds });
+      Object.defineProperty(components.orderBook, 'pairIds', {
+        value: pairIds,
+      });
       components.orderBook.getPeersOrders = jest.fn().mockImplementation(() => peersOrders);
       components.orderBook.getOwnOrders = jest.fn().mockImplementation(() => ownOrders);
       service = new Service(components);
@@ -293,7 +309,12 @@ describe('Service', () => {
       const ownOrders = { buyArray: [], sellArray: [] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: '', owner: Owner.Both, limit: 0, includeAliases: false });
+      const result = service.listOrders({
+        pairId: '',
+        owner: Owner.Both,
+        limit: 0,
+        includeAliases: false,
+      });
       expect(result.size).toEqual(pairIds.length);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(0);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(0);
@@ -302,11 +323,22 @@ describe('Service', () => {
     });
 
     test('returns both own and peer orders for all trading pairs', () => {
-      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
-      const ownOrders = { buyArray: [createOrder(1, 999)], sellArray: [createOrder(2, 123)] };
+      const peersOrders = {
+        buyArray: [createOrder(1, 123)],
+        sellArray: [createOrder(3, 222), createOrder(1, 999)],
+      };
+      const ownOrders = {
+        buyArray: [createOrder(1, 999)],
+        sellArray: [createOrder(2, 123)],
+      };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: '', owner: Owner.Both, limit: 0, includeAliases: false });
+      const result = service.listOrders({
+        pairId: '',
+        owner: Owner.Both,
+        limit: 0,
+        includeAliases: false,
+      });
       expect(result.size).toEqual(pairIds.length);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(3);
@@ -315,50 +347,93 @@ describe('Service', () => {
     });
 
     test('returns both own and peer orders for the specified trading pair', () => {
-      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
-      const ownOrders = { buyArray: [createOrder(1, 999)], sellArray: [createOrder(2, 123)] };
+      const peersOrders = {
+        buyArray: [createOrder(1, 123)],
+        sellArray: [createOrder(3, 222), createOrder(1, 999)],
+      };
+      const ownOrders = {
+        buyArray: [createOrder(1, 999)],
+        sellArray: [createOrder(2, 123)],
+      };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 0, includeAliases: false });
+      const result = service.listOrders({
+        pairId: pairIds[0],
+        owner: Owner.Both,
+        limit: 0,
+        includeAliases: false,
+      });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(3);
     });
 
     test('returns only peer orders', () => {
-      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
-      const ownOrders = { buyArray: [createOrder(1, 999), createOrder(1, 123)], sellArray: [createOrder(2, 123)] };
+      const peersOrders = {
+        buyArray: [createOrder(1, 123)],
+        sellArray: [createOrder(3, 222), createOrder(1, 999)],
+      };
+      const ownOrders = {
+        buyArray: [createOrder(1, 999), createOrder(1, 123)],
+        sellArray: [createOrder(2, 123)],
+      };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Peer, limit: 0, includeAliases: false });
+      const result = service.listOrders({
+        pairId: pairIds[0],
+        owner: Owner.Peer,
+        limit: 0,
+        includeAliases: false,
+      });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(1);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
     });
 
     test('returns only own orders', () => {
-      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
-      const ownOrders = { buyArray: [createOrder(1, 999), createOrder(1, 123)], sellArray: [createOrder(2, 123)] };
+      const peersOrders = {
+        buyArray: [createOrder(1, 123)],
+        sellArray: [createOrder(3, 222), createOrder(1, 999)],
+      };
+      const ownOrders = {
+        buyArray: [createOrder(1, 999), createOrder(1, 123)],
+        sellArray: [createOrder(2, 123)],
+      };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Own, limit: 0, includeAliases: false });
+      const result = service.listOrders({
+        pairId: pairIds[0],
+        owner: Owner.Own,
+        limit: 0,
+        includeAliases: false,
+      });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(1);
     });
 
     test('returns limited amount of orders', () => {
-      const peersOrders = { buyArray: [createOrder(1, 111)], sellArray: [createOrder(4, 222), createOrder(5, 999)] };
-      const ownOrders = { buyArray: [createOrder(3, 999), createOrder(2, 123)], sellArray: [createOrder(6, 123)] };
+      const peersOrders = {
+        buyArray: [createOrder(1, 111)],
+        sellArray: [createOrder(4, 222), createOrder(5, 999)],
+      };
+      const ownOrders = {
+        buyArray: [createOrder(3, 999), createOrder(2, 123)],
+        sellArray: [createOrder(6, 123)],
+      };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 2, includeAliases: false });
+      const result = service.listOrders({
+        pairId: pairIds[0],
+        owner: Owner.Both,
+        limit: 2,
+        includeAliases: false,
+      });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
-      expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 2)).toBeTruthy();
+      expect(result.get(pairIds[0])!.buyArray.some((val) => val.price === 2)).toBeTruthy();
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
-      expect(result.get(pairIds[0])!.sellArray.some(val => val.price === 5)).toBeTruthy();
+      expect(result.get(pairIds[0])!.sellArray.some((val) => val.price === 5)).toBeTruthy();
     });
-
   });
 });

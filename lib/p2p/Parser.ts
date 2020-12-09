@@ -8,9 +8,9 @@ import * as packetTypes from './packets/types';
 
 interface Parser {
   on(event: 'packet', packet: (order: Packet) => void): this;
-  on(event: 'error', err: (order: {message: string, code: string}) => void): this;
+  on(event: 'error', err: (order: { message: string; code: string }) => void): this;
   emit(event: 'packet', packet: Packet): boolean;
-  emit(event: 'error', err: {message: string, code: string}): boolean;
+  emit(event: 'error', err: { message: string; code: string }): boolean;
 }
 
 /** Wire protocol msg parser */
@@ -19,7 +19,7 @@ class Parser extends EventEmitter {
   private waiting = 0;
   private waitingHeader = 0;
   private encryptionKey?: Buffer;
-  private static readonly MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
+  private static readonly MAX_BUFFER_SIZE = 4 * 1024 * 1024; // in bytes
 
   constructor(
     private framer: Framer,
@@ -32,7 +32,7 @@ class Parser extends EventEmitter {
   public setEncryptionKey = (key: Buffer) => {
     this.encryptionKey = key;
     this.msgHeaderLength = Framer.ENCRYPTED_MSG_HEADER_LENGTH;
-  }
+  };
 
   public feed = (chunk: Buffer): void => {
     // verify that total size isn't exceeding
@@ -73,7 +73,7 @@ class Parser extends EventEmitter {
       }
       this.read(length + this.msgHeaderLength, chunk);
     }
-  }
+  };
 
   private read = (length: number, chunk: Buffer) => {
     this.pending.push(chunk.slice(0, length));
@@ -93,21 +93,19 @@ class Parser extends EventEmitter {
         this.feed(chunk.slice(length));
       }
     }
-  }
+  };
 
   private getTotalSize = (chunk: Buffer): number => {
-    const current = this.pending
-      .map(buffer => buffer.length)
-      .reduce((acc, curr) => acc + curr, 0);
+    const current = this.pending.map((buffer) => buffer.length).reduce((acc, curr) => acc + curr, 0);
 
     return current + chunk.length;
-  }
+  };
 
   private resetBuffer = () => {
     this.waiting = 0;
     this.waitingHeader = 0;
     this.pending = [];
-  }
+  };
 
   private parseLength = (data: Buffer): number => {
     try {
@@ -116,7 +114,7 @@ class Parser extends EventEmitter {
       this.error(err);
       return 0;
     }
-  }
+  };
 
   private parseMessage = (chunks: Buffer[]): void => {
     try {
@@ -127,7 +125,7 @@ class Parser extends EventEmitter {
     } catch (err) {
       this.error(err);
     }
-  }
+  };
 
   private parsePacket = (header: WireMsgHeader, payload: Uint8Array): Packet => {
     let packetOrPbObj;
@@ -197,12 +195,12 @@ class Parser extends EventEmitter {
     }
 
     return packet;
-  }
+  };
 
   private error = (err: any) => {
     this.emit('error', err);
     this.resetBuffer();
-  }
+  };
 }
 
 export default Parser;

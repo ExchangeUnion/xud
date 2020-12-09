@@ -45,7 +45,9 @@ const errors = {
     code: errorCodes.NOT_CONNECTED,
   }),
   NODE_TOR_ADDRESS: (nodePubKey: string, address: Address) => ({
-    message: `can't connect to node ${nodePubKey} at tor address ${addressUtils.toString(address)} because tor is disabled`,
+    message: `can't connect to node ${nodePubKey} at tor address ${addressUtils.toString(
+      address,
+    )} because tor is disabled`,
     code: errorCodes.NODE_TOR_ADDRESS,
   }),
   UNEXPECTED_NODE_PUB_KEY: (nodePubKey: string, expectedNodePubKey: string, address: string) => ({

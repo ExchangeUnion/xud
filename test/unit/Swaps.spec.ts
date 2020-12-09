@@ -69,10 +69,9 @@ describe('Swaps', () => {
   };
 
   it('should calculate swap amounts and currencies for a buy order', () => {
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } =
-      Swaps['calculateMakerTakerAmounts'](
-        buyDeal.quantity!, buyDeal.price, buyDeal.isBuy, buyDeal.pairId,
-      );
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } = Swaps[
+      'calculateMakerTakerAmounts'
+    ](buyDeal.quantity!, buyDeal.price, buyDeal.isBuy, buyDeal.pairId);
     expect(makerAmount).to.equal(buyDeal.makerAmount);
     expect(takerAmount).to.equal(buyDeal.takerAmount);
     expect(makerUnits).to.equal(buyDeal.makerUnits);
@@ -82,10 +81,9 @@ describe('Swaps', () => {
   });
 
   it('should calculate swap amounts and currencies for a sell order', () => {
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } =
-      Swaps['calculateMakerTakerAmounts'](
-        sellDeal.quantity!, sellDeal.price, sellDeal.isBuy, sellDeal.pairId,
-      );
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } = Swaps[
+      'calculateMakerTakerAmounts'
+    ](sellDeal.quantity!, sellDeal.price, sellDeal.isBuy, sellDeal.pairId);
     expect(makerAmount).to.equal(sellDeal.makerAmount);
     expect(takerAmount).to.equal(sellDeal.takerAmount);
     expect(makerUnits).to.equal(sellDeal.makerUnits);
@@ -96,7 +94,10 @@ describe('Swaps', () => {
 
   it('should calculate swap amounts and currencies for a WETH buy order', () => {
     const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps['calculateMakerTakerAmounts'](
-      buyDealEth.quantity!, buyDealEth.price, buyDealEth.isBuy, buyDealEth.pairId,
+      buyDealEth.quantity!,
+      buyDealEth.price,
+      buyDealEth.isBuy,
+      buyDealEth.pairId,
     );
     expect(makerAmount).to.equal(buyDealEth.makerAmount);
     expect(takerAmount).to.equal(buyDealEth.takerAmount);

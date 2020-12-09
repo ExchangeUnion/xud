@@ -23,13 +23,11 @@ class SanitySwapInitPacket extends Packet<SanitySwapInitPacketBody> {
   public static deserialize = (binary: Uint8Array): SanitySwapInitPacket | pb.SanitySwapInitPacket.AsObject => {
     const obj = pb.SanitySwapInitPacket.deserializeBinary(binary).toObject();
     return SanitySwapInitPacket.validate(obj) ? SanitySwapInitPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.SanitySwapInitPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.currency
-      && obj.rHash);
-  }
+    return !!(obj.id && obj.currency && obj.rHash);
+  };
 
   private static convert = (obj: pb.SanitySwapInitPacket.AsObject): SanitySwapInitPacket => {
     return new SanitySwapInitPacket({
@@ -41,7 +39,7 @@ class SanitySwapInitPacket extends Packet<SanitySwapInitPacketBody> {
         rHash: obj.rHash,
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SanitySwapInitPacket();
@@ -50,7 +48,7 @@ class SanitySwapInitPacket extends Packet<SanitySwapInitPacketBody> {
     msg.setRHash(this.body!.rHash);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SanitySwapInitPacket;
