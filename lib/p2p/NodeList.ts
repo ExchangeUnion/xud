@@ -77,7 +77,7 @@ class NodeList extends EventEmitter {
     this.nodes.forEach(callback);
   };
 
-  public rank = (): { primary: NodeInstance[], secondary: NodeInstance[] } => {
+  public rank = (): { primary: NodeInstance[]; secondary: NodeInstance[] } => {
     const primary: NodeInstance[] = [];
     const secondary: NodeInstance[] = [];
 
@@ -93,7 +93,7 @@ class NodeList extends EventEmitter {
       return { primary: secondary, secondary: [] };
     }
     return { primary, secondary };
-  }
+  };
 
   /**
    * Get the internal node id for a given nodePubKey.
@@ -288,7 +288,7 @@ class NodeList extends EventEmitter {
       node.consecutiveConnFailures = node.consecutiveConnFailures + 1;
       await node.save();
     }
-  }
+  };
 
   public resetConsecutiveConnFailures = async (nodePubKey: string) => {
     const node = this.nodes.get(nodePubKey);
@@ -296,7 +296,7 @@ class NodeList extends EventEmitter {
       node.consecutiveConnFailures = 0;
       await node.save();
     }
-  }
+  };
 
   private setBanStatus = (node: NodeInstance, status: boolean) => {
     node.banned = status;

@@ -203,35 +203,37 @@ class Pool extends EventEmitter {
     this.bindNodeList();
 
     this.loadingNodesPromise = this.nodes.load();
-    this.loadingNodesPromise.then(async () => {
-      if (this.disconnecting) {
+    this.loadingNodesPromise
+      .then(async () => {
+        if (this.disconnecting) {
+          this.loadingNodesPromise = undefined;
+          return;
+        }
+
+        const { primary, secondary } = this.nodes.rank();
+
+        // delay connection attempts to secondary peers - whom we've had trouble connecting to in the past -
+        // to prevent overwhelming xud at startup
+        if (secondary.length > 0) {
+          this.secondaryPeersTimeout = setTimeout(async () => {
+            this.logger.info('Connecting to secondary known / previously connected peers');
+            await this.connectNodes(secondary, true, true);
+            this.logger.info('Completed start-up connections to secondary known peers');
+          }, Pool.SECONDARY_PEERS_DELAY);
+        }
+
+        if (primary.length > 0) {
+          this.logger.info('Connecting to known / previously connected peers');
+          await this.connectNodes(primary, true, true);
+          this.logger.info('Completed start-up connections to known peers');
+        }
+
         this.loadingNodesPromise = undefined;
-        return;
-      }
-
-      const { primary, secondary } = this.nodes.rank();
-
-      // delay connection attempts to secondary peers - whom we've had trouble connecting to in the past -
-      // to prevent overwhelming xud at startup
-      if (secondary.length > 0) {
-        this.secondaryPeersTimeout = setTimeout(async () => {
-          this.logger.info('Connecting to secondary known / previously connected peers');
-          await this.connectNodes(secondary, true, true);
-          this.logger.info('Completed start-up connections to secondary known peers');
-        }, Pool.SECONDARY_PEERS_DELAY);
-      }
-
-      if (primary.length > 0) {
-        this.logger.info('Connecting to known / previously connected peers');
-        await this.connectNodes(primary, true, true);
-        this.logger.info('Completed start-up connections to known peers');
-      }
-
-      this.loadingNodesPromise = undefined;
-    }).catch((reason) => {
-      this.logger.error('Unexpected error connecting to known peers on startup', reason);
-      this.loadingNodesPromise = undefined;
-    });
+      })
+      .catch((reason) => {
+        this.logger.error('Unexpected error connecting to known peers on startup', reason);
+        this.loadingNodesPromise = undefined;
+      });
 
     this.verifyReachability();
     this.connected = true;

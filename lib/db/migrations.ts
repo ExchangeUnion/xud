@@ -20,8 +20,9 @@ migrations[0] = async (sequelize: Sequelize.Sequelize) => {
 };
 
 migrations[1] = async (sequelize: Sequelize.Sequelize) => {
-  await sequelize.getQueryInterface().addColumn('nodes',
-    'consecutiveConnFailures', { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 });
+  await sequelize
+    .getQueryInterface()
+    .addColumn('nodes', 'consecutiveConnFailures', { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 });
 };
 
 export default migrations;
