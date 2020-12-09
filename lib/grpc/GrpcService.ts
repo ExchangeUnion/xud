@@ -832,7 +832,7 @@ class GrpcService {
           for (const key in peer.lndUris) {
             const grpcUri = new xudrpc.Peer.LndUris();
             grpcUri.setCurrency(key);
-            grpcUri.getUriList().push(...peer.lndUris[key] || []);
+            grpcUri.getUriList().push(...(peer.lndUris[key] || []));
             grpcPeer.getLndUrisList().push(grpcUri);
           }
         }
