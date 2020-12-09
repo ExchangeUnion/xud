@@ -1,4 +1,3 @@
-// tslint:disable: max-line-length
 import ConnextClient from '../../lib/connextclient/ConnextClient';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 import Logger from '../../lib/Logger';

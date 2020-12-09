@@ -1,4 +1,3 @@
-/* tslint:disable brace-style */
 import { EventEmitter } from 'events';
 import errors from './errors';
 import Framer, { WireMsgHeader } from './Framer';

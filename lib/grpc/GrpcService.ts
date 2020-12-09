@@ -1,4 +1,3 @@
-/* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { ServerWritableStream, status } from 'grpc';
 import { fromEvent } from 'rxjs';
 import { take } from 'rxjs/operators';

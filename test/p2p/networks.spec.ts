@@ -1,4 +1,3 @@
-/* tslint:disable max-line-length */
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';

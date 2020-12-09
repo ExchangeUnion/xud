@@ -220,8 +220,6 @@ describe('Parser', () => {
   };
 
   describe('test packets validation', () => {
-    /* tslint:disable max-line-length */
-
     testValidPacket(new packets.PingPacket());
     testInvalidPacket(new packets.PingPacket(undefined, uuid()));
 

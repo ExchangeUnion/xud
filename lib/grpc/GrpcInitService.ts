@@ -1,4 +1,3 @@
-/* tslint:disable no-null-keyword */
 import grpc, { status } from 'grpc';
 import InitService from '../service/InitService';
 import * as xudrpc from '../proto/xudrpc_pb';
