@@ -179,7 +179,7 @@
     "semver": "^6.3.0",
     "sequelize": "^6.3.3",
     "socks": "^2.3.3",
-    "sqlite3": "^4.1.0",
+    "sqlite3": "^5.0.0",
     "swagger-ui-express": "^4.1.2",
     "toml": "^3.0.0",
     "uuid": "^3.3.3",
