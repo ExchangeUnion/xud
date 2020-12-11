@@ -129,9 +129,7 @@ class Swaps extends EventEmitter {
   ) => {
     /** A probabilistic upper bound for the time it will take for the second leg route time lock to expire. */
     const secondLegLockMinutes = poissonQuantile(0.9999, { lambda: secondLegLockDuration }) * secondLegMinutesPerBlock;
-    const firstLegLockBuffer = poissonQuantile(0.9999, {
-      lambda: secondLegLockMinutes / firstLegMinutesPerBlock,
-    });
+    const firstLegLockBuffer = poissonQuantile(0.9999, { lambda: secondLegLockMinutes / firstLegMinutesPerBlock });
 
     return firstLegLockBuffer;
   };
@@ -246,7 +244,7 @@ class Swaps extends EventEmitter {
     if (quoteCurrencyClient === undefined || !quoteCurrencyClient.isConnected()) {
       return quoteCurrency;
     }
-    return;
+    return undefined;
   };
 
   /**
@@ -812,8 +810,8 @@ class Swaps extends EventEmitter {
                 this.logger.info(`successfully settled invoice for deal ${rHash} on retry`);
                 resolve();
                 clearInterval(settleRetryTimer);
-              } catch (err) {
-                this.logger.error(`could not settle invoice for deal ${rHash}`, err);
+              } catch (settleInvoiceErr) {
+                this.logger.error(`could not settle invoice for deal ${rHash}`, settleInvoiceErr);
               }
             }, SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL);
           });
@@ -965,7 +963,7 @@ class Swaps extends EventEmitter {
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
   private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest) => {
-    const { amount, tokenAddress, expiration, chain_height } = resolveRequest;
+    const { amount, tokenAddress, expiration, chainHeight } = resolveRequest;
     const peer = this.pool.getPeer(deal.peerPubKey);
     let expectedAmount: number;
     let expectedTokenAddress: string | undefined;
@@ -973,13 +971,13 @@ class Swaps extends EventEmitter {
     let source: string;
     let destination: string;
     switch (deal.role) {
-      case SwapRole.Maker:
+      case SwapRole.Maker: {
         expectedAmount = deal.makerUnits;
         expectedCurrency = deal.makerCurrency;
         expectedTokenAddress = this.swapClientManager.connextClient?.tokenAddresses.get(deal.makerCurrency);
         source = 'Taker';
         destination = 'Maker';
-        const lockExpirationDelta = expiration - chain_height;
+        const lockExpirationDelta = expiration - chainHeight;
         // We relax the validation by LOCK_EXPIRATION_SLIPPAGE blocks because
         // new blocks could be mined during the time it takes from taker's
         // payment to reach the maker for validation.
@@ -1001,6 +999,7 @@ class Swaps extends EventEmitter {
           return false;
         }
         break;
+      }
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
         expectedCurrency = deal.takerCurrency;
@@ -1193,13 +1192,13 @@ class Swaps extends EventEmitter {
           const pendingPaymentPromise = new Promise<string>((resolve, reject) => {
             const recheckTimer = setInterval(async () => {
               this.logger.trace(`checking pending payment status for swap ${deal.rHash}`);
-              const paymentStatus = await swapClient.lookupPayment(rHash, deal.takerCurrency, deal.destination);
-              this.logger.trace(`payment for swap ${deal.rHash} is in ${PaymentState[paymentStatus.state]} status}`);
-              if (paymentStatus.state === PaymentState.Succeeded && paymentStatus.preimage) {
+              const newPaymentStatus = await swapClient.lookupPayment(rHash, deal.takerCurrency, deal.destination);
+              this.logger.trace(`payment for swap ${deal.rHash} is in ${PaymentState[newPaymentStatus.state]} status}`);
+              if (newPaymentStatus.state === PaymentState.Succeeded && newPaymentStatus.preimage) {
                 // the payment went through, we resolve the promise to the resolved preimage
-                resolve(paymentStatus.preimage);
+                resolve(newPaymentStatus.preimage);
                 clearInterval(recheckTimer);
-              } else if (paymentStatus.state === PaymentState.Failed) {
+              } else if (newPaymentStatus.state === PaymentState.Failed) {
                 // the payment finally failed, so we can fail the deal
                 await this.failDeal({
                   deal,
@@ -1518,7 +1517,7 @@ class Swaps extends EventEmitter {
 
         this.logger.debug(`Setting SendingPayment phase for deal ${rHash}`);
         break;
-      case SwapPhase.PreimageResolved:
+      case SwapPhase.PreimageResolved: {
         assert(deal.role === SwapRole.Maker, 'PreimageResolved can only be set by the maker');
         assert(deal.phase === SwapPhase.SendingPayment, 'PreimageResolved can only be set after SendingPayment');
 
@@ -1549,6 +1548,7 @@ class Swaps extends EventEmitter {
 
         this.logger.debug(`Setting PreimageResolved phase for deal ${rHash}`);
         break;
+      }
       case SwapPhase.PaymentReceived:
         assert(
           deal.phase === SwapPhase.SendingPayment || deal.phase === SwapPhase.PreimageResolved,

@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
-import { getDefaultBackupDir } from '../../utils/utils';
 import { join } from 'path';
 import readline from 'readline';
 import { Arguments } from 'yargs';
+import { getDefaultBackupDir } from '../../utils/utils';
 import { RestoreNodeRequest, RestoreNodeResponse } from '../../proto/xudrpc_pb';
 import { callback, loadXudInitClient } from '../command';
 import { getDefaultCertPath, waitForCert } from '../utils';
@@ -64,23 +64,12 @@ export const handler = async (argv: Arguments<any>) => {
     const backupDirectory = await fs.readdir(backupDir);
     backupDirectory.forEach((filename) => {
       readDbBackupPromises.push(
-        new Promise(async (resolve) => {
-          const fileContent = await fs.readFile(join(backupDir, filename));
-
+        fs.readFile(join(backupDir, filename)).then((fileContent) => {
           if (filename.startsWith('lnd-')) {
             request.getLndBackupsMap().set(filename.substr(4), fileContent);
-
-            resolve();
-            return;
+          } else if (filename === 'xud') {
+            request.setXudDatabase(fileContent);
           }
-
-          switch (filename) {
-            case 'xud':
-              request.setXudDatabase(fileContent);
-              break;
-          }
-
-          resolve();
         }),
       );
     });

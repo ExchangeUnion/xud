@@ -97,7 +97,18 @@ class TradingPair extends EventEmitter {
    * Gets the quantity that can be matched between two orders.
    * @returns the smaller of the quantity between the two orders if their price matches, 0 otherwise
    */
-  private static getMatchingQuantity = (buyOrder: Order, sellOrder: Order): number => {
+  private static getMatchingQuantity = (order1: Order, order2: Order): number => {
+    assert(order1.isBuy !== order2.isBuy, 'cannot get matching quantity from orders that are both sells or both buys');
+    let buyOrder: Order;
+    let sellOrder: Order;
+    if (order1.isBuy) {
+      buyOrder = order1;
+      sellOrder = order2;
+    } else {
+      buyOrder = order2;
+      sellOrder = order1;
+    }
+
     if (buyOrder.price >= sellOrder.price) {
       return Math.min(buyOrder.quantity, sellOrder.quantity);
     } else {
@@ -115,9 +126,7 @@ class TradingPair extends EventEmitter {
     assert(order.quantity > matchingQuantity, 'order quantity must be greater than matchingQuantity');
 
     order.quantity -= matchingQuantity;
-    const matchedOrder = Object.assign({}, order, {
-      quantity: matchingQuantity,
-    });
+    const matchedOrder = { ...order, quantity: matchingQuantity };
     return matchedOrder;
   };
 
@@ -265,12 +274,9 @@ class TradingPair extends EventEmitter {
             'cannot remove more than available quantity after holds',
           );
         }
-        order.quantity = order.quantity - quantityToRemove;
+        order.quantity -= quantityToRemove;
         this.logger.trace(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
-        return {
-          order: { ...order, quantity: quantityToRemove } as T,
-          fullyRemoved: false,
-        };
+        return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false };
       }
     }
 
@@ -300,7 +306,9 @@ class TradingPair extends EventEmitter {
       return order.isBuy ? this.ownOrders.buyMap : this.ownOrders.sellMap;
     } else {
       const peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
-      if (!peerOrdersMaps) return;
+      if (!peerOrdersMaps) {
+        return undefined;
+      }
       return order.isBuy ? peerOrdersMaps.buyMap : peerOrdersMaps.sellMap;
     }
   };
@@ -409,10 +417,6 @@ class TradingPair extends EventEmitter {
 
     const queue = takerOrder.isBuy ? this.queues!.sellQueue : this.queues!.buyQueue;
     const queueRemovedOrdersWithHold: OwnOrder[] = [];
-    const getMatchingQuantity = (remainingOrder: OwnOrder, oppositeOrder: Order) =>
-      takerOrder.isBuy
-        ? TradingPair.getMatchingQuantity(remainingOrder, oppositeOrder)
-        : TradingPair.getMatchingQuantity(oppositeOrder, remainingOrder);
 
     // as long as we have remaining quantity to match and orders to match against, keep checking for matches
     while (remainingOrder && !queue.isEmpty()) {
@@ -426,7 +430,7 @@ class TradingPair extends EventEmitter {
           }
         : makerOrder;
 
-      const matchingQuantity = getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
+      const matchingQuantity = TradingPair.getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
       if (matchingQuantity * makerOrder.price < TradingPair.QUANTITY_DUST_LIMIT) {
         // there's no match with the best available maker order OR there's a match
         // but it doesn't meet the dust minimum on both sides of the trade

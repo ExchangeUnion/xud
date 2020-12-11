@@ -226,9 +226,7 @@ describe('LndClient', () => {
       lnd['pendingChannels'] = jest.fn().mockImplementation(() => {
         return Promise.resolve({
           toObject: () => {
-            return {
-              pendingOpenChannelsList: [],
-            };
+            return { pendingOpenChannelsList: [] };
           },
         });
       });

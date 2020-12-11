@@ -75,9 +75,9 @@ class Backup extends EventEmitter {
       watcher.close();
     });
 
-    for (const lndClient of this.lndClients) {
+    this.lndClients.forEach((lndClient) => {
       lndClient.close();
-    }
+    });
 
     clearInterval(this.xudBackupTimer);
   };
@@ -124,9 +124,9 @@ class Backup extends EventEmitter {
         lndClient.subscribeChannelBackups();
         this.logger.info(`Listening to ${currency} LND channel backups`);
 
-        lndClient.on('channelBackup', (channelBackup) => {
+        lndClient.on('channelBackup', (newChannelBackup) => {
           this.logger.trace(`New ${lndClient.currency} channel backup`);
-          this.writeBackup(backupPath, channelBackup);
+          this.writeBackup(backupPath, newChannelBackup);
         });
         lndClient.on('channelBackupEnd', async () => {
           this.logger.warn(`Lost subscription to ${lndClient.currency} channel backups - attempting to restore`);
@@ -138,9 +138,9 @@ class Backup extends EventEmitter {
       }
     };
 
-    for (const currency in this.config.lnd) {
+    Object.keys(this.config.lnd).forEach((currency) => {
       lndPromises.push(startLndSubscription(currency));
-    }
+    });
 
     await Promise.all(lndPromises);
   };
@@ -181,8 +181,8 @@ class Backup extends EventEmitter {
     this.logger.verbose(`Listening for changes to the ${client} database`);
   };
 
-  private readDatabase = (path: string) => {
-    const content = fs.readFileSync(path);
+  private readDatabase = (dbPath: string) => {
+    const content = fs.readFileSync(dbPath);
 
     return content;
   };

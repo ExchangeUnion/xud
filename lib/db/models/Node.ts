@@ -48,6 +48,5 @@ export default function Node(sequelize: Sequelize) {
     tableName: 'nodes',
   };
 
-  const Node = sequelize.define<NodeInstance>('Node', attributes, options);
-  return Node;
+  return sequelize.define<NodeInstance>('Node', attributes, options);
 }

@@ -61,9 +61,7 @@ export const createOrderbook = (orders: ListOrdersResponse.AsObject, precision: 
 };
 
 const createTable = () => {
-  const table = new Table({
-    colWidths: COLUMNS,
-  }) as HorizontalTable;
+  const table = new Table({ colWidths: COLUMNS }) as HorizontalTable;
   table.push(HEADER);
   table.push(SECONDARY_HEADER);
   return table;

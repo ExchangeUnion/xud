@@ -1,7 +1,7 @@
 import { Arguments, Argv } from 'yargs';
-import { callback, loadXudClient } from '../command';
 import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
+import { callback, loadXudClient } from '../command';
 import { GetNodeInfoRequest, GetNodeInfoResponse } from '../../proto/xudrpc_pb';
 
 const displayNodeInfo = (node: GetNodeInfoResponse.AsObject) => {

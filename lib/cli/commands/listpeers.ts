@@ -8,9 +8,7 @@ import { generateHeaders, shorten } from '../utils';
 const HEADERS = ['Peer', 'Pairs', 'Details'];
 
 const createTable = () => {
-  const table = new Table({
-    head: generateHeaders(HEADERS),
-  }) as HorizontalTable;
+  const table = new Table({ head: generateHeaders(HEADERS) }) as HorizontalTable;
   return table;
 };
 

@@ -14,6 +14,5 @@ export default function Currency(sequelize: Sequelize) {
     timestamps: false,
   };
 
-  const Currency = sequelize.define<CurrencyInstance>('Currency', attributes, options);
-  return Currency;
+  return sequelize.define<CurrencyInstance>('Currency', attributes, options);
 }

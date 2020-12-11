@@ -55,9 +55,7 @@ export const formatOrders = (orders: ListOrdersResponse.AsObject) => {
 };
 
 const createTable = () => {
-  const table = new Table({
-    colWidths: COLUMNS,
-  }) as HorizontalTable;
+  const table = new Table({ colWidths: COLUMNS }) as HorizontalTable;
   table.push(HEADER);
   table.push(SECONDARY_HEADER);
   return table;

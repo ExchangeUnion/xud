@@ -49,9 +49,7 @@ const formatBalance = (availableBalance: number, pendingBalance: number, inactiv
 };
 
 const createTable = () => {
-  const table = new Table({
-    head: HEADERS,
-  }) as HorizontalTable;
+  const table = new Table({ head: HEADERS }) as HorizontalTable;
   return table;
 };
 

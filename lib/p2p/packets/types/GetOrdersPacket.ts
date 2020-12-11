@@ -30,12 +30,8 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
 
   private static convert = (obj: pb.GetOrdersPacket.AsObject): GetOrdersPacket => {
     return new GetOrdersPacket({
-      header: {
-        id: obj.id,
-      },
-      body: {
-        pairIds: obj.pairIdsList,
-      },
+      header: { id: obj.id },
+      body: { pairIds: obj.pairIdsList },
     });
   };
 

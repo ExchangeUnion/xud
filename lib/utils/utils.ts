@@ -33,6 +33,9 @@ export const getExternalIp = () => {
       })
       .on('error', (err: Error) => {
         reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
+      })
+      .on('error', (err: Error) => {
+        reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
       });
   });
 };
@@ -172,11 +175,11 @@ export const removeUndefinedProps = <T>(typedObj: T): T => {
 };
 
 export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
-  for (const key in obj) {
+  Object.keys(obj).forEach((key) => {
     if (obj[key] !== undefined) {
       map.set(key, obj[key]);
     }
-  }
+  });
 };
 
 /**
@@ -185,7 +188,7 @@ export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) =
 export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: string]: T } => {
   const kvps: { [key: string]: T } = {};
   kvpArray.forEach((kvp) => {
-    kvps[kvp[0]] = kvp[1];
+    kvps[kvp[0]] = kvp[1]; // eslint-disable-line prefer-destructuring
   });
 
   return kvps;

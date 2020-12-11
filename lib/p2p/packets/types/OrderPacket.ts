@@ -27,9 +27,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
 
   private static convert = (obj: pb.OrderPacket.AsObject): OrderPacket => {
     return new OrderPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: {
         id: obj.order!.id,
         pairId: obj.order!.pairId,

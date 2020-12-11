@@ -33,9 +33,7 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
 
   private static convert = (obj: pb.DisconnectingPacket.AsObject): DisconnectingPacket => {
     return new DisconnectingPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: removeUndefinedProps({
         reason: obj.reason,
         payload: obj.payload || undefined,

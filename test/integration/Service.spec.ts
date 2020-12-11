@@ -34,26 +34,14 @@ describe('API Service', () => {
       loglevel: 'warn',
       logpath: '',
       xudir: getTempDir(true),
-      p2p: {
-        listen: false,
-      },
-      http: {
-        disable: true,
-      },
-      rpc: {
-        disable: true,
-      },
+      p2p: { listen: false },
+      http: { disable: true },
+      rpc: { disable: true },
       lnd: {
-        LTC: {
-          disable: true,
-        },
-        BTC: {
-          disable: true,
-        },
+        LTC: { disable: true },
+        BTC: { disable: true },
       },
-      connext: {
-        disable: true,
-      },
+      connext: { disable: true },
     };
 
     xud = new Xud();
@@ -123,9 +111,7 @@ describe('API Service', () => {
   it('should remove an order', () => {
     const tp = xud['orderBook'].tradingPairs.get('LTC/BTC')!;
     expect(tp.ownOrders.buyMap.has(orderId!)).to.be.true;
-    const args = {
-      orderId: '1',
-    };
+    const args = { orderId: '1' };
     service.removeOrder(args);
     expect(tp.ownOrders.buyMap.has(orderId!)).to.be.false;
   });

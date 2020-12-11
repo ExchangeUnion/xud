@@ -95,11 +95,7 @@ describe('P2P Pool Tests', async () => {
       new Promise((resolve) => pool.on('peer.active', resolve)),
     ]);
 
-    const nodeInstance = await db.models.Node.findOne({
-      where: {
-        nodePubKey: nodeKeyOne.pubKey,
-      },
-    });
+    const nodeInstance = await db.models.Node.findOne({ where: { nodePubKey: nodeKeyOne.pubKey } });
     expect(nodeInstance).to.not.be.undefined;
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);

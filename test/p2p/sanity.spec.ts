@@ -22,9 +22,7 @@ export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = 
     port: p2pPort,
     addresses: [`localhost:${p2pPort}`],
   },
-  rpc: {
-    disable: true,
-  },
+  rpc: { disable: true },
   lnd: {
     LTC: {
       disable: true,
@@ -35,9 +33,7 @@ export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = 
       nomacaroons: true,
     },
   },
-  connext: {
-    disable: true,
-  },
+  connext: { disable: true },
 });
 
 describe('P2P Sanity Tests', () => {

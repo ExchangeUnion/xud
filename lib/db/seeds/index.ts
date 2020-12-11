@@ -1,7 +1,7 @@
 import { nodes as mainnetNodes, currencies as mainnetCurrencies, pairs as mainnetPairs } from './mainnet';
 import { nodes as testnetNodes, currencies as testnetCurrencies, pairs as testnetPairs } from './testnet';
 import { nodes as simnetNodes, currencies as simnetCurrencies, pairs as simnetPairs } from './simnet';
-import * as db from '../../db/types';
+import * as db from '../types';
 import { XuNetwork } from '../../constants/enums';
 
 const nodes: { [network: string]: db.NodeAttributes[] | undefined } = {

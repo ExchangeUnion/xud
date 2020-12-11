@@ -1,4 +1,3 @@
-/* tslint:disable max-line-length */
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
@@ -19,7 +18,7 @@ describe('P2P Networks Tests', () => {
 
       const host = 'localhost';
       const port = destNode['pool']['listenPort']!;
-      const nodePubKey = destNode['pool'].nodePubKey;
+      const { nodePubKey } = destNode['pool'];
       const nodeTwoUri = toUri({ host, port, nodePubKey });
 
       const rejectionMsg = `Peer ${nodePubKey}@${host}:${port} closed due to WireProtocolErr framer: incompatible msg origin network (expected: ${srcNodeNetwork}, found: ${destNodeNetwork})`;

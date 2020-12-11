@@ -158,7 +158,6 @@ const formatInternalMatch = (order: Order.AsObject) => {
 const formatPeerMatch = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
 
-  // tslint:disable-next-line: max-line-length
   console.log(
     `matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with peer ${
       order.nodeIdentifier!.alias
