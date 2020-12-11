@@ -64,7 +64,7 @@ const getRouterNodeIdentifier = (network: string): string => {
     case 'regtest':
     case 'simnet':
       // public key of our simnet router node
-      return 'vector7Qp3Jj6bMkJbtWZWTqF7EnfJ6UQigt1e5ZWC5VwKYhN7Bg4ZyA';
+      return 'vector5nFoanppRq7kkU9aARjJwZsdm64969rFde7yQhrXQZ7uWs4jLt';
     case 'testnet':
       // public key of our testnet router node
       return 'vector5ZGTZ1izRvvM73c5Rt1cMK34SdPVGLccMdc72v2B2HBmcTXRiD';
