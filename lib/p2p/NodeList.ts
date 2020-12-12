@@ -185,13 +185,15 @@ class NodeList extends EventEmitter {
    */
   public load = async (): Promise<void> => {
     const nodes = await this.repository.getNodes();
-    console.log(nodes);
+    console.log("NL initializing these nodes:" , nodes);
     const reputationLoadPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
+      console.log("NL adding loaded node");
       this.addNode(node, "none");
       const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
         node.reputationScore = 0;
         events.forEach(({ event }) => {
+          console.log("NL updating reputation score of loaded node");
           NodeList.updateReputationScore(node, event);
         });
       });
@@ -339,7 +341,7 @@ class NodeList extends EventEmitter {
 
   private addNode = (node: NodeInstance, sourceIP: string) => {
     const { nodePubKey } = node;
-    console.log(nodePubKey);
+    console.log("NL adding node: ", node);
     const alias = pubKeyToAlias(nodePubKey);
     if (this.aliasToPubKeyMap.has(alias)) {
       this.aliasToPubKeyMap.set(alias, 'CONFLICT');

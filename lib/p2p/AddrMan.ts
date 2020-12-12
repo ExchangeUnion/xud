@@ -37,7 +37,7 @@ class AddrInfo {
 
   // Calculate in which "tried" bucket this entry belongs
   public GetTriedBucket = (key: number): number => {
-    let hash1 = createHash("sha256").update(key.toString()).update(this.node.lastAddress.host).digest('hex');
+    let hash1 = createHash("sha256").update(key.toString()).update(this.node.lastAddressText).digest('hex');
     let hash2 = createHash("sha256").update(key.toString()).update((parseInt(hash1) % AddrMan.TRIED_BUCKETS_PER_SOURCE_GROUP).toString()).digest('hex');
     let tried_bucket = parseInt(hash2) % AddrMan.TRIED_BUCKET_COUNT;
     return tried_bucket;
@@ -46,7 +46,7 @@ class AddrInfo {
   // Calculate in which "new" bucket this entry belongs, given a certain source (ignoring asmap concerns)
   public GetNewBucket = (key: number, src?: string): number => {
     let source = src ? src : "none";
-    let hash1 = createHash("sha256").update(key.toString()).update(this.node.lastAddress.host).update(source).digest('hex');
+    let hash1 = createHash("sha256").update(key.toString()).update(source).digest('hex');
     let hash2 = createHash("sha256").update(key.toString()).update((parseInt(hash1) % AddrMan.NEW_BUCKETS_PER_SOURCE_GROUP).toString()).digest('hex');
     let new_bucket = parseInt(hash2) % AddrMan.NEW_BUCKET_COUNT;
     return new_bucket;
@@ -54,7 +54,12 @@ class AddrInfo {
   }
   // Calculate in which position of a bucket to store this entry
   public GetBucketPosition = (key: number, fNew: boolean, nBucket: number): number => {
-    let hash = createHash("sha256").update(key.toString()).update(fNew ? 'N' : 'K').update(nBucket.toString()).digest('hex');
+    let url = this.node.lastAddressText;
+    if (url == null) {
+      let parsed = JSON.parse(this.node['addressesText'])[0];
+      url = `${parsed['host']}:${parsed['port']}`;
+    }
+    let hash = createHash("sha256").update(key.toString()).update(fNew ? 'N' : 'K').update(nBucket.toString()).update(url).digest('hex');
     return parseInt(hash) % AddrMan.BUCKET_SIZE;
   }
 
@@ -151,25 +156,45 @@ class AddrMan {
   // list of "tried" buckets
   public vvTried: number[][] = new Array(AddrMan.TRIED_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
   // list of "new" buckets
-  public vvNew: number[][] = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
+  public vvNew: number[][]; // = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
 
   // constructor: logger, key, other vars?`
   constructor({ key }: {
     key: number,
   }) {
     this.nKey = key;
+    this.vvNew = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
   }
   
   // Find an entry by url. Returns last known instance of NodeInstance n
   public Find = (n: NodeInstance): [number, AddrInfo | undefined] => {
-    let toFind = `${n.lastAddress.host}:${n.lastAddress.port}`; 
-    for (let [k, v] of this.addrMap) {
-      let url = `${v.node.lastAddress.host}:${v.node.lastAddress.port}`;
-      if (url == toFind) {
-        return [k,v];
+    if (this.addrMap.size >= 1) {
+      let toFind = n.lastAddressText; 
+      if (toFind == null) {
+        console.log("AM", n.addressesText, JSON.parse(n.addressesText));
+        let parsed = JSON.parse(n['addressesText'])[0];
+        toFind =`${parsed['host']}:${parsed['port']}`;
       }
+
+      let url = "";
+      console.log("AM searching for node in addrMap");
+      for (let [k, v] of this.addrMap) {
+        if (v.node.lastAddressText != "null") {
+          url = `${v.node.lastAddressText}`;
+        } else{
+          //let {h, p} = JSON.parse(v.node.addressesText)[0];
+          let parsed = JSON.parse(v.node['addressesText'])[0];
+          url = `${parsed['host']}:${parsed['port']}`;
+        }
+
+        if (url == toFind) {
+          console.log("found node in addrMap");
+          return [k,v];
+        }
         
+      }
     }
+    console.log("did not find node in addrMap");
     return [-1, undefined];
   }
   
@@ -354,16 +379,22 @@ class AddrMan {
       this.MakeTried(nId);
     }
   }
+  
   // Add an entry to the "new" table. The addr node was either a seed or advertised by a peer.
   public Add = (addr: NodeInstance, sourceIP: string, nTimePenalty?: number): boolean => {
+    console.log("AM adding node: ", addr);
     let fNew = false;
-    let [nId, entry] = this.Find(addr);
-    console.log(nId);
+    let [nId, entry] = this.Find(addr); 
+    let host = "";
+    console.log("AM nId of node being added: ", nId);
 
-    const {host, port} = JSON.parse(addr.addressesText);
-
-    console.log(host);
-    console.log(port);
+    if (addr.lastAddressText != null) {
+      host = addr.lastAddressText.split(":")[0];
+    } else {
+      const parsed = JSON.parse(addr['addressesText'])[0];
+      host = parsed['host'];
+    }
+    
     if (!nTimePenalty || (host == sourceIP)) {
       nTimePenalty = 0;
     }
@@ -410,8 +441,9 @@ class AddrMan {
     let nUBucket = entry.GetNewBucket(this.nKey, sourceIP);
     let nUBucketPos = entry.GetBucketPosition(this.nKey, true, nUBucket);
     if (this.vvNew[nUBucket][nUBucketPos] !== nId) {
-      let fInsert = this.vvNew[nUBucket][nUBucketPos] == -1;
+      let fInsert = (this.vvNew[nUBucket][nUBucketPos] == -1);
       if (!fInsert) {
+        assert(this.addrMap.has(this.vvNew[nUBucket][nUBucketPos]) == true);
         let entryExisting = this.addrMap.get(this.vvNew[nUBucket][nUBucketPos]);
         if (entryExisting!.IsTerrible() || (entryExisting!.nRefCount > 1 && entry.nRefCount == 0)) {
           // Overwrite the existing new table entry.
@@ -433,7 +465,7 @@ class AddrMan {
   }
   // Mark and entry as attempted to connect
   public Attempt = (addr: NodeInstance, fCountFailure: boolean, nTime: number): void => {
-    console.log("attempting")
+    console.log("AM attempt fxn")
     let [nId, info] = this.Find(addr);
 
     if (!(nId && info)) {
