@@ -75,9 +75,8 @@ const argChecks = {
     }
   },
   VALID_PORT: ({ port }: { port: number }) => {
-    if (port < 1024 || port > 65535 || !Number.isInteger(port)) {
+    if (port < 1024 || port > 65535 || !Number.isInteger(port))
       throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
-    }
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
     if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
@@ -89,7 +88,6 @@ const argChecks = {
 
 interface Service {
   on(event: 'logLevel', listener: (level: Level) => void): this;
-
   emit(event: 'logLevel', level: Level): boolean;
 }
 
@@ -987,5 +985,4 @@ class Service extends EventEmitter {
     await this.swapClientManager.changeLndPasswords(oldPassword, newPassword);
   };
 }
-
 export default Service;
