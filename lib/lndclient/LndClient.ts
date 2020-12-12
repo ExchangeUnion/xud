@@ -247,20 +247,22 @@ class LndClient extends SwapClient {
   };
 
   protected updateCapacity = async () => {
-    await this.channelBalance().then(() => {
-      const totalBalance = this.totalOutboundAmount + this.totalInboundAmount;
-      const alertThreshold = totalBalance * 0.1;
-      this.checkLowBalance(
+    await this.channelBalance()
+      .then(() => {
+        const totalBalance = this.totalOutboundAmount + this.totalInboundAmount;
+        const alertThreshold = totalBalance * 0.1;
+        this.checkLowBalance(
           this.totalInboundAmount,
           this.totalOutboundAmount,
           totalBalance,
           alertThreshold,
           this.currency,
           this.emit.bind(this),
-      );
-    }).catch(async (err) => {
-      this.logger.error('failed to update total outbound capacity', err);
-    });
+        );
+      })
+      .catch(async (err) => {
+        this.logger.error('failed to update total outbound capacity', err);
+      });
   };
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
