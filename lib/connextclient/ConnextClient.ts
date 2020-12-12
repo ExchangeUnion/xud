@@ -47,18 +47,31 @@ import {
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
+
   on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
+
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
+
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
+
   on(event: 'lowTradingBalance', listener: (alert: BalanceAlert) => void): this;
+
   once(event: 'initialized', listener: () => void): this;
+
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
+
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
+
   emit(event: 'initialized'): boolean;
+
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
+
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
+
   emit(event: 'depositConfirmed', hash: string): void;
+
   emit(event: 'lowTradingBalance', alert: BalanceAlert): boolean;
 }
 
@@ -140,6 +153,7 @@ class ConnextClient extends SwapClient {
   public get label() {
     return 'Connext';
   }
+
   public readonly type = SwapClientType.Connext;
   public readonly finalLock = 200;
   public address?: string;
@@ -343,14 +357,7 @@ class ConnextClient extends SwapClient {
         const totalBalance = remoteBalance + localBalance;
         const alertThreshold = totalBalance * 0.1;
 
-        this.checkLowBalance(
-            remoteBalance,
-            localBalance,
-            totalBalance,
-            alertThreshold,
-            currency,
-            this.emit.bind(this),
-        );
+        this.checkLowBalance(remoteBalance, localBalance, totalBalance, alertThreshold, currency, this.emit.bind(this));
       }
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);

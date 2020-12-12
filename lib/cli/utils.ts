@@ -105,7 +105,13 @@ somewhere safe, it is your ONLY backup in case of data loss.
 `);
 }
 
-export const waitForClient = (client: XudClient, argv: Arguments, ensureConnection: Function, successCallback: Function, printError?: boolean) => {
+export const waitForClient = (
+  client: XudClient,
+  argv: Arguments,
+  ensureConnection: Function,
+  successCallback: Function,
+  printError?: boolean,
+) => {
   client.waitForReady(Date.now() + 3000, (error: Error | null) => {
     if (error) {
       if (error.message === 'Failed to connect before the deadline') {

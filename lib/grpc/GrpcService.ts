@@ -1009,7 +1009,7 @@ class GrpcService {
       call.write(alert);
     }, cancelled$);
     this.addStream(call);
-  }
+  };
 
   /*
    * See [[Service.subscribeOrders]]

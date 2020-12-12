@@ -289,14 +289,7 @@ describe('LndClient', () => {
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(1);
       expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
@@ -315,14 +308,7 @@ describe('LndClient', () => {
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(1);
       expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
@@ -341,14 +327,7 @@ describe('LndClient', () => {
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(0);
     });
@@ -360,14 +339,7 @@ describe('LndClient', () => {
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(0);
     });
@@ -379,14 +351,7 @@ describe('LndClient', () => {
       const remoteBalance = 10;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(1);
       expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
@@ -405,14 +370,7 @@ describe('LndClient', () => {
       const remoteBalance = 12;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(0);
     });
@@ -424,14 +382,7 @@ describe('LndClient', () => {
       const remoteBalance = 12.5;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](
-          remoteBalance,
-          localBalance,
-          totalBalance,
-          alertThreshold,
-          currency,
-          emit,
-      );
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
 
       expect(emit).toHaveBeenCalledTimes(0);
     });

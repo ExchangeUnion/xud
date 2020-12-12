@@ -71,8 +71,11 @@ export type WithdrawArguments = {
 
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+
   once(event: 'initialized', listener: () => void): this;
+
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
+
   emit(event: 'initialized'): boolean;
 }
 
@@ -111,6 +114,7 @@ abstract class SwapClient extends EventEmitter {
    * currencies supported by this client are included in the balance.
    */
   public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
+
   /**
    * Returns total unspent outputs (confirmed and unconfirmed),
    * all confirmed unspent outputs
@@ -119,6 +123,7 @@ abstract class SwapClient extends EventEmitter {
    * currencies supported by this client are included in the balance.
    */
   public abstract walletBalance(currency?: string): Promise<WalletBalance>;
+
   /**
    * Returns and updates the maximum outbound and inbound capacities for a distinct channel.
    * @param currency the currency whose trading limits to query for, otherwise all/any
@@ -127,6 +132,7 @@ abstract class SwapClient extends EventEmitter {
   public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
   public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
+
   protected abstract updateCapacity(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {
@@ -228,8 +234,14 @@ abstract class SwapClient extends EventEmitter {
     }
   };
 
-  protected checkLowBalance = (remoteBalance: number, localBalance: number, totalBalance: number,
-                               alertThreshold: number, currency: string, emit: Function) => {
+  protected checkLowBalance = (
+    remoteBalance: number,
+    localBalance: number,
+    totalBalance: number,
+    alertThreshold: number,
+    currency: string,
+    emit: Function,
+  ) => {
     if (localBalance < alertThreshold) {
       emit('lowTradingBalance', {
         totalBalance,
@@ -249,7 +261,7 @@ abstract class SwapClient extends EventEmitter {
         bound: 10,
       });
     }
-  }
+  };
 
   private updateCapacityTimerCallback = async () => {
     if (this.isConnected()) {
@@ -393,30 +405,38 @@ abstract class SwapClient extends EventEmitter {
   public isConnected(): boolean {
     return this.status === ClientStatus.ConnectionVerified;
   }
+
   public isDisabled(): boolean {
     return this.status === ClientStatus.Disabled;
   }
+
   public isMisconfigured(): boolean {
     return this.status === ClientStatus.Misconfigured;
   }
+
   /**
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
     return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
+
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
   }
+
   public isWaitingUnlock(): boolean {
     return this.status === ClientStatus.WaitingUnlock;
   }
+
   public isNotInitialized(): boolean {
     return this.status === ClientStatus.NotInitialized;
   }
+
   public isOutOfSync(): boolean {
     return this.status === ClientStatus.OutOfSync;
   }
+
   public hasNoInvoiceSupport(): boolean {
     return this.status === ClientStatus.NoHoldInvoiceSupport;
   }
@@ -434,6 +454,7 @@ abstract class SwapClient extends EventEmitter {
     }
     this.removeAllListeners();
   }
+
   protected abstract disconnect(): void;
 }
 

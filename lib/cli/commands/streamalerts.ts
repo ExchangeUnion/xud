@@ -10,8 +10,9 @@ export const command = 'streamalerts';
 
 export const describe = 'stream alert notifications from xud';
 
-export const builder = (argv: Argv) => argv
-    .option('pretty', {type: 'boolean',})
+export const builder = (argv: Argv) =>
+  argv
+    .option('pretty', { type: 'boolean' })
     .example('$0 streamalerts -j', 'prints alert payload in a JSON structure')
     .example('$0 streamalerts', 'prints alert message only');
 
@@ -30,14 +31,19 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
 };
 
 const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
-  const result: {type: string, payload: {
-    totalBalance?: number,
-    side?: string,
-    bound?: number,
-    sideBalance?: number,
-    channelPoint?: string,
-    currency?: string,
-  } | undefined } = {
+  const result: {
+    type: string;
+    payload:
+      | {
+          totalBalance?: number;
+          side?: string;
+          bound?: number;
+          sideBalance?: number;
+          channelPoint?: string;
+          currency?: string;
+        }
+      | undefined;
+  } = {
     type: AlertType[alertObject.type],
     payload: undefined,
   };

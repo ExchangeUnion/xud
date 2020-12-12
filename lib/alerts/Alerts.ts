@@ -20,7 +20,7 @@ class Alerts extends EventEmitter {
   private alerts = new Map<string, number>();
   private logger: Logger;
 
-  constructor({ swapClientManager, logger }: {swapClientManager: SwapClientManager, logger: Logger}) {
+  constructor({ swapClientManager, logger }: { swapClientManager: SwapClientManager; logger: Logger }) {
     super();
     this.logger = logger;
     this.listenLowTradingBalanceAlerts(swapClientManager);
@@ -40,13 +40,17 @@ class Alerts extends EventEmitter {
     if (this.alerts.get(stringRepresentation) === undefined || this.checkAlertThreshold(stringRepresentation)) {
       this.logger.trace(`triggering low balance alert ${stringRepresentation}`);
 
-      balanceAlert.message = `${ChannelSide[balanceAlert.side || 0]} trading balance (${satsToCoinsStr(balanceAlert.sideBalance || 0)} ${balanceAlert.currency}) is lower than 10% of trading capacity (${satsToCoinsStr(balanceAlert.totalBalance || 0)} ${balanceAlert.currency})`;
+      balanceAlert.message = `${ChannelSide[balanceAlert.side || 0]} trading balance (${satsToCoinsStr(
+        balanceAlert.sideBalance || 0,
+      )} ${balanceAlert.currency}) is lower than 10% of trading capacity (${satsToCoinsStr(
+        balanceAlert.totalBalance || 0,
+      )} ${balanceAlert.currency})`;
       balanceAlert.type = AlertType.LowTradingBalance;
 
       this.alerts.set(stringRepresentation, Date.now());
       this.emit('alert', balanceAlert);
     }
-  }
+  };
 
   private checkAlertThreshold(stringRepresentation: string) {
     const lastThrownTime = this.alerts.get(stringRepresentation) || 0;
