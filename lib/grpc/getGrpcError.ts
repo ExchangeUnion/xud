@@ -80,11 +80,14 @@ const getGrpcError = (err: any) => {
     case swapErrorCodes.SWAP_CLIENT_WALLET_NOT_CREATED:
       code = status.INTERNAL;
       break;
+    default:
+      code = status.UNKNOWN;
+      break;
   }
 
   // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
   const grpcError: grpc.ServiceError = {
-    code: code ?? status.UNKNOWN,
+    code,
     message: err.message ?? (typeof err === 'string' ? err : ''),
     name: err.name ?? 'UnknownError',
   };

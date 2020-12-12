@@ -25,11 +25,7 @@ class GetNodesPacket extends Packet<undefined> {
   };
 
   private static convert = (obj: pb.GetNodesPacket.AsObject): GetNodesPacket => {
-    return new GetNodesPacket({
-      header: {
-        id: obj.id,
-      },
-    });
+    return new GetNodesPacket({ header: { id: obj.id } });
   };
 
   public serialize = (): Uint8Array => {

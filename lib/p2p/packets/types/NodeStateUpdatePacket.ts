@@ -29,9 +29,7 @@ class NodeStateUpdatePacket extends Packet<NodeState> {
 
   private static convert = (obj: pb.NodeStateUpdatePacket.AsObject): NodeStateUpdatePacket => {
     return new NodeStateUpdatePacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: removeUndefinedProps(convertNodeState(obj.nodeState!)),
     });
   };

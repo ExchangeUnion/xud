@@ -34,9 +34,7 @@ class SessionAckPacket extends Packet<SessionAckPacketBody> {
         id: obj.id,
         reqId: obj.reqId,
       },
-      body: {
-        ephemeralPubKey: obj.ephemeralPubKey,
-      },
+      body: { ephemeralPubKey: obj.ephemeralPubKey },
     });
   };
 

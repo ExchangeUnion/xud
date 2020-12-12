@@ -35,13 +35,13 @@ const convertLndUris = (kvpArray: [string, pb.LndUris.AsObject][]): { [key: stri
 };
 
 const setLndUrisMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
-  for (const key in obj) {
+  Object.keys(obj).forEach((key) => {
     if (obj[key] !== undefined) {
       const lndUris = new pb.LndUris();
       lndUris.setLndUriList(obj[key]);
       map.set(key, lndUris);
     }
-  }
+  });
 };
 
 export const serializeNodeState = (nodeState: NodeState): pb.NodeState => {

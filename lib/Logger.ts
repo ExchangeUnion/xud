@@ -1,6 +1,5 @@
-import winston from 'winston';
 import colors from 'colors/safe';
-
+import winston from 'winston';
 import { getTsString } from './utils/utils';
 
 enum Level {
@@ -190,6 +189,8 @@ class Logger {
           return colors.blue(level);
         case 'trace':
           return colors.magenta(level);
+        default:
+          return level;
       }
     }
     return level;

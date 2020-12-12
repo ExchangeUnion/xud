@@ -241,7 +241,7 @@ class Peer extends EventEmitter {
       case SwapClientType.Connext:
         return this.connextIdentifier;
       default:
-        return;
+        return undefined;
     }
   };
 
@@ -507,24 +507,24 @@ class Peer extends EventEmitter {
     if (this.nodeState && this.nodeState.lndUris) {
       return this.nodeState.lndUris[currency];
     }
-    return;
+    return undefined;
   }
 
   /**
    * Ensure we are connected (for inbound connections) or listen for the `connect` socket event (for outbound connections)
    * and set the [[connectTime]] timestamp. If an outbound connection attempt errors or times out, throw an error.
    */
-  private initConnection = async (retry = false, torport: number) => {
+  private initConnection = (retry = false, torport: number) => {
     if (this.connected) {
       // in case of an inbound peer, we will already be connected
       assert(this.socket);
       assert(this.inbound);
       this.connectTime = Date.now();
       this.logger.debug(this.getStatus());
-      return;
+      return Promise.resolve(undefined);
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<undefined>((resolve, reject) => {
       const startTime = Date.now();
       let retryDelay = Peer.CONNECTION_RETRIES_MIN_DELAY;
       let retries = 0;
@@ -617,7 +617,7 @@ class Peer extends EventEmitter {
 
         this.retryConnectionTimer = setTimeout(() => {
           retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
-          retries = retries + 1;
+          retries += 1;
           connect();
         }, retryDelay);
       };
@@ -794,6 +794,9 @@ class Peer extends EventEmitter {
           this.emit('reputation', ReputationEvent.WireProtocolErr);
           await this.close(DisconnectionReason.WireProtocolErr, err.message);
           break;
+        default:
+          await this.close();
+          break;
       }
     });
   };
@@ -925,13 +928,17 @@ class Peer extends EventEmitter {
       expectedNodePubKey,
     });
     await this.sendPacket(packet);
-    await this.wait(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
-      // enabling in-encryption synchronously,
-      // expecting the following peer msg to be encrypted
-      const sessionAck: packets.SessionAckPacket = packet;
-      const key = ECDH.computeSecret(sessionAck.body!.ephemeralPubKey, 'hex');
-      this.setInEncryption(key);
-    });
+    await this.wait(
+      packet.header.id,
+      packet.responseType,
+      Peer.RESPONSE_TIMEOUT,
+      (sessionAckPacket: packets.SessionAckPacket) => {
+        // enabling in-encryption synchronously,
+        // expecting the following peer msg to be encrypted
+        const key = ECDH.computeSecret(sessionAckPacket.body!.ephemeralPubKey, 'hex');
+        this.setInEncryption(key);
+      },
+    );
   };
 
   /**

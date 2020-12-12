@@ -1,4 +1,3 @@
-/* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { ServerWritableStream, status } from 'grpc';
 import { fromEvent } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -156,6 +155,8 @@ const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
     case PlaceOrderEventType.SwapFailure:
       placeOrderEvent.setSwapFailure(createSwapFailure(e.swapFailure!));
       break;
+    default:
+      throw new Error('unrecognized PlaceOrderEventType');
   }
   return placeOrderEvent;
 };
@@ -170,9 +171,6 @@ class GrpcService {
   private service?: Service;
   /** The set of active streaming calls. */
   private streams: Set<grpc.ServerWriteableStream<any>> = new Set<grpc.ServerWriteableStream<any>>();
-
-  /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor() {}
 
   public setService(service: Service) {
     this.service = service;
@@ -206,16 +204,8 @@ class GrpcService {
   ): service is Service => {
     if (!service) {
       const err = this.locked
-        ? {
-            code: status.UNIMPLEMENTED,
-            message: 'xud is locked',
-            name: 'LockedError',
-          }
-        : {
-            code: status.UNAVAILABLE,
-            message: 'xud is starting',
-            name: 'NotReadyError',
-          };
+        ? { code: status.UNIMPLEMENTED, message: 'xud is locked', name: 'LockedError' }
+        : { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' };
       if (typeof callbackOrCall === 'function') {
         const callback = callbackOrCall;
         callback(err, null);
@@ -824,7 +814,7 @@ class GrpcService {
         grpcPeer.setAlias(peer.alias || '');
         if (peer.lndPubKeys) {
           const map = grpcPeer.getLndPubKeysMap();
-          for (const key in peer.lndPubKeys) {
+          for (const key of Object.keys(peer.lndPubKeys)) {
             map.set(key, peer.lndPubKeys[key]);
           }
         }

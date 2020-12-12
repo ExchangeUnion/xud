@@ -111,9 +111,7 @@ const faucetRequest = (connextAddress: string) => {
       path: '/faucet',
     };
 
-    const payload = {
-      address: connextAddress,
-    };
+    const payload = { address: connextAddress };
 
     const payloadStr = JSON.stringify(payload);
     options.headers = {

@@ -49,9 +49,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
 
   private static convert = (obj: pb.SessionInitPacket.AsObject): SessionInitPacket => {
     return new SessionInitPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: {
         sign: obj.sign,
         peerPubKey: obj.peerPubKey,

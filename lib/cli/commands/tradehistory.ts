@@ -39,6 +39,8 @@ const displayTrades = (trades: TradeHistoryResponse.AsObject) => {
         counterpartyOrderId = trim(trade.makerOrder?.id ?? '', 8);
         role = 'Internal';
         break;
+      default:
+        throw new Error('unrecognized trade role');
     }
     let side: string;
     switch (trade.side) {
@@ -51,6 +53,8 @@ const displayTrades = (trades: TradeHistoryResponse.AsObject) => {
       case OrderSide.BOTH:
         side = trade.takerOrder!.side === OrderSide.BUY ? 'Buy' : 'Sell';
         break;
+      default:
+        throw new Error('unrecognized trade side');
     }
 
     const details = [

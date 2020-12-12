@@ -135,7 +135,7 @@ export type ResolveRequest = {
   tokenAddress: string;
   /** The number of blocks before the incoming payment expires. */
   expiration: number;
-  chain_height: number;
+  chainHeight: number;
 };
 
 export type CloseChannelParams = {

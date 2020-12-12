@@ -1,3 +1,4 @@
+/* eslint-disable */
 // MIT License
 //
 // Copyright (c) 2019 Echo
@@ -85,9 +86,7 @@ const handler = {
           };
           const newCallback = (callback: any) => {
             return (...args: any) => {
-              ctx.status = {
-                code: grpc.status.OK,
-              };
+              ctx.status = { code: grpc.status.OK };
               const err = args[0];
               if (err) {
                 ctx.status = {
@@ -132,7 +131,7 @@ export default (server: any) => {
     let i = 0;
     while (i < server.interceptors.length) {
       yield server.interceptors[i];
-      i = i + 1;
+      i += 1;
     }
   };
   return new Proxy(server, handler);

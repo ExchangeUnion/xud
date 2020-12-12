@@ -220,8 +220,6 @@ describe('Parser', () => {
   };
 
   describe('test packets validation', () => {
-    /* tslint:disable max-line-length */
-
     testValidPacket(new packets.PingPacket());
     testInvalidPacket(new packets.PingPacket(undefined, uuid()));
 
@@ -407,9 +405,7 @@ describe('Parser', () => {
     );
     testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })));
 
-    const getOrdersPacketBody = {
-      pairIds: [uuid()],
-    };
+    const getOrdersPacketBody = { pairIds: [uuid()] };
     testValidPacket(new packets.GetOrdersPacket(getOrdersPacketBody));
     testInvalidPacket(new packets.GetOrdersPacket(getOrdersPacketBody, uuid()));
     testInvalidPacket(

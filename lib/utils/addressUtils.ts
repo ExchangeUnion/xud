@@ -1,6 +1,6 @@
 import { Socket } from 'net';
-import { Address } from '../p2p/types';
 import assert from 'assert';
+import { Address } from '../p2p/types';
 
 /** Helper methods for interacting with the [[Address]] type. */
 const addressUtils = {

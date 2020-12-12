@@ -1,7 +1,7 @@
-import PacketType from './PacketType';
 import { createHash } from 'crypto';
 import uuidv1 from 'uuid/v1';
 import stringify from 'json-stable-stringify';
+import PacketType from './PacketType';
 
 type PacketHeader = {
   /** An identifer for the packet which must be unique for a given socket. */
@@ -17,7 +17,7 @@ interface PacketInterface {
 
 function isPacketInterface(obj: any): obj is PacketInterface {
   if (obj) {
-    const header = (<PacketInterface>obj).header;
+    const { header } = <PacketInterface>obj;
     return header !== undefined && typeof header.id === 'string';
   }
   return false;

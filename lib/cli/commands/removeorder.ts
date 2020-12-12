@@ -9,9 +9,7 @@ export const describe = 'remove an order';
 
 export const builder = (argv: Argv) =>
   argv
-    .positional('order_id', {
-      type: 'string',
-    })
+    .positional('order_id', { type: 'string' })
     .option('quantity', {
       type: 'number',
       describe: 'quantity to remove; if unspecified the entire order is removed',

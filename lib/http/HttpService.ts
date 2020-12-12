@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import Service from '../service/Service';
 import serviceErrors from '../service/errors';
 import {
@@ -5,7 +6,6 @@ import {
   ConnextIncomingTransferRequest,
   ConnextDepositConfirmedRequest,
 } from '../connextclient/types';
-import { createHash } from 'crypto';
 
 class HttpService {
   constructor(private service: Service) {}
@@ -30,7 +30,7 @@ class HttpService {
 
   public incomingTransfer = async (incomingTransferRequest: ConnextIncomingTransferRequest): Promise<object> => {
     if (incomingTransferRequest.transfer) {
-      const transfer = incomingTransferRequest.transfer;
+      const { transfer } = incomingTransferRequest;
       const { transferState, meta, assetId, balance } = transfer;
       const { routingId } = meta;
       const { lockHash, expiry: expiryString } = transferState;

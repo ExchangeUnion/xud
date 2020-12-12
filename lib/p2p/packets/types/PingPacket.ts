@@ -25,11 +25,7 @@ class PingPacket extends Packet<undefined> {
   };
 
   private static convert = (obj: pb.PingPacket.AsObject): PingPacket => {
-    return new PingPacket({
-      header: {
-        id: obj.id,
-      },
-    });
+    return new PingPacket({ header: { id: obj.id } });
   };
 
   public serialize = (): Uint8Array => {

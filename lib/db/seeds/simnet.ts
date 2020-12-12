@@ -1,4 +1,4 @@
-import * as db from '../../db/types';
+import * as db from '../types';
 import { SwapClientType } from '../../constants/enums';
 
 const nodes = [

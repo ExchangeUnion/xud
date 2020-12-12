@@ -309,7 +309,7 @@ class Pool extends EventEmitter {
   };
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEvent[]) => {
+    this.nodes.on('node.ban', async (nodePubKey: string, events: ReputationEvent[]) => {
       const banReasonText =
         events[0] !== ReputationEvent.ManualBan && ReputationEvent[events[0]]
           ? `due to ${ReputationEvent[events[0]]}`
@@ -318,9 +318,8 @@ class Pool extends EventEmitter {
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        return peer.close(DisconnectionReason.Banned, JSON.stringify(events));
+        await peer.close(DisconnectionReason.Banned, JSON.stringify(events));
       }
-      return;
     });
   };
 
@@ -416,12 +415,13 @@ class Pool extends EventEmitter {
     const sortedAddresses = addressUtils.sortByLastConnected(addresses);
 
     for (const address of sortedAddresses) {
-      if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) continue;
-
-      try {
-        await this.addOutbound(address, nodePubKey, false, false);
-        return true; // once we've successfully established an outbound connection, stop attempting new connections
-      } catch (err) {}
+      if (!node.lastAddress || !addressUtils.areEqual(address, node.lastAddress)) {
+        // attempt a connection if this address is different from the last address used to connect to this node
+        try {
+          await this.addOutbound(address, nodePubKey, false, false);
+          return true; // once we've successfully established an outbound connection, stop attempting new connections
+        } catch (err) {}
+      }
     }
 
     return false;
@@ -536,6 +536,8 @@ class Pool extends EventEmitter {
         case '127.0.0.1':
         case 'localhost':
           return true;
+        default:
+          return false;
       }
     }
 
@@ -764,7 +766,7 @@ class Pool extends EventEmitter {
     try {
       return this.getPeer(peerPubKey);
     } catch (err) {
-      return;
+      return undefined;
     }
   };
 
@@ -928,6 +930,9 @@ class Pool extends EventEmitter {
         this.emit('packet.swapFailed', packet);
         break;
       }
+      default:
+        // nothing to do for packet types not specified above
+        break;
     }
   };
 

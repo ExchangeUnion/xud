@@ -20,9 +20,9 @@ export const handler = (argv: Arguments<any>) => {
     terminal: true,
   });
 
-  console.log(`\
+  console.log('\
 You are changing the master password for xud and underlying wallets.\
-`);
+');
   process.stdout.write('Enter old password: ');
   rl.question('', (oldPassword) => {
     process.stdout.write('\nEnter new password: ');

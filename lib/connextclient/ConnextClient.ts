@@ -1,48 +1,48 @@
+import { sha256 } from '@ethersproject/solidity';
 import assert from 'assert';
 import http from 'http';
+import { combineLatest, defer, from, fromEvent, interval, Observable, of, Subscription, throwError, timer } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, mergeMap, mergeMapTo, pluck, take, timeout } from 'rxjs/operators';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
-import { XudError } from '../types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
 import SwapClient, {
   ChannelBalance,
   ClientStatus,
   PaymentState,
-  WalletBalance,
-  SwapClientInfo,
   PaymentStatus,
+  SwapClientInfo,
+  WalletBalance,
   WithdrawArguments,
 } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities } from '../swaps/types';
+import { CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
+import { XudError } from '../types';
 import { UnitConverter } from '../utils/UnitConverter';
+import { parseResponseBody } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import {
-  ConnextErrorResponse,
+  ConnextBalanceResponse,
+  ConnextBlockNumberResponse,
+  ConnextChannelBalanceResponse,
+  ConnextChannelDetails,
+  ConnextChannelResponse,
+  ConnextClientConfig,
   ConnextConfig,
   ConnextConfigResponse,
-  ConnextBalanceResponse,
-  ConnextChannelResponse,
-  ConnextChannelBalanceResponse,
-  ConnextTransferResponse,
-  ConnextClientConfig,
+  ConnextErrorResponse,
   ConnextInfo,
-  ConnextTransferRequest,
   ConnextTransfer,
+  ConnextTransferRequest,
+  ConnextTransferResponse,
+  ConnextWithdrawResponse,
+  EthproviderGasPriceResponse,
   ExpectedIncomingTransfer,
+  GetBlockByNumberResponse,
+  OnchainTransferResponse,
   ProvidePreimageEvent,
   TransferReceivedEvent,
-  ConnextWithdrawResponse,
-  OnchainTransferResponse,
-  ConnextBlockNumberResponse,
-  ConnextChannelDetails,
-  GetBlockByNumberResponse,
-  EthproviderGasPriceResponse,
 } from './types';
-import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, defer, Subscription, throwError, interval, timer, combineLatest, of } from 'rxjs';
-import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
-import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
@@ -64,7 +64,7 @@ const getRouterNodeIdentifier = (network: string): string => {
     case 'regtest':
     case 'simnet':
       // public key of our simnet router node
-      return 'vector7Qp3Jj6bMkJbtWZWTqF7EnfJ6UQigt1e5ZWC5VwKYhN7Bg4ZyA';
+      return 'vector5nFoanppRq7kkU9aARjJwZsdm64969rFde7yQhrXQZ7uWs4jLt';
     case 'testnet':
       // public key of our testnet router node
       return 'vector5ZGTZ1izRvvM73c5Rt1cMK34SdPVGLccMdc72v2B2HBmcTXRiD';
@@ -155,7 +155,7 @@ class ConnextClient extends SwapClient {
   private unitConverter: UnitConverter;
   private network: string;
   private seed: string | undefined;
-  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '36000';
+  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '172800';
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextChannelBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
@@ -215,27 +215,21 @@ class ConnextClient extends SwapClient {
   };
 
   public initConnextClient = async (seedMnemonic: string) => {
-    const res = await this.sendRequest('/connect', 'POST', {
-      mnemonic: seedMnemonic,
-    });
-    return await parseResponseBody<ConnextConfigResponse>(res);
+    const res = await this.sendRequest('/connect', 'POST', { mnemonic: seedMnemonic });
+    return parseResponseBody<ConnextConfigResponse>(res);
   };
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest('/event/subscribe', 'POST', {
       publicIdentifier: this.publicIdentifier,
-      events: {
-        CONDITIONAL_TRANSFER_CREATED: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
-      },
+      events: { CONDITIONAL_TRANSFER_CREATED: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer` },
     });
   };
 
   private subscribePreimage = async () => {
     await this.sendRequest('/event/subscribe', 'POST', {
       publicIdentifier: this.publicIdentifier,
-      events: {
-        CONDITIONAL_TRANSFER_RESOLVED: `http://${this.webhookhost}:${this.webhookport}/preimage`,
-      },
+      events: { CONDITIONAL_TRANSFER_RESOLVED: `http://${this.webhookhost}:${this.webhookport}/preimage` },
     });
   };
 
@@ -335,7 +329,7 @@ class ConnextClient extends SwapClient {
   protected updateCapacity = async () => {
     try {
       const channelBalancePromises = [];
-      for (const [currency] of this.tokenAddresses) {
+      for (const currency of this.tokenAddresses.keys()) {
         channelBalancePromises.push(this.channelBalance(currency));
       }
       await Promise.all(channelBalancePromises);
@@ -380,9 +374,7 @@ class ConnextClient extends SwapClient {
       this.channelAddress = channel;
       await this.subscribeIncomingTransfer();
       await this.subscribePreimage();
-      this.emit('connectionVerified', {
-        newIdentifier: publicIdentifier,
-      });
+      this.emit('connectionVerified', { newIdentifier: publicIdentifier });
       this.setStatus(ClientStatus.ConnectionVerified);
       this.reconcileDeposit();
     } catch (err) {
@@ -398,18 +390,23 @@ class ConnextClient extends SwapClient {
     if (this._reconcileDepositSubscriber) {
       this._reconcileDepositSubscriber.unsubscribe();
     }
-    // TODO: increase interval after testing to 30+ sec
-    this._reconcileDepositSubscriber = interval(5000)
+    const ethBalance$ = interval(30000).pipe(
+      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!))),
+      // only emit new ETH balance events when the balance changes
+      distinctUntilChanged(),
+    );
+    this._reconcileDepositSubscriber = ethBalance$
+      // when ETH balance changes
       .pipe(
         mergeMap(() => {
           if (this.status === ClientStatus.ConnectionVerified) {
             return defer(() => {
-              // TODO: reconcile deposit for all supported currencies
+              // create new commitment transaction
               return from(
                 this.sendRequest('/deposit', 'POST', {
                   channelAddress: this.channelAddress,
                   publicIdentifier: this.publicIdentifier,
-                  assetId: '0x0000000000000000000000000000000000000000',
+                  assetId: '0x0000000000000000000000000000000000000000', // TODO: multi currency support
                 }),
               );
             });
@@ -455,9 +452,7 @@ class ConnextClient extends SwapClient {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = deal.takerUnits.toLocaleString('fullwide', {
-          useGrouping: false,
-        });
+        amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const expiry = await this.getExpiry(this.finalLock);
         const executeTransfer = this.executeHashLockTransfer({
@@ -469,9 +464,7 @@ class ConnextClient extends SwapClient {
             lockHash: `0x${deal.rHash}`,
           },
           recipient: deal.destination,
-          meta: {
-            routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
-          },
+          meta: { routingId: this.deriveRoutingId(deal.rHash, tokenAddress) },
           channelAddress: this.channelAddress,
           publicIdentifier: this.publicIdentifier,
         });
@@ -484,9 +477,7 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = deal.makerUnits.toLocaleString('fullwide', {
-          useGrouping: false,
-        });
+        amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         secret = deal.rPreimage!;
         assert(deal.makerCltvDelta, 'cannot send transfer without deal.makerCltvDelta');
@@ -500,9 +491,7 @@ class ConnextClient extends SwapClient {
             lockHash: `0x${deal.rHash}`,
           },
           recipient: deal.destination,
-          meta: {
-            routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
-          },
+          meta: { routingId: this.deriveRoutingId(deal.rHash, tokenAddress) },
           channelAddress: this.channelAddress,
           publicIdentifier: this.publicIdentifier,
         });
@@ -622,12 +611,8 @@ class ConnextClient extends SwapClient {
       transferId,
       routingId,
       conditionType: 'HashlockTransfer',
-      details: {
-        lockHash,
-      },
-      transferResolver: {
-        preImage: `0x${rPreimage}`,
-      },
+      details: { lockHash },
+      transferResolver: { preImage: `0x${rPreimage}` },
       publicIdentifier: this.publicIdentifier,
       channelAddress: this.channelAddress,
     });
@@ -640,12 +625,8 @@ class ConnextClient extends SwapClient {
       await this.sendRequest('/transfers/resolve', 'POST', {
         transferId: transfer.transferId,
         conditionType: 'HashlockTransfer',
-        details: {
-          lockHash: transfer.transferState.lockHash,
-        },
-        transferResolver: {
-          preImage: '0x0000000000000000000000000000000000000000000000000000000000000000',
-        },
+        details: { lockHash: transfer.transferState.lockHash },
+        transferResolver: { preImage: '0x0000000000000000000000000000000000000000000000000000000000000000' },
         publicIdentifier: this.publicIdentifier,
         channelAddress: this.channelAddress,
         routingId: transfer.meta.routingId,
@@ -708,7 +689,7 @@ class ConnextClient extends SwapClient {
             state: PaymentState.Succeeded,
             preimage: transferStatusResponse.transferResolver.preImage.slice(2),
           };
-        case 'EXPIRED':
+        case 'EXPIRED': {
           const expiredTransferUnlocked$ = defer(() =>
             from(
               // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
@@ -734,6 +715,7 @@ class ConnextClient extends SwapClient {
           // TODO: user funds can remain locked if the above code fails and xud is restarted. In that case the transfer
           // is marked as failed and it will not attempt to unlock again.
           return { state: PaymentState.Failed };
+        }
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
@@ -752,9 +734,7 @@ class ConnextClient extends SwapClient {
   public getRoute = async () => {
     /** A placeholder route value that assumes a fixed lock time of 100 for Connext. */
     const currentHeight = await this.getHeight();
-    return {
-      getTotalTimeLock: () => currentHeight + 101,
-    };
+    return { getTotalTimeLock: () => currentHeight + 101 };
   };
 
   public canRouteToNode = async () => {
@@ -847,7 +827,7 @@ class ConnextClient extends SwapClient {
         chainId: CHAIN_IDENTIFIERS[this.network],
         timeout: this.CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT,
       });
-      return await this.getChannel();
+      return this.getChannel();
     }
     return channel[0];
   };
@@ -1023,7 +1003,7 @@ class ConnextClient extends SwapClient {
    * @param lockHash
    */
   private executeHashLockTransfer = async (payload: ConnextTransferRequest): Promise<ConnextTransferResponse> => {
-    const lockHash = payload.details.lockHash;
+    const { lockHash } = payload.details;
     this.logger.debug(`sending payment of ${payload.amount} with hash ${lockHash} to ${payload.recipient}`);
     this.outgoingTransferHashes.add(lockHash);
     const res = await this.sendRequest('/transfers/create', 'POST', payload);
@@ -1084,11 +1064,10 @@ class ConnextClient extends SwapClient {
     for (const req of this.pendingRequests) {
       if (this.criticalRequestPaths.includes(req.path)) {
         this.logger.warn(`critical request is pending: ${req.path}`);
-        continue;
+      } else {
+        this.logger.info(`aborting pending request: ${req.path}`);
+        req.destroy();
       }
-
-      this.logger.info(`aborting pending request: ${req.path}`);
-      req.destroy();
     }
   };
 
@@ -1119,6 +1098,7 @@ class ConnextClient extends SwapClient {
       this.logger.trace(`sending request to ${endpoint}${payloadStr ? `: ${payloadStr}` : ''}`);
 
       let req: http.ClientRequest;
+      // eslint-disable-next-line prefer-const
       req = http.request(options, async (res) => {
         this.pendingRequests.delete(req);
 

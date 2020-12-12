@@ -13,6 +13,5 @@ export default function Pair(sequelize: Sequelize) {
     timestamps: false,
   };
 
-  const Pair = sequelize.define<PairInstance>('Pair', attributes, options);
-  return Pair;
+  return sequelize.define<PairInstance>('Pair', attributes, options);
 }

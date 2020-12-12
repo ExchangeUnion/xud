@@ -16,12 +16,8 @@ jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
     return {
       models: {
-        Order: {
-          create: jest.fn(),
-        },
-        Trade: {
-          create: jest.fn(),
-        },
+        Order: { create: jest.fn() },
+        Trade: { create: jest.fn() },
         Pair: {
           findAll: () => {
             return [
@@ -308,9 +304,7 @@ describe('OrderBook', () => {
         isBuy: false,
       };
 
-      const oldOrder = await orderbook.placeLimitOrder({
-        order,
-      });
+      const oldOrder = await orderbook.placeLimitOrder({ order });
       expect(orderbook.getOwnOrders(pairId).sellArray.length).toEqual(1);
       expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(oldQuantity);
       expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(oldPrice);

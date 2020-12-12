@@ -21,7 +21,7 @@ import Swaps from './swaps/Swaps';
 import { createSimnetChannels } from './utils/simnet-connext-channels';
 import { UnitConverter } from './utils/UnitConverter';
 
-const version: string = require('../package.json').version;
+const { version }: { version: string } = require('../package.json');
 
 interface Xud {
   on(event: 'shutdown', listener: () => void): this;

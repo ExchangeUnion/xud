@@ -111,16 +111,16 @@ class NodeList extends EventEmitter {
    * Ban a node by nodePubKey.
    * @returns true if the node was banned, false otherwise
    */
-  public ban = async (nodePubKey: string): Promise<boolean> => {
-    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+  public ban = (nodePubKey: string): Promise<boolean> => {
+    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
   };
 
   /**
    * Remove ban from node by nodePubKey.
    * @returns true if ban was removed, false otherwise
    */
-  public unBan = async (nodePubKey: string): Promise<boolean> => {
-    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+  public unBan = (nodePubKey: string): Promise<boolean> => {
+    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
   };
 
   public isBanned = (nodePubKey: string): boolean => {
@@ -254,7 +254,7 @@ class NodeList extends EventEmitter {
 
       // if the lastAddress is removed, then re-assigning lastAddress with the latest connected advertised address
       if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) {
-        node.lastAddress = addressUtils.sortByLastConnected(node.addresses)[0];
+        [node.lastAddress] = addressUtils.sortByLastConnected(node.addresses);
       }
     }
 

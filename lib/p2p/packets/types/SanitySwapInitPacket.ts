@@ -31,9 +31,7 @@ class SanitySwapInitPacket extends Packet<SanitySwapInitPacketBody> {
 
   private static convert = (obj: pb.SanitySwapInitPacket.AsObject): SanitySwapInitPacket => {
     return new SanitySwapInitPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: {
         currency: obj.currency,
         rHash: obj.rHash,

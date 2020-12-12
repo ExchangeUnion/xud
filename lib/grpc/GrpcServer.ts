@@ -66,7 +66,6 @@ class GrpcServer {
       privateKey = Buffer.from(tlsKey);
     }
 
-    // tslint:disable-next-line:no-null-keyword
     const credentials = grpc.ServerCredentials.createSsl(
       null,
       [
