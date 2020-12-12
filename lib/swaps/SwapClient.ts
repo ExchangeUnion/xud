@@ -236,7 +236,7 @@ abstract class SwapClient extends EventEmitter {
     currency: string,
     emit: Function,
   ) => {
-    if (localBalance < alertThreshold) {
+    if (localBalance < 490000001) {
       emit('lowTradingBalance', {
         totalBalance,
         currency,

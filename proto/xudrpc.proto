@@ -416,9 +416,11 @@ message Alert {
    AlertType type = 1 [json_name = "type"];
    // The human readable alert message.
    string message = 2 [json_name = "message"];
+   // The human readable alert message.
+   int64 date = 3 [json_name = "date"];
    // The structured payload.
    oneof payload {
-     BalanceAlert balance_alert = 3 [json_name = "balance_alert"];
+     BalanceAlert balance_alert = 4 [json_name = "balance_alert"];
    }
 }
 

@@ -33,6 +33,7 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
 const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
   const result: {
     type: string;
+    date: number;
     payload:
       | {
           totalBalance?: number;
@@ -45,6 +46,7 @@ const structAlertJson = (alertObject: xudrpc.Alert.AsObject) => {
       | undefined;
   } = {
     type: AlertType[alertObject.type],
+    date: alertObject.date,
     payload: undefined,
   };
 
@@ -69,7 +71,7 @@ const streamalerts = (argv: Arguments<any>) => {
     if (argv.json) {
       console.log(JSON.stringify(structAlertJson(alert.toObject()), undefined, 2));
     } else {
-      console.log(`(${moment()}) ${AlertType[alert.getType()]}: ${alert.getMessage()}`);
+      console.log(`(${moment(alert.getDate())}) ${AlertType[alert.getType()]}: ${alert.getMessage()}`);
     }
   });
   alertsSubscription.on('end', reconnect.bind(undefined, argv));

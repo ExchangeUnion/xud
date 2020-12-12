@@ -996,6 +996,7 @@ class GrpcService {
       const alert = new xudrpc.Alert();
       alert.setType(serviceAlert.type as number);
       alert.setMessage(serviceAlert.message);
+      alert.setDate(serviceAlert.date);
       if (serviceAlert.type === AlertType.LowTradingBalance) {
         const balanceServiceAlert = serviceAlert as BalanceAlert;
         const balanceAlert = new xudrpc.BalanceAlert();

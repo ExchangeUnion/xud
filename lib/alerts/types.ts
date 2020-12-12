@@ -16,4 +16,5 @@ export type BalanceAlert = Alert & {
 export type Alert = {
   type: AlertType;
   message: string;
+  date: number;
 };

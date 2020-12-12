@@ -166,6 +166,7 @@
 | ----- | ---- | ----- | ----------- |
 | type | [Alert.AlertType](#xudrpc.Alert.AlertType) |  |  |
 | message | [string](#string) |  | The human readable alert message. |
+| date | [int64](#int64) |  | The human readable alert message. |
 | balance_alert | [BalanceAlert](#xudrpc.BalanceAlert) |  |  |
 
 

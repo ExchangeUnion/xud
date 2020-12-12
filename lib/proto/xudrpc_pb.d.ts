@@ -72,6 +72,9 @@ export class Alert extends jspb.Message {
     getMessage(): string;
     setMessage(value: string): void;
 
+    getDate(): number;
+    setDate(value: number): void;
+
 
     hasBalanceAlert(): boolean;
     clearBalanceAlert(): void;
@@ -95,6 +98,7 @@ export namespace Alert {
     export type AsObject = {
         type: Alert.AlertType,
         message: string,
+        date: number,
         balanceAlert?: BalanceAlert.AsObject,
     }
 
@@ -106,7 +110,7 @@ export namespace Alert {
     export enum PayloadCase {
         PAYLOAD_NOT_SET = 0,
     
-    BALANCE_ALERT = 3,
+    BALANCE_ALERT = 4,
 
     }
 

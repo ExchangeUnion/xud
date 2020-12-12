@@ -46,8 +46,9 @@ class Alerts extends EventEmitter {
         balanceAlert.totalBalance || 0,
       )} ${balanceAlert.currency})`;
       balanceAlert.type = AlertType.LowTradingBalance;
+      balanceAlert.date = Date.now();
 
-      this.alerts.set(stringRepresentation, Date.now());
+      this.alerts.set(stringRepresentation, balanceAlert.date);
       this.emit('alert', balanceAlert);
     }
   };
