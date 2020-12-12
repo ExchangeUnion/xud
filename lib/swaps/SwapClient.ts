@@ -29,20 +29,20 @@ enum ClientStatus {
 
 type ChannelBalance = {
   /** The cumulative balance of open channels denominated in satoshis. */
-  balance: number,
+  balance: number;
   /** The cumulative balance of pending channels denominated in satoshis. */
-  pendingOpenBalance: number,
+  pendingOpenBalance: number;
   /** The cumulative balance of inactive channels denominated in satoshis. */
-  inactiveBalance: number,
+  inactiveBalance: number;
 };
 
 type WalletBalance = {
   /** The balance of the wallet. */
-  totalBalance: number,
+  totalBalance: number;
   /** The confirmed balance of a wallet (with >= 1 confirmations). */
-  confirmedBalance: number,
+  confirmedBalance: number;
   /** The unconfirmed balance of a wallet (with 0 confirmations). */
-  unconfirmedBalance: number,
+  unconfirmedBalance: number;
 };
 
 export type SwapClientInfo = {
@@ -57,16 +57,16 @@ export enum PaymentState {
 }
 
 export type PaymentStatus = {
-  state: PaymentState,
-  preimage?: string,
+  state: PaymentState;
+  preimage?: string;
 };
 
 export type WithdrawArguments = {
-  currency: string,
-  destination: string,
-  amount?: number,
-  all?: boolean,
-  fee?: number,
+  currency: string;
+  destination: string;
+  amount?: number;
+  all?: boolean;
+  fee?: number;
 };
 
 interface SwapClient {
@@ -126,12 +126,6 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
-  public abstract totalOutboundAmount(currency?: string): number;
-  /**
-   * Checks whether there is sufficient inbound capacity to receive the specified amount
-   * and throws an error if there isn't, otherwise does nothing.
-   */
-  public abstract checkInboundCapacity(inboundAmount: number, currency?: string): void;
   public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
 
@@ -141,16 +135,20 @@ abstract class SwapClient extends EventEmitter {
     return new Promise<void>((resolve, reject) => {
       const verifyTimeout = setTimeout(() => {
         // we could not verify the connection within the allotted time
-        this.logger.info(`could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`);
+        this.logger.info(
+          `could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`,
+        );
         this.setStatus(ClientStatus.Disconnected);
         resolve();
       }, SwapClient.INITIALIZATION_TIME_LIMIT);
-      this.verifyConnection().then(() => {
-        clearTimeout(verifyTimeout);
-        resolve();
-      }).catch(reject);
+      this.verifyConnection()
+        .then(() => {
+          clearTimeout(verifyTimeout);
+          resolve();
+        })
+        .catch(reject);
     });
-  }
+  };
 
   public init = async () => {
     // up front checks before initializing client
@@ -175,7 +173,7 @@ abstract class SwapClient extends EventEmitter {
       this.emit('initialized');
       await this.verifyConnectionWithTimeout();
     }
-  }
+  };
 
   protected abstract async initSpecific(): Promise<void>;
 
@@ -187,8 +185,7 @@ abstract class SwapClient extends EventEmitter {
       newIdentifier,
       newUris,
     });
-
-  }
+  };
 
   protected setStatus = (newStatus: ClientStatus): void => {
     if (this.status === newStatus) {
@@ -212,13 +209,15 @@ abstract class SwapClient extends EventEmitter {
       case ClientStatus.WaitingUnlock:
       case ClientStatus.OutOfSync:
       case ClientStatus.NoHoldInvoiceSupport:
-        // these statuses can only be set on an operational, initalized client
+        // these statuses can only be set on an operational, initialized client
         validStatusTransition = this.isOperational();
         break;
       case ClientStatus.NotInitialized:
         // this is the starting status and cannot be reassigned
         validStatusTransition = false;
         break;
+      default:
+        throw new Error('unrecognized client status');
     }
 
     if (validStatusTransition) {
@@ -227,20 +226,21 @@ abstract class SwapClient extends EventEmitter {
     } else {
       this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
     }
-  }
+  };
 
   private updateCapacityTimerCallback = async () => {
     if (this.isConnected()) {
       await this.updateCapacity();
     }
-  }
+  };
 
   private reconnectionTimerCallback = async () => {
-    if (this.status === ClientStatus.Disconnected
-        || this.status === ClientStatus.OutOfSync
-        || this.status === ClientStatus.WaitingUnlock
-        || this.status === ClientStatus.Unlocked
-      ) {
+    if (
+      this.status === ClientStatus.Disconnected ||
+      this.status === ClientStatus.OutOfSync ||
+      this.status === ClientStatus.WaitingUnlock ||
+      this.status === ClientStatus.Unlocked
+    ) {
       try {
         await this.verifyConnection();
       } catch (err) {
@@ -250,7 +250,7 @@ abstract class SwapClient extends EventEmitter {
     if (this.reconnectionTimer) {
       this.reconnectionTimer.refresh();
     }
-  }
+  };
 
   private setTimers = () => {
     if (!this.updateCapacityTimer) {
@@ -259,7 +259,7 @@ abstract class SwapClient extends EventEmitter {
     if (!this.reconnectionTimer) {
       this.reconnectionTimer = setTimeout(this.reconnectionTimerCallback, SwapClient.RECONNECT_INTERVAL);
     }
-  }
+  };
 
   /**
    * Verifies that the swap client can be reached and is in an operational state
@@ -286,7 +286,12 @@ abstract class SwapClient extends EventEmitter {
    * @param destination the identifier for the receiving node
    * @returns routes
    */
-  public abstract async getRoute(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route | undefined>;
+  public abstract async getRoute(
+    units: number,
+    destination: string,
+    currency: string,
+    finalCltvDelta?: number,
+  ): Promise<Route | undefined>;
 
   /**
    * Checks whether it is possible to route a payment to a node. This does not test or guarantee
@@ -302,10 +307,17 @@ abstract class SwapClient extends EventEmitter {
    * @param expiry
    * @param currency
    */
-  public abstract async addInvoice(
-    { rHash, units, expiry, currency }:
-    { rHash: string, units: number, expiry?: number, currency?: string },
-  ): Promise<void>;
+  public abstract async addInvoice({
+    rHash,
+    units,
+    expiry,
+    currency,
+  }: {
+    rHash: string;
+    units: number;
+    expiry?: number;
+    currency?: string;
+  }): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string, currency?: string): Promise<void>;
 
@@ -325,19 +337,32 @@ abstract class SwapClient extends EventEmitter {
   /**
    * Opens a payment channel.
    */
-  public abstract async openChannel(
-    { remoteIdentifier, units, currency, uris, pushUnits, fee }: OpenChannelParams,
-  ): Promise<string>;
+  public abstract async openChannel({
+    remoteIdentifier,
+    units,
+    currency,
+    uris,
+    pushUnits,
+    fee,
+  }: OpenChannelParams): Promise<string>;
 
   /**
    * Closes a payment channel.
    */
-  public abstract async closeChannel(
-    { remoteIdentifier, units, currency, destination, force, fee }: CloseChannelParams,
-  ): Promise<string[]>;
+  public abstract async closeChannel({
+    remoteIdentifier,
+    units,
+    currency,
+    destination,
+    force,
+    fee,
+  }: CloseChannelParams): Promise<string[]>;
 
-  /** Gets a deposit address. */
+  /** Gets an address for depositing directly to a channel. */
   public abstract async deposit(): Promise<string>;
+
+  /** Gets a deposit address for on-chain wallet. */
+  public abstract async walletDeposit(): Promise<string>;
 
   /** Withdraws from the onchain wallet of the client and returns the transaction id or transaction hash in case of Ethereum */
   public abstract async withdraw(args: WithdrawArguments): Promise<string>;
@@ -355,7 +380,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized() && !this.hasNoInvoiceSupport();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;

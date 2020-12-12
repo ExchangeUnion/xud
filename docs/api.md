@@ -11,6 +11,8 @@
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
+    - [ChangePasswordRequest](#xudrpc.ChangePasswordRequest)
+    - [ChangePasswordResponse](#xudrpc.ChangePasswordResponse)
     - [Channels](#xudrpc.Channels)
     - [CloseChannelRequest](#xudrpc.CloseChannelRequest)
     - [CloseChannelResponse](#xudrpc.CloseChannelResponse)
@@ -31,6 +33,8 @@
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
+    - [GetMnemonicRequest](#xudrpc.GetMnemonicRequest)
+    - [GetMnemonicResponse](#xudrpc.GetMnemonicResponse)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
@@ -67,6 +71,8 @@
     - [RestoreNodeRequest](#xudrpc.RestoreNodeRequest)
     - [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry)
     - [RestoreNodeResponse](#xudrpc.RestoreNodeResponse)
+    - [SetLogLevelRequest](#xudrpc.SetLogLevelRequest)
+    - [SetLogLevelResponse](#xudrpc.SetLogLevelResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
@@ -91,12 +97,15 @@
   
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
+    - [LogLevel](#xudrpc.LogLevel)
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
+  
   
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -199,6 +208,32 @@
 | ----- | ---- | ----- | ----------- |
 | chain | [string](#string) |  | The blockchain the swap client is on (eg bitcoin, litecoin) |
 | network | [string](#string) |  | The network the swap client is on (eg regtest, testnet, mainnet) |
+
+
+
+
+
+
+<a name="xudrpc.ChangePasswordRequest"></a>
+
+### ChangePasswordRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| new_password | [string](#string) |  |  |
+| old_password | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.ChangePasswordResponse"></a>
+
+### ChangePasswordResponse
+
 
 
 
@@ -520,6 +555,31 @@
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [LndInfo](#xudrpc.LndInfo) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.GetMnemonicRequest"></a>
+
+### GetMnemonicRequest
+
+
+
+
+
+
+
+<a name="xudrpc.GetMnemonicResponse"></a>
+
+### GetMnemonicResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seed_mnemonic | [string](#string) | repeated |  |
 
 
 
@@ -1014,6 +1074,9 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | quantity_on_hold | [uint64](#uint64) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
+| remaining_quantity | [uint64](#uint64) |  | Remaining portion of the order if it was a partial removal. |
+| removed_quantity | [uint64](#uint64) |  | Successfully removed portion of the order. |
+| pair_id | [string](#string) |  | Removed order&#39;s pairId. (e.g. ETH/BTC) |
 
 
 
@@ -1089,6 +1152,31 @@
 | ----- | ---- | ----- | ----------- |
 | restored_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
 | restored_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
+
+
+
+
+
+
+<a name="xudrpc.SetLogLevelRequest"></a>
+
+### SetLogLevelRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_level | [LogLevel](#xudrpc.LogLevel) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.SetLogLevelResponse"></a>
+
+### SetLogLevelResponse
+
 
 
 
@@ -1288,10 +1376,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| max_sell | [uint64](#uint64) |  | Maximum outbound limit for an order denominated in satoshis. |
-| max_buy | [uint64](#uint64) |  | Maximum inbound limit for an order denominated in satoshis. |
-| reserved_outbound | [uint64](#uint64) |  | The outbound amount reserved for open orders. |
-| reserved_inbound | [uint64](#uint64) |  | The inbound amount reserved for open orders. |
+| max_sell | [uint64](#uint64) |  | Maximum outbound limit for a sell order denominated in satoshis. |
+| max_buy | [uint64](#uint64) |  | Maximum inbound limit for a buy order denominated in satoshis. |
+| reserved_sell | [uint64](#uint64) |  | The outbound amount reserved for open sell orders. |
+| reserved_buy | [uint64](#uint64) |  | The inbound amount reserved for open buy orders. |
 
 
 
@@ -1462,6 +1550,23 @@
 
 
 
+<a name="xudrpc.LogLevel"></a>
+
+### LogLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALERT | 0 |  |
+| ERROR | 1 |  |
+| WARN | 2 |  |
+| INFO | 3 |  |
+| VERBOSE | 4 |  |
+| DEBUG | 5 |  |
+| TRACE | 6 |  |
+
+
+
 <a name="xudrpc.OrderSide"></a>
 
 ### OrderSide
@@ -1502,12 +1607,15 @@ The primary service for interacting with a running xud node.
 | AddCurrency | [Currency](#xudrpc.Currency) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. shell: xucli addcurrency &lt;currency&gt; &lt;swap_client&gt; [decimal_places] [token_address] |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. shell: xucli addpair &lt;base_currency&gt; &lt;quote_currency&gt; |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. shell: xucli ban &lt;node_identifier&gt; |
+| ChangePassword | [ChangePasswordRequest](#xudrpc.ChangePasswordRequest) | [ChangePasswordResponse](#xudrpc.ChangePasswordResponse) | Changes the xud master password, including the wallet passwords for any underlying clients. shell: xucli changepass |
 | CloseChannel | [CloseChannelRequest](#xudrpc.CloseChannelRequest) | [CloseChannelResponse](#xudrpc.CloseChannelResponse) | Closes any existing payment channels with a peer for the specified currency. shell: xucli closechannel &lt;currency&gt; [node_identifier ] [--force] |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. shell: xucli connect &lt;node_uri&gt; |
 | WalletDeposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli walletdeposit &lt;currency&gt; |
+| Deposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency directly into a channel. shell: xucli deposit &lt;currency&gt; |
 | DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. shell: xucli getbalance [currency] |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. shell: xucli getinfo |
+| GetMnemonic | [GetMnemonicRequest](#xudrpc.GetMnemonicRequest) | [GetMnemonicResponse](#xudrpc.GetMnemonicResponse) | Gets the master seed mnemonic . shell: xucli getnemonic |
 | GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Gets general information about a node. shell: xucli getnodeinfo &lt;node_identifier&gt; |
 | ListOrders | [ListOrdersRequest](#xudrpc.ListOrdersRequest) | [ListOrdersResponse](#xudrpc.ListOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. shell: xucli listorders [pair_id] [include_own_orders] [limit] |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. shell: xucli listcurrencies |
@@ -1521,6 +1629,7 @@ The primary service for interacting with a running xud node.
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeorder &lt;order_id&gt; [quantity] |
 | RemoveAllOrders | [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest) | [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse) | Removes all orders from the order book. Removed orders become immediately unavailable for swaps, and peers are notified that the orders are no longer valid. Any portion of the orders that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeallorders |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. shell: xucli removepair &lt;pair_id&gt; |
+| SetLogLevel | [SetLogLevelRequest](#xudrpc.SetLogLevelRequest) | [SetLogLevelResponse](#xudrpc.SetLogLevelResponse) | Set the logging level. shell: xucli loglevel &lt;level&gt; |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. shell: xucli shutdown |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |

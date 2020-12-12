@@ -57,9 +57,7 @@ const initValues = async (db: DB) => {
     { id: currencies[0], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
     { id: currencies[1], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   ]);
-  await orderBookRepository.addPairs([
-    { baseCurrency: currencies[0], quoteCurrency: currencies[1] },
-  ]);
+  await orderBookRepository.addPairs([{ baseCurrency: currencies[0], quoteCurrency: currencies[1] }]);
 };
 
 describe('OrderBook', () => {
@@ -112,15 +110,30 @@ describe('OrderBook', () => {
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: PAIR_ID, quantity: 500, price: 55, isBuy: true, hold: 0 };
-    const { remainingOrder } = await orderBook.placeLimitOrder({ order: { localId: uuidv1(), ...order } });
+    const order = {
+      pairId: PAIR_ID,
+      quantity: 500,
+      price: 55,
+      isBuy: true,
+      hold: 0,
+    };
+    const { remainingOrder } = await orderBook.placeLimitOrder({
+      order: { localId: uuidv1(), ...order },
+    });
     expect(remainingOrder).to.not.be.undefined;
     expect(orderBook.getOwnOrder(remainingOrder!.id, PAIR_ID)).to.not.be.undefined;
     await orderBook.placeLimitOrder({ order: { localId: uuidv1(), ...order } });
   });
 
   it('should fully match new ownOrder and remove matches', async () => {
-    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 600, price: 55, isBuy: false, hold: 0 };
+    const order = {
+      pairId: 'LTC/BTC',
+      localId: uuidv1(),
+      quantity: 600,
+      price: 55,
+      isBuy: false,
+      hold: 0,
+    };
     const matches = await orderBook.placeLimitOrder({ order });
     expect(matches.remainingOrder).to.be.undefined;
 
@@ -137,7 +150,13 @@ describe('OrderBook', () => {
   });
 
   it('should partially match new market order and discard remaining order', async () => {
-    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 1000, isBuy: false, hold: 0 };
+    const order = {
+      pairId: 'LTC/BTC',
+      localId: uuidv1(),
+      quantity: 1000,
+      isBuy: false,
+      hold: 0,
+    };
     const result = await orderBook.placeMarketOrder({ order });
     const match = result.internalMatches[0];
     expect(result.remainingOrder).to.be.undefined;
@@ -147,7 +166,12 @@ describe('OrderBook', () => {
   it('should create, partially match, and remove an order', async () => {
     const order: orders.OwnOrder = createOwnOrder(10, 1000, true);
     await orderBook.placeLimitOrder({ order });
-    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 500, isBuy: false };
+    const takerOrder: orders.OwnMarketOrder = {
+      pairId: 'LTC/BTC',
+      localId: uuidv1(),
+      quantity: 500,
+      isBuy: false,
+    };
     await orderBook.placeMarketOrder({ order: takerOrder });
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
   });
@@ -169,7 +193,7 @@ describe('OrderBook', () => {
   });
 
   it('should place order with quantity higher than min quantity', async () => {
-    orderBook['thresholds'] = { minQuantity : 10000 };
+    orderBook['thresholds'] = { minQuantity: 10000 };
     const order: orders.OwnOrder = createOwnOrder(0.01, 1000000, false);
 
     await expect(orderBook.placeLimitOrder({ order })).to.be.fulfilled;
@@ -231,7 +255,9 @@ describe('nomatching OrderBook', () => {
     expect(buyOrderResult.remainingOrder!.quantity).to.be.equal(buyOrder.quantity);
 
     const sellOrder = createOwnOrder(0.01, 100000, false);
-    const sellOrderResult = await orderBook.placeLimitOrder({ order: sellOrder });
+    const sellOrderResult = await orderBook.placeLimitOrder({
+      order: sellOrder,
+    });
     expect(sellOrderResult.remainingOrder!.localId).to.be.equal(sellOrder.localId);
     expect(sellOrderResult.remainingOrder!.quantity).to.be.equal(sellOrder.quantity);
   });
@@ -264,11 +290,13 @@ describe('nomatching OrderBook', () => {
       quantityToRemove: 10000,
     });
 
-    expect(() => orderBook['removeOwnOrder']({
-      orderId: remainingOrder!.id,
-      pairId: order.pairId,
-      quantityToRemove: 10000,
-    })).to.throw;
+    expect(() =>
+      orderBook['removeOwnOrder']({
+        orderId: remainingOrder!.id,
+        pairId: order.pairId,
+        quantityToRemove: 10000,
+      }),
+    ).to.throw;
   });
 
   it('should allow own order partial removal, but should not find the order id after it was fully removed', async () => {
@@ -286,11 +314,13 @@ describe('nomatching OrderBook', () => {
       quantityToRemove: 10000,
     });
 
-    expect(() => orderBook['removeOwnOrder']({
-      orderId: remainingOrder!.id,
-      pairId: order.pairId,
-      quantityToRemove: 10000,
-    })).to.throw;
+    expect(() =>
+      orderBook['removeOwnOrder']({
+        orderId: remainingOrder!.id,
+        pairId: order.pairId,
+        quantityToRemove: 10000,
+      }),
+    ).to.throw;
   });
 
   describe('stampOwnOrder', () => {
@@ -329,8 +359,9 @@ describe('nomatching OrderBook', () => {
         id: ownOrderWithLocalId.localId,
         pairId: ownOrderWithLocalId.pairId,
       });
-      expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId))
-        .to.throw(`order with local id ${ownOrderWithLocalId.localId} already exists`);
+      expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId)).to.throw(
+        `order with local id ${ownOrderWithLocalId.localId} already exists`,
+      );
     });
 
     it('does not throw an error when replacing an existing localId', async () => {

@@ -23,36 +23,16 @@ var instabilityTestCases = []*testCase{
 		test: testMakerCrashedAfterSendBeforePreimageResolved,
 	},
 	{
-		name: "maker crashed after send payment before preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
-		test: testMakerCrashedAfterSendBeforePreimageResolvedConnextIn,
-	},
-	{
 		name: "maker crashed after send payment after preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
 		test: testMakerCrashedAfterSendAfterPreimageResolved,
-	},
-	{
-		name: "maker crashed after send payment after preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
-		test: testMakerCrashedAfterSendAfterPreimageResolvedConnextIn,
 	},
 	{
 		name: "maker lnd crashed before order settlement", // replacing Alice
 		test: testMakerLndCrashedBeforeSettlement,
 	},
 	{
-		name: "maker connext client crashed before order settlement", // replacing Alice
-		test: testMakerConnextClientCrashedBeforeSettlement,
-	},
-	{
 		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
 		test: testMakerCrashedAfterSendDelayedSettlement,
-	},
-	{
-		name: "maker crashed after send payment with delayed settlement; incoming: connext, outgoing: lnd", // replacing Alice + Bob
-		test: testMakerCrashedAfterSendDelayedSettlementConnextIn,
-	},
-	{
-		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
-		test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
 	},
 }
 
@@ -60,17 +40,8 @@ func testMakerCrashedAfterSendBeforePreimageResolved(net *xudtest.NetworkHarness
 	testMakerCrashedDuringSwap(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED"})
 }
 
-func testMakerCrashedAfterSendBeforePreimageResolvedConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
-	ht.act.initConnext(net, net.Bob, true)
-	testMakerCrashedDuringSwapConnextIn(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED"})
-}
-
 func testMakerCrashedAfterSendAfterPreimageResolved(net *xudtest.NetworkHarness, ht *harnessTest) {
 	testMakerCrashedDuringSwap(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_AFTER_PREIMAGE_RESOLVED"})
-}
-
-func testMakerCrashedAfterSendAfterPreimageResolvedConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
-	testMakerCrashedDuringSwapConnextIn(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_AFTER_PREIMAGE_RESOLVED"})
 }
 
 func testMakerCrashedDuringSwap(net *xudtest.NetworkHarness, ht *harnessTest, customXudMakerEnvVars []string) {
@@ -123,69 +94,6 @@ func testMakerCrashedDuringSwap(net *xudtest.NetworkHarness, ht *harnessTest, cu
 	ht.assert.NoError(err)
 	aliceLtcBalance := aliceBalance.ltc.channel.GetBalance()
 	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not receive LTC")
-}
-
-func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnessTest, makerEnvArgs []string) {
-	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, makerEnvArgs)
-	ht.assert.NoError(err)
-	ht.act.init(net.Alice)
-	ht.act.initConnext(net, net.Alice, false)
-
-	// Connect Alice to Bob.
-	ht.act.connect(net.Alice, net.Bob)
-	ht.act.verifyConnectivity(net.Alice, net.Bob)
-
-	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
-	ht.assert.NoError(err)
-
-	// Save the initial balances.
-	alicePrevBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.NoError(err)
-	alicePrevEthBalance := alicePrevBalance.Balances["ETH"]
-
-	// Place an order on Alice.
-	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "testMakerCrashedDuringSwapConnextIn",
-		Price:    40,
-		Quantity: 100,
-		PairId:   "BTC/ETH",
-		Side:     xudrpc.OrderSide_SELL,
-	}
-	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
-
-	// brief wait for collateralization to complete for Alice
-	time.Sleep(1 * time.Second)
-
-	// Place a matching order on Bob.
-	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "testMakerCrashedDuringSwapConnextIn",
-		Price:    aliceOrderReq.Price,
-		Quantity: aliceOrderReq.Quantity,
-		PairId:   aliceOrderReq.PairId,
-		Side:     xudrpc.OrderSide_BUY,
-	}
-
-	_, err = net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
-	ht.assert.NoError(err)
-
-	<-net.Alice.ProcessExit
-
-	err = net.Alice.Start(nil)
-	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
-
-	// Brief delay to allow for swap to be recovered consistently.
-	time.Sleep(3 * time.Second)
-
-	// Verify that Alice recovered ETH funds.
-	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.NoError(err)
-	aliceEthBalance := aliceBalance.Balances["ETH"]
-	diff := uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
-	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
 }
 
 func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -247,92 +155,6 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 	ht.assert.NoError(err)
 	aliceLtcBalance := aliceBalance.ltc.channel.GetBalance()
 	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not recover LTC funds")
-}
-
-func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
-	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
-		"CUSTOM_SCENARIO=INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE",
-		"CLIENT_TYPE=ConnextClient",
-		// connext-client should be replaced, so we're not specifying its current PID,
-		// as in other client types.
-	})
-
-	ht.assert.NoError(err)
-	ht.act.init(net.Alice)
-
-	ht.act.initConnext(net, net.Alice, false)
-	ht.assert.NoError(waitConnextReady(net.Bob))
-
-	// Connect Alice to Bob.
-	ht.act.connect(net.Alice, net.Bob)
-	ht.act.verifyConnectivity(net.Alice, net.Bob)
-
-	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
-	ht.assert.NoError(err)
-
-	// Save the initial balances.
-	alicePrevBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.NoError(err)
-	alicePrevEthBalance := alicePrevBalance.Balances["ETH"]
-
-	bobPrevBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
-	ht.assert.NoError(err)
-	bobPrevBtcBalance := bobPrevBalance.Balances["BTC"]
-
-	// Place an order on Alice.
-	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "testMakerConnextClientCrashedBeforeSettlement",
-		Price:    40,
-		Quantity: 100,
-		PairId:   "BTC/ETH",
-		Side:     xudrpc.OrderSide_SELL,
-	}
-	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
-
-	// brief wait for collateralization to complete for Alice
-	time.Sleep(1 * time.Second)
-
-	// Place a matching order on Bob.
-	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "testMakerConnextClientCrashedBeforeSettlement",
-		Price:    aliceOrderReq.Price,
-		Quantity: aliceOrderReq.Quantity,
-		PairId:   aliceOrderReq.PairId,
-		Side:     xudrpc.OrderSide_BUY,
-	}
-	go net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
-
-	// Alice's connext-client is expected to be killed by Alice's custom xud.
-	<-net.Alice.ConnextClient.ProcessExit
-
-	// Wait a bit so that Alice's call to connext-client for settlement would fail.
-	time.Sleep(5 * time.Second)
-
-	// Restart Alice's connext-client.
-	err = net.Alice.ConnextClient.Start(nil)
-	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
-
-	// Brief delay to allow for swap to be recovered consistently.
-	// The pending swap recheck interval is usually 5m, but was adjusted in
-	// Alice's custom xud to 5s (as well as the swap completion timeout interval).
-	time.Sleep(10 * time.Second)
-
-	// Verify that both parties received their payment.
-	bobBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
-	ht.assert.NoError(err)
-	bobBtcBalance := bobBalance.Balances["BTC"]
-	diff := bobOrderReq.Quantity
-	ht.assert.Equal(bobPrevBtcBalance.ChannelBalance+diff, bobBtcBalance.ChannelBalance)
-
-	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.NoError(err)
-	aliceEthBalance := aliceBalance.Balances["ETH"]
-	diff = uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
-	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
 }
 
 func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -406,10 +228,10 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 	ht.assert.NoError(err)
 
 	ht.act.init(net.Alice)
-	ht.act.initConnext(net, net.Alice, true)
+	// ht.act.FundETH(net, net.Alice)
 
 	ht.act.init(net.Bob)
-	ht.act.initConnext(net, net.Bob, false)
+	ht.act.waitConnextReady(net.Bob)
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -451,9 +273,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 	err = net.Alice.Start(nil)
 	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Verify that alice hasn't claimed her BTC yet. The incoming BTC payment
 	// cannot be settled until the outgoing ETH payment is settled by bob,
@@ -494,10 +314,10 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 	ht.assert.NoError(err)
 
 	ht.act.init(net.Alice)
-	ht.act.initConnext(net, net.Alice, false)
+	ht.act.waitConnextReady(net.Alice)
 
 	ht.act.init(net.Bob)
-	ht.act.initConnext(net, net.Bob, true)
+	// ht.act.FundETH(net, net.Bob)
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -542,9 +362,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 
 	err = net.Alice.Start(nil)
 	ht.assert.NoError(err)
-
-	err = waitConnextReady(net.Alice)
-	ht.assert.NoError(err)
+	ht.act.waitConnextReady(net.Alice)
 
 	// Verify that alice hasn't claimed her ETH yet. The incoming ETH payment
 	// cannot be settled until the outgoing BTC payment is settled by bob,

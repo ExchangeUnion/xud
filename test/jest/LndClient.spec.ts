@@ -6,26 +6,16 @@ import { SwapRole } from '../../lib/constants/enums';
 import { ClientStatus } from '../../lib/swaps/SwapClient';
 
 const openChannelSyncResponse = {
-  hasFundingTxidStr: () => { return true; },
+  hasFundingTxidStr: () => {
+    return true;
+  },
   getFundingTxidStr: () => 'some_tx_id',
 };
 
-const getSendPaymentSyncResponse = () => {
-  return {
-    getPaymentError: () => {},
-    getPaymentPreimage_asB64: () =>
-      'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=',
-  };
-};
-
-const getSendPaymentSyncErrorResponse = () => {
-  return {
-    getPaymentError: () => 'error!',
-  };
-};
+const preimage = 'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=';
 
 jest.mock('../../lib/Logger');
-const mockedLogger = <jest.Mock<Logger>><any>Logger;
+const mockedLogger = <jest.Mock<Logger>>(<any>Logger);
 describe('LndClient', () => {
   let lnd: LndClient;
   let config: LndClientConfig;
@@ -63,10 +53,7 @@ describe('LndClient', () => {
     const units = 16000000;
     const externalIp1 = '123.456.789.321:9735';
     const externalIp2 = '192.168.63.155:9777';
-    const lndListeningUris = [
-      `${peerPubKey}@${externalIp1}`,
-      `${peerPubKey}@${externalIp2}`,
-    ];
+    const lndListeningUris = [`${peerPubKey}@${externalIp1}`, `${peerPubKey}@${externalIp2}`];
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
@@ -74,7 +61,8 @@ describe('LndClient', () => {
       const connectPeerFail = () => {
         throw new Error('connectPeer failed');
       };
-      lnd['connectPeer'] = jest.fn()
+      lnd['connectPeer'] = jest
+        .fn()
         .mockImplementationOnce(connectPeerFail)
         .mockImplementationOnce(() => {
           return Promise.resolve();
@@ -85,10 +73,8 @@ describe('LndClient', () => {
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(2);
-      expect(lnd['connectPeer'])
-        .toHaveBeenCalledWith(peerPubKey, externalIp1);
-      expect(lnd['connectPeer'])
-        .toHaveBeenCalledWith(peerPubKey, externalIp2);
+      expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp2);
     });
 
     test('it does succeed when connecting to already connected peer', async () => {
@@ -97,29 +83,25 @@ describe('LndClient', () => {
       const alreadyConnected = () => {
         throw new Error('already connected');
       };
-      lnd['connectPeer'] = jest.fn()
-        .mockImplementation(alreadyConnected);
+      lnd['connectPeer'] = jest.fn().mockImplementation(alreadyConnected);
       await lnd.openChannel({
         units,
         remoteIdentifier: peerPubKey,
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
-      expect(lnd['connectPeer'])
-        .toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
-      expect(lnd['openChannelSync'])
-        .toHaveBeenCalledWith(peerPubKey, units, 0, 0);
+      expect(lnd['openChannelSync']).toHaveBeenCalledWith(peerPubKey, units, 0, 0);
     });
 
     test('it pushes satoshis to the peer when specified', async () => {
       expect.assertions(4);
       const pushUnits = 481824;
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
-      lnd['connectPeer'] = jest.fn()
-        .mockImplementationOnce(() => {
-          return Promise.resolve();
-        });
+      lnd['connectPeer'] = jest.fn().mockImplementationOnce(() => {
+        return Promise.resolve();
+      });
       await lnd.openChannel({
         units,
         pushUnits,
@@ -127,21 +109,18 @@ describe('LndClient', () => {
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
-      expect(lnd['connectPeer'])
-        .toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
-      expect(lnd['openChannelSync'])
-        .toHaveBeenCalledWith(peerPubKey, units, pushUnits, 0);
+      expect(lnd['openChannelSync']).toHaveBeenCalledWith(peerPubKey, units, pushUnits, 0);
     });
 
     test('it should set fee when specified', async () => {
       expect.assertions(4);
       const fee = 24;
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
-      lnd['connectPeer'] = jest.fn()
-          .mockImplementationOnce(() => {
-            return Promise.resolve();
-          });
+      lnd['connectPeer'] = jest.fn().mockImplementationOnce(() => {
+        return Promise.resolve();
+      });
       await lnd.openChannel({
         units,
         fee,
@@ -149,30 +128,25 @@ describe('LndClient', () => {
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
-      expect(lnd['connectPeer'])
-          .toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
-      expect(lnd['openChannelSync'])
-          .toHaveBeenCalledWith(peerPubKey, units, 0, fee);
+      expect(lnd['openChannelSync']).toHaveBeenCalledWith(peerPubKey, units, 0, fee);
     });
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
-      lnd['connectPeer'] = jest.fn()
-        .mockImplementationOnce(() => {
-          return Promise.resolve();
-        });
+      lnd['connectPeer'] = jest.fn().mockImplementationOnce(() => {
+        return Promise.resolve();
+      });
       await lnd.openChannel({
         units,
         remoteIdentifier: peerPubKey,
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
-      expect(lnd['connectPeer'])
-        .toHaveBeenCalledWith(peerPubKey, externalIp1);
-      expect(lnd['connectPeer'])
-        .not.toHaveBeenCalledWith(peerPubKey, externalIp2);
+      expect(lnd['connectPeer']).toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['connectPeer']).not.toHaveBeenCalledWith(peerPubKey, externalIp2);
     });
 
     test('it throws when openchannel fails', async () => {
@@ -192,18 +166,14 @@ describe('LndClient', () => {
       }
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
     });
-
   });
 
   describe('sendPayment', () => {
-
     test('it resolves upon maker success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn().mockReturnValue(Promise.resolve(preimage));
       const deal = getValidDeal();
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
-      await expect(lnd.sendPayment(deal))
-        .resolves.toMatchSnapshot();
+      await expect(lnd.sendPayment(deal)).resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         amount: deal.takerAmount,
         destination: deal.takerPubKey,
@@ -214,15 +184,13 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon taker success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn().mockReturnValue(Promise.resolve(preimage));
       const deal = {
         ...getValidDeal(),
         role: SwapRole.Taker,
       };
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
-      await expect(lnd.sendPayment(deal))
-        .resolves.toMatchSnapshot();
+      await expect(lnd.sendPayment(deal)).resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         amount: deal.makerAmount,
         destination: deal.destination,
@@ -232,20 +200,16 @@ describe('LndClient', () => {
     });
 
     test('it rejects upon sendPaymentSync error', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncErrorResponse()));
-      await expect(lnd.sendPayment(getValidDeal()))
-        .rejects.toMatchSnapshot();
+      lnd['sendPaymentV2'] = jest.fn().mockRejectedValue('error');
+      await expect(lnd.sendPayment(getValidDeal())).rejects.toEqual('error');
     });
 
     test('it resolves upon sendSmallestAmount success', async () => {
-      lnd['sendPaymentSync'] = jest.fn()
-        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      lnd['sendPaymentV2'] = jest.fn().mockReturnValue(Promise.resolve(preimage));
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
       const rHash = '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80';
       const destination = '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac';
-      await expect(lnd.sendSmallestAmount(rHash, destination))
-        .resolves.toMatchSnapshot();
+      await expect(lnd.sendSmallestAmount(rHash, destination)).resolves.toEqual(preimage);
       expect(buildSendRequestSpy).toHaveBeenCalledWith({
         destination,
         rHash,
@@ -256,16 +220,13 @@ describe('LndClient', () => {
   });
 
   describe('swapCapacities', () => {
-
     test('fetch and persist swap capacities', async () => {
       expect.assertions(5);
 
       lnd['pendingChannels'] = jest.fn().mockImplementation(() => {
         return Promise.resolve({
           toObject: () => {
-            return {
-              pendingOpenChannelsList: [],
-            };
+            return { pendingOpenChannelsList: [] };
           },
         });
       });
@@ -275,10 +236,34 @@ describe('LndClient', () => {
           toObject: () => {
             return {
               channelsList: [
-                { active: true, localBalance: 100, localChanReserveSat: 2, remoteBalance: 200, remoteChanReserveSat: 5 },
-                { active: true, localBalance: 80, localChanReserveSat: 2, remoteBalance: 220, remoteChanReserveSat: 5 },
-                { active: true, localBalance: 110, localChanReserveSat: 20, remoteBalance: 300, remoteChanReserveSat: 5 },
-                { active: false, localBalance: 50, localChanReserveSat: 2, remoteBalance: 50, remoteChanReserveSat: 2 },
+                {
+                  active: true,
+                  localBalance: 100,
+                  localChanReserveSat: 2,
+                  remoteBalance: 200,
+                  remoteChanReserveSat: 5,
+                },
+                {
+                  active: true,
+                  localBalance: 80,
+                  localChanReserveSat: 2,
+                  remoteBalance: 220,
+                  remoteChanReserveSat: 5,
+                },
+                {
+                  active: true,
+                  localBalance: 110,
+                  localChanReserveSat: 20,
+                  remoteBalance: 300,
+                  remoteChanReserveSat: 5,
+                },
+                {
+                  active: false,
+                  localBalance: 50,
+                  localChanReserveSat: 2,
+                  remoteBalance: 50,
+                  remoteChanReserveSat: 2,
+                },
               ],
             };
           },

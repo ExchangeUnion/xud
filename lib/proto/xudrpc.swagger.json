@@ -122,6 +122,23 @@
         ]
       }
     },
+    "/v1/changepass": {
+      "post": {
+        "summary": "Changes the xud master password, including the wallet passwords for any underlying clients.\nshell: xucli changepass",
+        "operationId": "ChangePassword",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcChangePasswordResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/closechannel": {
       "post": {
         "summary": "Closes any existing payment channels with a peer for the specified currency.\nshell: xucli closechannel \u003ccurrency\u003e [node_identifier ] [--force]",
@@ -178,6 +195,33 @@
             }
           }
         },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/deposit": {
+      "post": {
+        "summary": "Gets an address to deposit a given currency directly into a channel.\nshell: xucli deposit \u003ccurrency\u003e",
+        "operationId": "Deposit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositRequest"
+            }
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -246,6 +290,23 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcGetInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/mnemonic": {
+      "get": {
+        "summary": "Gets the master seed mnemonic .\nshell: xucli getnemonic",
+        "operationId": "GetMnemonic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetMnemonicResponse"
             }
           }
         },
@@ -540,6 +601,33 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/xudrpcRemovePairRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/setloglevel": {
+      "post": {
+        "summary": "Set the logging level.\nshell: xucli loglevel \u003clevel\u003e",
+        "operationId": "SetLogLevel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcSetLogLevelResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcSetLogLevelRequest"
             }
           }
         ],
@@ -942,6 +1030,9 @@
         }
       }
     },
+    "xudrpcChangePasswordResponse": {
+      "type": "object"
+    },
     "xudrpcChannels": {
       "type": "object",
       "properties": {
@@ -1181,6 +1272,17 @@
         }
       }
     },
+    "xudrpcGetMnemonicResponse": {
+      "type": "object",
+      "properties": {
+        "seed_mnemonic": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "xudrpcGetNodeInfoResponse": {
       "type": "object",
       "properties": {
@@ -1276,6 +1378,19 @@
           "type": "string"
         }
       }
+    },
+    "xudrpcLogLevel": {
+      "type": "string",
+      "enum": [
+        "ALERT",
+        "ERROR",
+        "WARN",
+        "INFO",
+        "VERBOSE",
+        "DEBUG",
+        "TRACE"
+      ],
+      "default": "ALERT"
     },
     "xudrpcNodeIdentifier": {
       "type": "object",
@@ -1619,6 +1734,20 @@
           "type": "string",
           "format": "uint64",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
+        },
+        "remaining_quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Remaining portion of the order if it was a partial removal."
+        },
+        "removed_quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Successfully removed portion of the order."
+        },
+        "pair_id": {
+          "type": "string",
+          "title": "Removed order's pairId. (e.g. ETH/BTC)"
         }
       }
     },
@@ -1659,6 +1788,17 @@
         "INTERNAL"
       ],
       "default": "TAKER"
+    },
+    "xudrpcSetLogLevelRequest": {
+      "type": "object",
+      "properties": {
+        "log_level": {
+          "$ref": "#/definitions/xudrpcLogLevel"
+        }
+      }
+    },
+    "xudrpcSetLogLevelResponse": {
+      "type": "object"
     },
     "xudrpcShutdownRequest": {
       "type": "object"
@@ -1881,22 +2021,22 @@
         "max_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "Maximum outbound limit for an order denominated in satoshis."
+          "description": "Maximum outbound limit for a sell order denominated in satoshis."
         },
         "max_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "Maximum inbound limit for an order denominated in satoshis."
+          "description": "Maximum inbound limit for a buy order denominated in satoshis."
         },
-        "reserved_outbound": {
+        "reserved_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "The outbound amount reserved for open orders."
+          "description": "The outbound amount reserved for open sell orders."
         },
-        "reserved_inbound": {
+        "reserved_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "The inbound amount reserved for open orders."
+          "description": "The inbound amount reserved for open buy orders."
         }
       }
     },

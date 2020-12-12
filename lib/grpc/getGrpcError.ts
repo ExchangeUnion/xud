@@ -22,6 +22,8 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.MIN_QUANTITY_VIOLATED:
     case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
     case swapErrorCodes.REMOTE_IDENTIFIER_MISSING:
+    case orderErrorCodes.DUPLICATE_PAIR_CURRENCIES:
+    case connextErrorCodes.WITHDRAW_ADDRESS_MISSING:
       code = status.INVALID_ARGUMENT;
       break;
     case orderErrorCodes.PAIR_DOES_NOT_EXIST:
@@ -49,10 +51,12 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
     case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
     case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
-    case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
+    case swapErrorCodes.INSUFFICIENT_OUTBOUND_CAPACITY:
+    case swapErrorCodes.INSUFFICIENT_INBOUND_CAPACITY:
     case orderErrorCodes.QUANTITY_ON_HOLD:
     case swapErrorCodes.SWAP_CLIENT_NOT_FOUND:
     case swapErrorCodes.SWAP_CLIENT_MISCONFIGURED:
+    case serviceErrorCodes.NO_CHANNELS_TO_CLOSE:
       code = status.FAILED_PRECONDITION;
       break;
     case lndErrorCodes.UNAVAILABLE:
@@ -64,6 +68,7 @@ const getGrpcError = (err: any) => {
       break;
     case serviceErrorCodes.NODE_ALREADY_EXISTS:
     case serviceErrorCodes.NODE_DOES_NOT_EXIST:
+    case serviceErrorCodes.NO_ENCRYPT_MODE_ENABLED:
       code = status.UNIMPLEMENTED;
       break;
     case p2pErrorCodes.POOL_CLOSED:
@@ -75,11 +80,14 @@ const getGrpcError = (err: any) => {
     case swapErrorCodes.SWAP_CLIENT_WALLET_NOT_CREATED:
       code = status.INTERNAL;
       break;
+    default:
+      code = status.UNKNOWN;
+      break;
   }
 
   // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
   const grpcError: grpc.ServiceError = {
-    code: code ?? status.UNKNOWN,
+    code,
     message: err.message ?? (typeof err === 'string' ? err : ''),
     name: err.name ?? 'UnknownError',
   };

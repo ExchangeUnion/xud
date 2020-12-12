@@ -88,7 +88,9 @@ describe('Config', () => {
   });
 
   test('it throws an error when a nested property is assigned the wrong type', async () => {
-    await expect(config.load({ p2p: { listen: 'no' } })).rejects.toThrow('p2p.listen is type string but should be boolean');
+    await expect(config.load({ p2p: { listen: 'no' } })).rejects.toThrow(
+      'p2p.listen is type string but should be boolean',
+    );
   });
 
   test('it throws an error when a port property is assigned an invalid value', async () => {
@@ -96,7 +98,9 @@ describe('Config', () => {
   });
 
   test('it throws an error when a cltvdelta property is assigned a negative value', async () => {
-    await expect(config.load({ lnd: { BTC: { cltvdelta: -1 } } })).rejects.toThrow('cltvdelta must be a positive number');
+    await expect(config.load({ lnd: { BTC: { cltvdelta: -1 } } })).rejects.toThrow(
+      'cltvdelta must be a positive number',
+    );
   });
 
   test('it uses the default value when a prperty is assigned an undefined value', async () => {

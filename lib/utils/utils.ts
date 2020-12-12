@@ -1,4 +1,3 @@
-import { createHash, randomBytes as cryptoRandomBytes } from 'crypto';
 import http from 'http';
 // @ts-ignore
 import createKeccakHash from 'keccak';
@@ -16,24 +15,28 @@ const MAX_DECIMAL_PLACES = 12;
  */
 export const getExternalIp = () => {
   return new Promise<string>((resolve, reject) => {
-    http.get('http://ipv4.icanhazip.com/', (res) => {
-      let body = '';
+    http
+      .get('http://ipv4.icanhazip.com/', (res) => {
+        let body = '';
 
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-      res.on('end', () => {
-        // Removes new line at the end of the string
-        body = body.trimRight();
-        resolve(body);
-      });
-      res.on('error', (err: Error) => {
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          // Removes new line at the end of the string
+          body = body.trimRight();
+          resolve(body);
+        });
+        res.on('error', (err: Error) => {
+          reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
+        });
+      })
+      .on('error', (err: Error) => {
+        reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
+      })
+      .on('error', (err: Error) => {
         reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
       });
-
-    }).on('error', (err: Error) => {
-      reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
-    });
   });
 };
 
@@ -41,7 +44,7 @@ export const getExternalIp = () => {
  * Check whether a variable is a non-array object
  */
 export const isObject = (val: any): boolean => {
-  return (val && typeof val === 'object' && !Array.isArray(val));
+  return val && typeof val === 'object' && !Array.isArray(val);
 };
 
 /**
@@ -86,7 +89,7 @@ export const getPublicMethods = (obj: any): any => {
   const ret: any = {};
   Object.getOwnPropertyNames(Object.getPrototypeOf(obj)).forEach((name) => {
     const func = obj[name];
-    if ((func instanceof Function) && name !== 'constructor' && !name.startsWith('_')) {
+    if (func instanceof Function && name !== 'constructor' && !name.startsWith('_')) {
       ret[name] = func;
     }
   });
@@ -158,9 +161,6 @@ export const isPlainObject = (obj: any) => {
 /** A promisified wrapper for the NodeJS `setTimeout` method. */
 export const setTimeoutPromise = promisify(setTimeout);
 
-/** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
-export const randomBytes = promisify(cryptoRandomBytes);
-
 export const removeUndefinedProps = <T>(typedObj: T): T => {
   const obj = typedObj as any;
   Object.keys(obj).forEach((key) => {
@@ -175,11 +175,11 @@ export const removeUndefinedProps = <T>(typedObj: T): T => {
 };
 
 export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
-  for (const key in obj) {
+  Object.keys(obj).forEach((key) => {
     if (obj[key] !== undefined) {
       map.set(key, obj[key]);
     }
-  }
+  });
 };
 
 /**
@@ -188,7 +188,7 @@ export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) =
 export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: string]: T } => {
   const kvps: { [key: string]: T } = {};
   kvpArray.forEach((kvp) => {
-    kvps[kvp[0]] = kvp[1];
+    kvps[kvp[0]] = kvp[1]; // eslint-disable-line prefer-destructuring
   });
 
   return kvps;
@@ -199,18 +199,8 @@ export const sortOrders = <T extends SortableOrder>(orders: T[], isBuy: boolean)
     if (a.price === b.price) {
       return a.createdAt - b.createdAt;
     }
-    return isBuy
-      ? a.price - b.price
-      : b.price - a.price;
+    return isBuy ? a.price - b.price : b.price - a.price;
   });
-};
-
-/** Returns a random payment preimage and hash in hex encoding. */
-export const generatePreimageAndHash = async () => {
-  const bytes = await randomBytes(32);
-  const rPreimage = bytes.toString('hex');
-  const rHash = createHash('sha256').update(bytes).digest('hex');
-  return { rPreimage, rHash };
 };
 
 export const base64ToHex = (b64: string) => {
@@ -219,6 +209,10 @@ export const base64ToHex = (b64: string) => {
 
 export const hexToUint8Array = (hex: string) => {
   return Uint8Array.from(Buffer.from(hex, 'hex'));
+};
+
+export const uint8ArrayToHex = (uint8: Uint8Array) => {
+  return Buffer.from(uint8).toString('hex');
 };
 
 /**

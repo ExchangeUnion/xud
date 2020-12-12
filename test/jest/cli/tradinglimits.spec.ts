@@ -18,12 +18,17 @@ describe('displayLimits', () => {
 
   it('should print a table', () => {
     displayLimits({
-      limitsMap: [['BTC', {
-        maxBuy: 12345,
-        maxSell: 67890,
-        reservedInbound: 25000,
-        reservedOutbound: 75000,
-      }]],
+      limitsMap: [
+        [
+          'BTC',
+          {
+            maxBuy: 12345,
+            maxSell: 67890,
+            reservedBuy: 25000,
+            reservedSell: 75000,
+          },
+        ],
+      ],
     });
 
     expect(mockLog.mock.calls).toMatchSnapshot();

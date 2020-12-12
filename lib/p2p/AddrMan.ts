@@ -461,6 +461,8 @@ class AddrMan {
         }
       }
     }
+    console.log("AM vvNew is now: ", this.vvNew);
+    console.log("AM addrMap is now: ", this.addrMap);
     return fNew;
   }
   // Mark and entry as attempted to connect

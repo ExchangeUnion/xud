@@ -33,24 +33,23 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
   public static deserialize = (binary: Uint8Array): SessionInitPacket | pb.SessionInitPacket.AsObject => {
     const obj = pb.SessionInitPacket.deserializeBinary(binary).toObject();
     return SessionInitPacket.validate(obj) ? SessionInitPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.SessionInitPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.sign
-      && obj.ephemeralPubKey
-      && obj.peerPubKey
-      && obj.version
-      && obj.nodePubKey
-      && validateNodeState(obj.nodeState)
+    return !!(
+      obj.id &&
+      obj.sign &&
+      obj.ephemeralPubKey &&
+      obj.peerPubKey &&
+      obj.version &&
+      obj.nodePubKey &&
+      validateNodeState(obj.nodeState)
     );
-  }
+  };
 
   private static convert = (obj: pb.SessionInitPacket.AsObject): SessionInitPacket => {
     return new SessionInitPacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: {
         sign: obj.sign,
         peerPubKey: obj.peerPubKey,
@@ -60,7 +59,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
         nodeState: convertNodeState(obj.nodeState!),
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SessionInitPacket();
@@ -73,7 +72,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     msg.setNodeState(serializeNodeState(this.body!.nodeState));
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SessionInitPacket;

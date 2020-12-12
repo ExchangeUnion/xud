@@ -9,6 +9,8 @@ const errorCodes = {
   OPEN_CHANNEL_FAILURE: codesPrefix.concat('.5'),
   NODE_DOES_NOT_EXIST: codesPrefix.concat('.6'),
   INVALID_REQUEST: codesPrefix.concat('.7'),
+  NO_CHANNELS_TO_CLOSE: codesPrefix.concat('.8'),
+  NO_ENCRYPT_MODE_ENABLED: codesPrefix.concat('.9'),
 };
 
 const errors = {
@@ -46,6 +48,14 @@ const errors = {
   INVALID_REQUEST: {
     message: 'invalid request',
     code: errorCodes.INVALID_REQUEST,
+  },
+  NO_CHANNELS_TO_CLOSE: (remoteIdentifier: string) => ({
+    message: `no channels found to close for ${remoteIdentifier}`,
+    code: errorCodes.NO_CHANNELS_TO_CLOSE,
+  }),
+  NO_ENCRYPT_MODE_ENABLED: {
+    message: 'xud is not encrypted with a password',
+    code: errorCodes.NO_ENCRYPT_MODE_ENABLED,
   },
 };
 

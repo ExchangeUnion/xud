@@ -21,7 +21,7 @@ import Swaps from './swaps/Swaps';
 import { createSimnetChannels } from './utils/simnet-connext-channels';
 import { UnitConverter } from './utils/UnitConverter';
 
-const version: string = require('../package.json').version;
+const { version }: { version: string } = require('../package.json');
 
 interface Xud {
   on(event: 'shutdown', listener: () => void): this;
@@ -81,7 +81,12 @@ class Xud extends EventEmitter {
       }
     }
 
-    const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
+    const loggers = Logger.createLoggers(
+      this.config.loglevel,
+      this.config.logpath,
+      this.config.instanceid,
+      this.config.logdateformat,
+    );
     this.logger = loggers.global;
     if (configFileLoaded) {
       this.logger.info('config file loaded');
@@ -117,19 +122,26 @@ class Xud extends EventEmitter {
       this.unitConverter.init();
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
-      const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
+      const nodeKeyExists = await fs
+        .access(nodeKeyPath)
+        .then(() => true)
+        .catch(() => false);
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
-      await this.swapClientManager.init(this.db.models);
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter, this.db.models);
+      await this.swapClientManager.init();
 
       let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
         if (nodeKeyExists) {
           nodeKey = await NodeKey.fromFile(nodeKeyPath);
         } else {
-          nodeKey = await NodeKey.generate();
-          await nodeKey.toFile(nodeKeyPath);
+          nodeKey = await NodeKey.generate(nodeKeyPath);
+          await nodeKey.toFile();
         }
+
+        // we need to initialize connext every time xud starts, even in noencrypt mode
+        // the call below is in lieu of the UnlockNode/CreateNode call flow
+        await this.swapClientManager.initConnext(nodeKey.childSeed(SwapClientType.Connext));
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
@@ -194,17 +206,12 @@ class Xud extends EventEmitter {
       // wait for components to initialize in parallel
       await Promise.all(initPromises);
 
-      // We initialize Connext separately because it
-      // requires a NodeKey.
-      await this.swapClientManager.initConnext(
-        nodeKey.childSeed(SwapClientType.Connext),
-      );
-
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init();
 
       this.service = new Service({
         version,
+        nodeKey,
         orderBook: this.orderBook,
         swapClientManager: this.swapClientManager,
         pool: this.pool,
@@ -213,21 +220,22 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
+      this.service.on('logLevel', (level) => {
+        this.swapClientManager?.setLogLevel(level);
+        Object.values(loggers).forEach((logger) => {
+          logger.setLogLevel(level);
+        });
+      });
+
       if (this.swapClientManager.connextClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
-        await this.httpServer.listen(
-          this.config.http.port,
-          this.config.http.host,
-        );
+        await this.httpServer.listen(this.config.http.port, this.config.http.host);
       }
 
       // if we're running in simnet mode and Connext is enabled we'll
       // attempt to request funds from the faucet and open a channel
       // to the node once we have received the on-chain funds
-      if (
-        this.config.network === XuNetwork.SimNet &&
-        this.swapClientManager.connextClient?.isOperational()
-      ) {
+      if (this.config.network === XuNetwork.SimNet && this.swapClientManager.connextClient?.isOperational()) {
         this.simnetChannels$ = createSimnetChannels({
           channels: [
             {
@@ -237,19 +245,7 @@ class Xud extends EventEmitter {
               // minimum channelBalance threshold
               minChannelAmount: 100000000,
             },
-            {
-              currency: 'USDT',
-              channelAmount: 100000000000,
-              minChannelAmount: 100000000,
-            },
-            {
-              currency: 'DAI',
-              channelAmount: 150000000000,
-              minChannelAmount: 100000000,
-            },
           ],
-          // we check the channel and on-chain balance every 10 seconds
-          // and refund from faucet if below the walletAmount
           retryInterval: 10000,
         }).subscribe({
           next: (currency) => {
@@ -267,7 +263,6 @@ class Xud extends EventEmitter {
       // initialize rpc server last
       if (this.rpcServer) {
         this.rpcServer.grpcService.setService(this.service);
-
       } else {
         this.logger.info('RPC server is disabled.');
       }
@@ -275,7 +270,7 @@ class Xud extends EventEmitter {
       this.logger.error('Unexpected error during initialization, shutting down...', err);
       await this.shutdown();
     }
-  }
+  };
 
   private shutdown = async () => {
     if (this.shuttingDown) {
@@ -314,15 +309,15 @@ class Xud extends EventEmitter {
     this.logger.info('XUD shutdown gracefully');
 
     this.emit('shutdown');
-  }
+  };
 
   /**
    * Initiate graceful shutdown of xud. Emits the `shutdown` event when shutdown is complete.
    */
   public beginShutdown = () => {
     // we begin the shutdown process but return a response before it completes.
-    void (this.shutdown());
-  }
+    void this.shutdown();
+  };
 }
 
 if (!module.parent) {

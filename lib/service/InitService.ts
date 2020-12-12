@@ -33,21 +33,22 @@ class InitService extends EventEmitter {
     this.newWalletValidation(password);
 
     try {
-      await this.prepareCall();
+      await this.prepareCall(true);
       const seedMnemonic = await generate();
 
       // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
       // to generate an xud nodekey from the same seed used for wallets
       const decipheredSeed = await decipher(seedMnemonic);
-      const nodeKey = NodeKey.fromBytes(decipheredSeed);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed, this.nodeKeyPath);
 
       // use this seed to init any lnd wallets that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
         seedMnemonic,
+        nodeKey,
         walletPassword: password,
       });
 
-      await nodeKey.toFile(this.nodeKeyPath, password);
+      await nodeKey.toFile(password);
       this.emit('nodekey', nodeKey);
       return {
         initializedLndWallets: initWalletResult.initializedLndWallets,
@@ -57,7 +58,7 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   public unlockNode = async (args: { password: string }) => {
     const { password } = args;
@@ -73,6 +74,7 @@ class InitService extends EventEmitter {
       this.emit('nodekey', nodeKey);
 
       return this.swapClientManager.unlockWallets({
+        nodeKey,
         walletPassword: password,
         connextSeed: nodeKey.childSeed(SwapClientType.Connext),
       });
@@ -85,20 +87,15 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   public restoreNode = async (args: {
-    password: string,
-    xudDatabase: Uint8Array,
-    lndBackupsMap: Map<string, Uint8Array>,
-    seedMnemonicList: string[],
+    password: string;
+    xudDatabase: Uint8Array;
+    lndBackupsMap: Map<string, Uint8Array>;
+    seedMnemonicList: string[];
   }) => {
-    const {
-      password,
-      xudDatabase,
-      lndBackupsMap,
-      seedMnemonicList,
-    } = args;
+    const { password, xudDatabase, lndBackupsMap, seedMnemonicList } = args;
 
     if (seedMnemonicList.length !== 24) {
       throw errors.INVALID_ARGUMENT('mnemonic must be exactly 24 words');
@@ -110,11 +107,12 @@ class InitService extends EventEmitter {
       await this.prepareCall();
 
       const decipheredSeed = await decipher(seedMnemonicList);
-      const nodeKey = NodeKey.fromBytes(decipheredSeed);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed, this.nodeKeyPath);
 
       // use the seed and database backups to restore any swap clients' wallets
       // that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
+        nodeKey,
         lndBackups: lndBackupsMap,
         walletPassword: password,
         seedMnemonic: seedMnemonicList,
@@ -124,7 +122,7 @@ class InitService extends EventEmitter {
       if (xudDatabase.byteLength) {
         await fs.writeFile(this.databasePath, xudDatabase);
       }
-      await nodeKey.toFile(this.nodeKeyPath, password);
+      await nodeKey.toFile(password);
       this.emit('nodekey', nodeKey);
       return {
         initializedLndWallets: initWalletResult.initializedLndWallets,
@@ -133,7 +131,7 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   private newWalletValidation = (password: string) => {
     if (this.nodeKeyExists) {
@@ -150,7 +148,7 @@ class InitService extends EventEmitter {
       });
       throw swapErrors.SWAP_CLIENT_MISCONFIGURED(misconfiguredClientLabels);
     }
-  }
+  };
 
   private prepareCall = async (ignoreUnavailableClients = false) => {
     if (this.pendingCall) {
@@ -167,7 +165,7 @@ class InitService extends EventEmitter {
         throw err;
       }
     }
-  }
+  };
 }
 
 export default InitService;

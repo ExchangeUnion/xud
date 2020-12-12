@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
+	// "github.com/ExchangeUnion/xud-simulation/connexttest"
+	// "math/big"
 	"time"
 
 	"github.com/roasbeef/btcutil"
@@ -27,67 +28,89 @@ type actions struct {
 }
 
 func (a *actions) init(node *xudtest.HarnessNode) {
-	// Verify connectivity.
-	timeout := time.Now().Add(10 * time.Second)
-	for {
-		req := &xudrpc.GetInfoRequest{}
-		res, err := node.Client.GetInfo(a.ctx, req)
+	var info *xudrpc.GetInfoResponse
+	isReady := func() bool {
+		var err error
+		info, err = node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
 		a.assert.NoError(err)
-		a.assert.NotNil(res.Lnd["BTC"])
-		a.assert.NotNil(res.Lnd["LTC"])
-		if len(res.Lnd["BTC"].Chains) == 1 && len(res.Lnd["LTC"].Chains) == 1 {
-			a.assert.Equal(res.Lnd["BTC"].Chains[0].Chain, "bitcoin")
-			a.assert.Equal(res.Lnd["BTC"].Chains[0].Network, "simnet")
-			a.assert.Equal(res.Lnd["LTC"].Chains[0].Chain, "litecoin")
-			a.assert.Equal(res.Lnd["LTC"].Chains[0].Network, "simnet")
+		return len(info.Lnd["BTC"].Chains) == 1 && len(info.Lnd["LTC"].Chains) == 1
+	}
 
-			// Set the node public key.
-			node.SetPubKey(res.NodePubKey)
-
-			// Add currencies
-			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "", 8)
-			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "", 8)
-
-			// Add pairs to the node.
-			a.addPair(node, "LTC", "BTC")
-
-			break
+	timeout := time.After(10 * time.Second)
+	for !isReady() {
+		select {
+		case <-timeout:
+			a.assert.Fail("timeout waiting for LND synced chains")
+		case <-time.After(1 * time.Second):
 		}
-		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
-		// retry interval
-		time.Sleep(100 * time.Millisecond)
+	}
+
+	a.assert.Equal(info.Lnd["BTC"].Chains[0].Chain, "bitcoin")
+	a.assert.Equal(info.Lnd["BTC"].Chains[0].Network, "simnet")
+	a.assert.Equal(info.Lnd["LTC"].Chains[0].Chain, "litecoin")
+	a.assert.Equal(info.Lnd["LTC"].Chains[0].Network, "simnet")
+
+	// Set the node public key.
+	node.SetPubKey(info.NodePubKey)
+
+	// Add currencies.
+	a.addCurrency(node, "BTC", xudrpc.Currency_LND, "", 8)
+	a.addCurrency(node, "LTC", xudrpc.Currency_LND, "", 8)
+	// a.addCurrency(node, "ETH", xudrpc.Currency_CONNEXT, connexttest.ETHTokenAddress, 18)
+
+	// Add pairs.
+	a.addPair(node, "LTC", "BTC")
+	// a.addPair(node, "BTC", "ETH")
+}
+
+/*
+func (a *actions) FundETH(net *xudtest.NetworkHarness, node *xudtest.HarnessNode) {
+	// Wait for node's connext connection to catch-up.
+	a.waitConnextReady(node)
+
+	// Fund node's wallet.
+	resInfo, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+	a.assert.NoError(err)
+	amount := big.NewInt(2000000000000000000)
+	err = net.ConnextNetwork.Wallet.SendEth(resInfo.Connext.Address, amount)
+	a.assert.NoError(err)
+
+	time.Sleep(15 * time.Second)
+
+	// Verify node's ETH balance.
+	bal, err := node.Client.GetBalance(a.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ethBal := bal.Balances["ETH"]
+	a.assert.NoError(err)
+	a.assert.Equal(uint64(200000000), ethBal.TotalBalance)
+	a.assert.Equal(uint64(200000000), ethBal.WalletBalance)
+	a.assert.Equal(uint64(0), ethBal.ChannelBalance)
+}
+*/
+
+func (a *actions) waitConnextReady(node *xudtest.HarnessNode) {
+	isReady := func() bool {
+		info, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+		if err != nil {
+			return false
+		}
+
+		return info.Connext.Address != ""
+	}
+
+	timeout := time.After(30 * time.Second)
+	for !isReady() {
+		select {
+		case <-timeout:
+			a.assert.Fail("timeout waiting for connext to be ready")
+		case <-time.After(1 * time.Second):
+		}
 	}
 }
 
-func (a *actions) initConnext(net *xudtest.NetworkHarness, node *xudtest.HarnessNode, fund bool) {
-	// Wait for node's connext connection to catch-up.
-	err := waitConnextReady(node)
+func (a *actions) removeCurrency(node *xudtest.HarnessNode, currency string) {
+	req := &xudrpc.RemoveCurrencyRequest{Currency: currency}
+	_, err := node.Client.RemoveCurrency(a.ctx, req)
 	a.assert.NoError(err)
-
-	// Fund node's wallet.
-	if fund {
-		resInfo, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
-		a.assert.NoError(err)
-		amount := big.NewInt(2000000000000000000)
-		err = net.ConnextNetwork.Wallet.SendEth(resInfo.Connext.Address, amount)
-		a.assert.NoError(err)
-
-		time.Sleep(15 * time.Second)
-	}
-
-	// Init node.
-	ETHTokenAddress := "0x0000000000000000000000000000000000000000"
-	a.addCurrency(node, "ETH", 2, ETHTokenAddress, 18)
-	a.addPair(node, "BTC", "ETH")
-	err = net.RestartNode(node)
-	a.assert.NoError(err)
-
-	// Verify node's ETH balance.
-	if fund {
-		resBal, err := node.Client.GetBalance(a.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-		a.assert.NoError(err)
-		a.assert.Equal(uint64(200000000), resBal.Balances["ETH"].WalletBalance)
-	}
 }
 
 func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string, decimalPlaces uint32) {
@@ -100,6 +123,24 @@ func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapCl
 		_, err := node.Client.AddCurrency(a.ctx, req)
 		a.assert.NoError(err)
 	}
+}
+
+func (a *actions) removePair(node *xudtest.HarnessNode, pairId string) {
+	// Check the current number of pairs.
+	res, err := node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
+	a.assert.NoError(err)
+
+	prevNumPairs := res.NumPairs
+
+	// Remove the pair.
+	req := &xudrpc.RemovePairRequest{PairId: pairId}
+	_, err = node.Client.RemovePair(a.ctx, req)
+	a.assert.NoError(err)
+
+	// Verify that the pair was removed.
+	res, err = node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
+	a.assert.NoError(err)
+	a.assert.Equal(res.NumPairs, prevNumPairs-1)
 }
 
 func (a *actions) addPair(node *xudtest.HarnessNode, baseCurrency string, quoteCurrency string) {
@@ -232,10 +273,16 @@ func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
 	a.assert.Equal(res.RemainingOrder.LocalId, req.OrderId)
 
 	// Retrieve and verify the added order event on destNode.
-	e := <-destNodeOrderChan
-	a.assert.NoError(e.err)
-	a.assert.NotNil(e.orderUpdate)
-	peerOrder := e.orderUpdate.GetOrder()
+
+	var peerOrder *xudrpc.Order
+	select {
+	case e := <-destNodeOrderChan:
+		a.assert.NoError(e.err)
+		a.assert.NotNil(e.orderUpdate)
+		peerOrder = e.orderUpdate.GetOrder()
+	case <-time.After(5 * time.Second):
+		a.assert.Fail("timeout waiting for broadcasted order on destNode")
+	}
 
 	// Verify the peer order.
 	a.assert.NotEqual(peerOrder.Id, req.OrderId) // Local id should not equal the global id.

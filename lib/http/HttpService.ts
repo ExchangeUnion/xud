@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import Service from '../service/Service';
 import serviceErrors from '../service/errors';
 import {
@@ -5,16 +6,13 @@ import {
   ConnextIncomingTransferRequest,
   ConnextDepositConfirmedRequest,
 } from '../connextclient/types';
-import { createHash } from 'crypto';
 
 class HttpService {
   constructor(private service: Service) {}
 
   public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
-    if (
-      preimageRequest.data && preimageRequest.data.transferMeta
-    ) {
-      const { preImage: preimage } = preimageRequest.data.transferMeta;
+    if (preimageRequest.transfer) {
+      const { preImage: preimage } = preimageRequest.transfer.transferResolver;
       if (!preimage) {
         throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
@@ -28,48 +26,39 @@ class HttpService {
     } else {
       throw serviceErrors.INVALID_REQUEST;
     }
-  }
+  };
 
-  public incomingTransfer = async (
-    incomingTransferRequest: ConnextIncomingTransferRequest,
-  ): Promise<object> => {
-    if (incomingTransferRequest.data) {
-      const {
-        amount: amountHex,
-        assetId,
-        paymentId,
-      } = incomingTransferRequest.data;
-      const {
-        lockHash,
-        timelock: timelockString,
-      } = incomingTransferRequest.data.transferMeta;
+  public incomingTransfer = async (incomingTransferRequest: ConnextIncomingTransferRequest): Promise<object> => {
+    if (incomingTransferRequest.transfer) {
+      const { transfer } = incomingTransferRequest;
+      const { transferState, meta, assetId, balance } = transfer;
+      const { routingId } = meta;
+      const { lockHash, expiry: expiryString } = transferState;
       const rHash = lockHash.slice(2);
-      const timelock = parseInt(timelockString, 10);
-      const units = parseInt(amountHex._hex, 16);
+      const expiry = parseInt(expiryString, 10);
+      const { amount } = balance;
+      const units = parseInt(amount[0], 10);
       await this.service.transferReceived({
         rHash,
-        timelock,
+        expiry,
         units,
-        paymentId,
+        routingId,
         tokenAddress: assetId,
       });
       return {};
     } else {
       throw serviceErrors.INVALID_REQUEST;
     }
-  }
+  };
 
-  public depositConfirmed = (
-    depositConfirmedRequest: ConnextDepositConfirmedRequest,
-  ): object => {
+  public depositConfirmed = (depositConfirmedRequest: ConnextDepositConfirmedRequest): object => {
     if (depositConfirmedRequest.data && depositConfirmedRequest.data.hash) {
       this.service.depositConfirmed(depositConfirmedRequest.data.hash);
       return {};
     } else {
       throw serviceErrors.INVALID_REQUEST;
     }
-  }
-
+  };
 }
 
 export default HttpService;

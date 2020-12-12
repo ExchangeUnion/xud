@@ -1,27 +1,10 @@
 import grpc from 'grpc';
 import http from 'http';
-import { defer, empty, from, Observable, of, throwError } from 'rxjs';
-import {
-  catchError,
-  concat,
-  concatAll,
-  delay,
-  mapTo,
-  mergeMap,
-  retryWhen,
-  share,
-  take,
-} from 'rxjs/operators';
+import { defer, from, Observable, of, throwError } from 'rxjs';
+import { catchError, concat, concatAll, delay, mergeMap, retryWhen, share, take, mapTo } from 'rxjs/operators';
 import { loadXudClient } from '../cli/command';
 import { XudClient } from '../proto/xudrpc_grpc_pb';
-import {
-  GetBalanceRequest,
-  GetBalanceResponse,
-  GetInfoRequest,
-  GetInfoResponse,
-  OpenChannelRequest,
-  OpenChannelResponse,
-} from '../proto/xudrpc_pb';
+import { GetBalanceRequest, GetBalanceResponse, GetInfoRequest, GetInfoResponse } from '../proto/xudrpc_pb';
 
 type Balances = {
   channelBalance: number;
@@ -49,10 +32,7 @@ const processResponse = (resolve: Function, reject: Function) => {
   };
 };
 
-const getBalance = async (
-  client: XudClient,
-  currency?: string,
-): Promise<GetBalanceResponse> => {
+const getBalance = async (client: XudClient, currency?: string): Promise<GetBalanceResponse> => {
   const request = new GetBalanceRequest();
   if (currency) {
     request.setCurrency(currency.toUpperCase());
@@ -61,20 +41,6 @@ const getBalance = async (
     client.getBalance(request, processResponse(resolve, reject));
   });
   return balances as GetBalanceResponse;
-};
-
-const openConnextChannel = async (
-  client: XudClient,
-  currency: string,
-  amount: number,
-): Promise<OpenChannelResponse> => {
-  const request = new OpenChannelRequest();
-  request.setCurrency(currency.toUpperCase());
-  request.setAmount(amount);
-  const openChannelResponse = await new Promise((resolve, reject) => {
-    client.openChannel(request, processResponse(resolve, reject));
-  });
-  return openChannelResponse as OpenChannelResponse;
 };
 
 const checkBalanceObservable = (
@@ -91,7 +57,7 @@ const checkBalanceObservable = (
         walletBalance: currencyBalance.getWalletBalance(),
         channelBalance: currencyBalance.getChannelBalance(),
       };
-      if (balances.walletBalance < minimumBalance) {
+      if (balances.channelBalance < minimumBalance) {
         // the balance is under our specified threshold
         // we'll hit the faucet with our connext address
         // and then recheck the balance
@@ -100,14 +66,7 @@ const checkBalanceObservable = (
             return from(faucetRequest(connextAddress)).pipe(
               // we wait 31 seconds (~2 blocks) before checking the balance again
               delay(31000),
-              mergeMap(() =>
-                checkBalanceObservable(
-                  client,
-                  currency,
-                  minimumBalance,
-                  getBalance$,
-                ),
-              ),
+              mergeMap(() => checkBalanceObservable(client, currency, minimumBalance, getBalance$)),
             );
           }),
         );
@@ -152,9 +111,7 @@ const faucetRequest = (connextAddress: string) => {
       path: '/faucet',
     };
 
-    const payload = {
-      address: connextAddress,
-    };
+    const payload = { address: connextAddress };
 
     const payloadStr = JSON.stringify(payload);
     options.headers = {
@@ -185,7 +142,6 @@ const faucetRequest = (connextAddress: string) => {
 const createSimnetChannel = ({
   client,
   currency,
-  minChannelAmount,
   channelAmount,
   retryInterval,
   getBalance$,
@@ -197,26 +153,10 @@ const createSimnetChannel = ({
   retryInterval: number;
   getBalance$: Observable<GetBalanceResponse>;
 }) => {
-  const balances$ = checkBalanceObservable(
-    client,
-    currency,
-    channelAmount,
-    getBalance$,
-  );
+  const balances$ = checkBalanceObservable(client, currency, channelAmount, getBalance$);
   const simnetChannel$ = balances$.pipe(
-    mergeMap((balances) => {
-      if (balances.channelBalance >= minChannelAmount) {
-        // in case we already have enough channelBalance we won't attempt
-        // to open a channel
-        return empty();
-      } else {
-        return from(openConnextChannel(client, currency, channelAmount)).pipe(
-          mapTo(currency),
-        );
-      }
-    }),
     // when error happens
-    retryWhen(errors =>
+    retryWhen((errors) =>
       errors.pipe(
         // we wait for retryInterval and attempt again
         delay(retryInterval),
@@ -226,6 +166,7 @@ const createSimnetChannel = ({
         concat(throwError('unrecoverable error happened - giving up')),
       ),
     ),
+    mapTo(currency),
     // complete the observable when the flow is successful
     take(1),
   );
@@ -239,7 +180,7 @@ const createSimnetChannels = (config: ChannelsConfig): Observable<any> => {
       const getBalance$ = defer(() => from(getBalance(client))).pipe(share());
       return from(
         // we map our channels config into observables
-        config.channels.map(channelConfig =>
+        config.channels.map((channelConfig) =>
           createSimnetChannel({
             ...channelConfig,
             client,

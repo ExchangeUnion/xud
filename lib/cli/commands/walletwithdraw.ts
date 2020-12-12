@@ -7,26 +7,27 @@ export const command = 'walletwithdraw <amount> <currency> <destination> [fee]';
 
 export const describe = 'withdraws on-chain funds from xud';
 
-export const builder = (argv: Argv) => argv
-  .positional('amount', {
-    description: 'the amount to withdraw, `all` withdraws everything',
-    type: 'string',
-  })
-  .positional('currency', {
-    description: 'the ticker symbol of the currency to withdraw.',
-    type: 'string',
-  })
-  .positional('destination', {
-    description: 'the address to send withdrawn funds to',
-    type: 'string',
-  })
-  .option('fee', {
-    description: 'the fee in satoshis (or equivalent) per byte',
-    type: 'number',
-  })
-  .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws 0.1 BTC')
-  .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE 20', 'withdraws 0.1 BTC using 20 sats/byte')
-  .example('$0 walletwithdraw all BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
+export const builder = (argv: Argv) =>
+  argv
+    .positional('amount', {
+      description: 'the amount to withdraw, `all` withdraws everything',
+      type: 'string',
+    })
+    .positional('currency', {
+      description: 'the ticker symbol of the currency to withdraw.',
+      type: 'string',
+    })
+    .positional('destination', {
+      description: 'the address to send withdrawn funds to',
+      type: 'string',
+    })
+    .option('fee', {
+      description: 'the fee in satoshis (or equivalent) per byte',
+      type: 'number',
+    })
+    .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws 0.1 BTC')
+    .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE 20', 'withdraws 0.1 BTC using 20 sats/byte')
+    .example('$0 walletwithdraw all BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();

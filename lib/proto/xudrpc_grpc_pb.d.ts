@@ -78,12 +78,15 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     addCurrency: IXudService_IAddCurrency;
     addPair: IXudService_IAddPair;
     ban: IXudService_IBan;
+    changePassword: IXudService_IChangePassword;
     closeChannel: IXudService_ICloseChannel;
     connect: IXudService_IConnect;
     walletDeposit: IXudService_IWalletDeposit;
+    deposit: IXudService_IDeposit;
     discoverNodes: IXudService_IDiscoverNodes;
     getBalance: IXudService_IGetBalance;
     getInfo: IXudService_IGetInfo;
+    getMnemonic: IXudService_IGetMnemonic;
     getNodeInfo: IXudService_IGetNodeInfo;
     listOrders: IXudService_IListOrders;
     listCurrencies: IXudService_IListCurrencies;
@@ -97,6 +100,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     removeOrder: IXudService_IRemoveOrder;
     removeAllOrders: IXudService_IRemoveAllOrders;
     removePair: IXudService_IRemovePair;
+    setLogLevel: IXudService_ISetLogLevel;
     shutdown: IXudService_IShutdown;
     subscribeOrders: IXudService_ISubscribeOrders;
     subscribeSwapFailures: IXudService_ISubscribeSwapFailures;
@@ -135,6 +139,15 @@ interface IXudService_IBan extends grpc.MethodDefinition<xudrpc_pb.BanRequest, x
     responseSerialize: grpc.serialize<xudrpc_pb.BanResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.BanResponse>;
 }
+interface IXudService_IChangePassword extends grpc.MethodDefinition<xudrpc_pb.ChangePasswordRequest, xudrpc_pb.ChangePasswordResponse> {
+    path: string; // "/xudrpc.Xud/ChangePassword"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.ChangePasswordRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ChangePasswordRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.ChangePasswordResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.ChangePasswordResponse>;
+}
 interface IXudService_ICloseChannel extends grpc.MethodDefinition<xudrpc_pb.CloseChannelRequest, xudrpc_pb.CloseChannelResponse> {
     path: string; // "/xudrpc.Xud/CloseChannel"
     requestStream: boolean; // false
@@ -155,6 +168,15 @@ interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRe
 }
 interface IXudService_IWalletDeposit extends grpc.MethodDefinition<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse> {
     path: string; // "/xudrpc.Xud/WalletDeposit"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.DepositRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.DepositRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.DepositResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.DepositResponse>;
+}
+interface IXudService_IDeposit extends grpc.MethodDefinition<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse> {
+    path: string; // "/xudrpc.Xud/Deposit"
     requestStream: boolean; // false
     responseStream: boolean; // false
     requestSerialize: grpc.serialize<xudrpc_pb.DepositRequest>;
@@ -188,6 +210,15 @@ interface IXudService_IGetInfo extends grpc.MethodDefinition<xudrpc_pb.GetInfoRe
     requestDeserialize: grpc.deserialize<xudrpc_pb.GetInfoRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.GetInfoResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.GetInfoResponse>;
+}
+interface IXudService_IGetMnemonic extends grpc.MethodDefinition<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetMnemonicResponse> {
+    path: string; // "/xudrpc.Xud/GetMnemonic"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.GetMnemonicRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.GetMnemonicResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicResponse>;
 }
 interface IXudService_IGetNodeInfo extends grpc.MethodDefinition<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse> {
     path: string; // "/xudrpc.Xud/GetNodeInfo"
@@ -306,6 +337,15 @@ interface IXudService_IRemovePair extends grpc.MethodDefinition<xudrpc_pb.Remove
     responseSerialize: grpc.serialize<xudrpc_pb.RemovePairResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.RemovePairResponse>;
 }
+interface IXudService_ISetLogLevel extends grpc.MethodDefinition<xudrpc_pb.SetLogLevelRequest, xudrpc_pb.SetLogLevelResponse> {
+    path: string; // "/xudrpc.Xud/SetLogLevel"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.SetLogLevelRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.SetLogLevelRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.SetLogLevelResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.SetLogLevelResponse>;
+}
 interface IXudService_IShutdown extends grpc.MethodDefinition<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse> {
     path: string; // "/xudrpc.Xud/Shutdown"
     requestStream: boolean; // false
@@ -394,12 +434,15 @@ export interface IXudServer {
     addCurrency: grpc.handleUnaryCall<xudrpc_pb.Currency, xudrpc_pb.AddCurrencyResponse>;
     addPair: grpc.handleUnaryCall<xudrpc_pb.AddPairRequest, xudrpc_pb.AddPairResponse>;
     ban: grpc.handleUnaryCall<xudrpc_pb.BanRequest, xudrpc_pb.BanResponse>;
+    changePassword: grpc.handleUnaryCall<xudrpc_pb.ChangePasswordRequest, xudrpc_pb.ChangePasswordResponse>;
     closeChannel: grpc.handleUnaryCall<xudrpc_pb.CloseChannelRequest, xudrpc_pb.CloseChannelResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
     walletDeposit: grpc.handleUnaryCall<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse>;
+    deposit: grpc.handleUnaryCall<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse>;
     discoverNodes: grpc.handleUnaryCall<xudrpc_pb.DiscoverNodesRequest, xudrpc_pb.DiscoverNodesResponse>;
     getBalance: grpc.handleUnaryCall<xudrpc_pb.GetBalanceRequest, xudrpc_pb.GetBalanceResponse>;
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
+    getMnemonic: grpc.handleUnaryCall<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetMnemonicResponse>;
     getNodeInfo: grpc.handleUnaryCall<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse>;
     listOrders: grpc.handleUnaryCall<xudrpc_pb.ListOrdersRequest, xudrpc_pb.ListOrdersResponse>;
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
@@ -413,6 +456,7 @@ export interface IXudServer {
     removeOrder: grpc.handleUnaryCall<xudrpc_pb.RemoveOrderRequest, xudrpc_pb.RemoveOrderResponse>;
     removeAllOrders: grpc.handleUnaryCall<xudrpc_pb.RemoveAllOrdersRequest, xudrpc_pb.RemoveAllOrdersResponse>;
     removePair: grpc.handleUnaryCall<xudrpc_pb.RemovePairRequest, xudrpc_pb.RemovePairResponse>;
+    setLogLevel: grpc.handleUnaryCall<xudrpc_pb.SetLogLevelRequest, xudrpc_pb.SetLogLevelResponse>;
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
     subscribeOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate>;
     subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapFailure>;
@@ -434,6 +478,9 @@ export interface IXudClient {
     ban(request: xudrpc_pb.BanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: xudrpc_pb.ChangePasswordRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     closeChannel(request: xudrpc_pb.CloseChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
@@ -443,6 +490,9 @@ export interface IXudClient {
     walletDeposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    deposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
@@ -452,6 +502,9 @@ export interface IXudClient {
     getInfo(request: xudrpc_pb.GetInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
+    getMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
@@ -490,6 +543,9 @@ export interface IXudClient {
     removePair(request: xudrpc_pb.RemovePairRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
+    setLogLevel(request: xudrpc_pb.SetLogLevelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
@@ -526,6 +582,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public ban(request: xudrpc_pb.BanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     public ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
     public ban(request: xudrpc_pb.BanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.BanResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: xudrpc_pb.ChangePasswordRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     public closeChannel(request: xudrpc_pb.CloseChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     public closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
     public closeChannel(request: xudrpc_pb.CloseChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CloseChannelResponse) => void): grpc.ClientUnaryCall;
@@ -535,6 +594,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public walletDeposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     public walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     public walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public deposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
@@ -544,6 +606,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public getInfo(request: xudrpc_pb.GetInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     public getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
     public getInfo(request: xudrpc_pb.GetInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetInfoResponse) => void): grpc.ClientUnaryCall;
+    public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
@@ -582,6 +647,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public removePair(request: xudrpc_pb.RemovePairRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
+    public setLogLevel(request: xudrpc_pb.SetLogLevelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    public setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
+    public setLogLevel(request: xudrpc_pb.SetLogLevelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.SetLogLevelResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;

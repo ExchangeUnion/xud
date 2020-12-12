@@ -21,22 +21,18 @@ class NodeStateUpdatePacket extends Packet<NodeState> {
   public static deserialize = (binary: Uint8Array): NodeStateUpdatePacket | pb.NodeStateUpdatePacket.AsObject => {
     const obj = pb.NodeStateUpdatePacket.deserializeBinary(binary).toObject();
     return NodeStateUpdatePacket.validate(obj) ? NodeStateUpdatePacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.NodeStateUpdatePacket.AsObject): boolean => {
-    return !!(obj.id
-      && validateNodeState(obj.nodeState)
-    );
-  }
+    return !!(obj.id && validateNodeState(obj.nodeState));
+  };
 
   private static convert = (obj: pb.NodeStateUpdatePacket.AsObject): NodeStateUpdatePacket => {
     return new NodeStateUpdatePacket({
-      header: {
-        id: obj.id,
-      },
+      header: { id: obj.id },
       body: removeUndefinedProps(convertNodeState(obj.nodeState!)),
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.NodeStateUpdatePacket();
@@ -45,7 +41,7 @@ class NodeStateUpdatePacket extends Packet<NodeState> {
     msg.setNodeState(serializeNodeState(this.body!));
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default NodeStateUpdatePacket;

@@ -2,28 +2,56 @@
 
 This test suite simulates real usage of `xud` and the second-layer payment channel network clients that it interacts with. It creates chains, generates blocks, and establishes payment channels. All commands to `xud` are issued via the gRPC API. This helps ensure that `xud` integrates with other nodes and software components properly and allows for more complete and realistic testing of `xud`.
 
----
+## Requirements:
+- [docker](https://docs.docker.com/install/)
+- [docker-compose](https://docs.docker.com/compose/install/)
+- [node / npm](https://nodejs.org/en/download/), [build-essential](https://packages.ubuntu.com/focal/build-essential) and [python](https://www.python.org/downloads/) (needed for `xud` build and scripts)
+- [jq](https://packages.ubuntu.com/focal/jq)
 
-The simulation tests’ only dependencies are [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/).
+Successfully tested hw/sw stack:
+- ubuntu `20.04` / `20.10`
+- node `v14.15.1` (via nvm)
+- npm `6.14.8` (via nvm)
+- docker `19.03.13` & docker-compose `1.27.4` (via `apt install docker.io`)
+- 25 GB disk size, 4 CPU, 16 GB memory
+- Good internet connection
 
-## Usage (via `xud` npm scripts)
+## General Usage
 
-### Run all test suites after building all images
+### Build images (if not available) and run all test suites
 
 ```bash
-npm run test:sim:build
-npm run test:sim:run
+npm run test:sim
 ```
 
-### Run every test suite separately after building all images
+### Run test suites separately after building all images manually
 
 ```bash
 npm run test:sim:build
 npm run test:sim:run:integration
 npm run test:sim:run:security
 npm run test:sim:run:stability
+```
+
+### If you encounter issues, try
+
+```bash
+cd xud
+npm run test:sim:clean
+npm run test:sim:clean:indra
+docker system prune -a
+npm run test:sim
+```
+
+If you still have issues, try these commands before running above again:
 
 ```
+rm -rf ./test/simulation/temp
+docker swarm init
+npm install -g typescript
+```
+
+## Specific Usage
 
 ### Specific image builds
 
@@ -94,8 +122,6 @@ For printing them unto console:
 npm run test:sim:logs
 ```
 
----
-
 ## Simulation Test Cases
 
 Below is a list of implemented (checked) and planned (unchecked) test cases.
@@ -117,6 +143,7 @@ Below is a list of implemented (checked) and planned (unchecked) test cases.
 
 - [x] Placed order should get broadcasted over the network, and added to connected peers' order books.
 - [x] Removed order should get invalidated over the network, and removed from connected peers' order books.
+- [x] Added trading pairs and currencies should trigger broadcast of active orders from connected peers' order books. 
 - [ ] Placed order should get internal matches, and trigger order invalidation over the network.
 - [ ] Peer disconnection should trigger orders removal to all his orders.
 

@@ -14,6 +14,8 @@ const errorCodes = {
   PAYMENT_PENDING: codesPrefix.concat('.10'),
   REMOTE_IDENTIFIER_MISSING: codesPrefix.concat('.11'),
   INSUFFICIENT_BALANCE: codesPrefix.concat('.12'),
+  INSUFFICIENT_OUTBOUND_CAPACITY: codesPrefix.concat('.13'),
+  INSUFFICIENT_INBOUND_CAPACITY: codesPrefix.concat('.14'),
 };
 
 const errors = {
@@ -21,8 +23,8 @@ const errors = {
     message: `swapClient for currency ${currency} not found`,
     code: errorCodes.SWAP_CLIENT_NOT_FOUND,
   }),
-  SWAP_CLIENT_NOT_CONFIGURED: (currency: string) => ({
-    message: `swapClient for currency ${currency} is not configured`,
+  SWAP_CLIENT_NOT_CONFIGURED: (currencyOrClientType: string) => ({
+    message: `swap client for ${currencyOrClientType} is not configured`,
     code: errorCodes.SWAP_CLIENT_NOT_CONFIGURED,
   }),
   PAYMENT_HASH_NOT_FOUND: (rHash: string) => ({
@@ -70,6 +72,17 @@ const errors = {
     message: 'swap failed due to insufficient channel balance',
     code: errorCodes.INSUFFICIENT_BALANCE,
   },
+  INSUFFICIENT_OUTBOUND_CAPACITY: (currency: string, amount: number, capacity: number) => ({
+    message: `${currency} outbound capacity of ${Math.max(
+      0,
+      capacity,
+    )} is not sufficient for order amount of ${amount}`,
+    code: errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
+  }),
+  INSUFFICIENT_INBOUND_CAPACITY: (currency: string, amount: number, capacity: number) => ({
+    message: `${currency} inbound capacity of ${Math.max(0, capacity)} is not sufficient for order amount of ${amount}`,
+    code: errorCodes.INSUFFICIENT_INBOUND_CAPACITY,
+  }),
 };
 
 export { errorCodes };

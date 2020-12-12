@@ -1,7 +1,7 @@
-import PacketType from './PacketType';
 import { createHash } from 'crypto';
 import uuidv1 from 'uuid/v1';
 import stringify from 'json-stable-stringify';
+import PacketType from './PacketType';
 
 type PacketHeader = {
   /** An identifer for the packet which must be unique for a given socket. */
@@ -17,7 +17,7 @@ interface PacketInterface {
 
 function isPacketInterface(obj: any): obj is PacketInterface {
   if (obj) {
-    const header = (<PacketInterface>obj).header;
+    const { header } = <PacketInterface>obj;
     return header !== undefined && typeof header.id === 'string';
   }
   return false;
@@ -39,7 +39,7 @@ function isPacketType(val: any): val is PacketType {
 }
 
 function isPacketTypeArray(val: any): val is PacketType[] {
-  return val !== undefined && val instanceof Array && val.every(v => isPacketType(v));
+  return val !== undefined && val instanceof Array && val.every((v) => isPacketType(v));
 }
 
 /**
@@ -93,7 +93,7 @@ abstract class Packet<T = any> implements PacketInterface {
 
   public toJSON = () => {
     return stringify({ header: this.header, body: this.body });
-  }
+  };
 
   /**
    * Serialize this packet to binary Buffer.
@@ -101,26 +101,27 @@ abstract class Packet<T = any> implements PacketInterface {
    */
   public toRaw = (): Buffer => {
     return Buffer.from(this.serialize().buffer as ArrayBuffer);
-  }
+  };
 
   /**
    * Calculating the packet checksum using its JSON representation hash first 4 bytes.
    */
   public checksum = (): number => {
-    return createHash('sha256')
-      .update(this.toJSON())
-      .digest()
-      .readUInt32LE(0);
-  }
+    return createHash('sha256').update(this.toJSON()).digest().readUInt32LE(0);
+  };
 }
 
 function isPacket(val: any): val is Packet {
-  const p = (<Packet>val);
+  const p = <Packet>val;
   return (
-    p.toRaw !== undefined && typeof p.toRaw === 'function'
-    && p.serialize !== undefined && typeof p.serialize === 'function'
-    && p.type !== undefined && typeof p.type === 'number'
-    && p.direction !== undefined && typeof p.direction === 'number'
+    p.toRaw !== undefined &&
+    typeof p.toRaw === 'function' &&
+    p.serialize !== undefined &&
+    typeof p.serialize === 'function' &&
+    p.type !== undefined &&
+    typeof p.type === 'number' &&
+    p.direction !== undefined &&
+    typeof p.direction === 'number'
   );
 }
 

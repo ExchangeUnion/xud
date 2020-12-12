@@ -22,14 +22,11 @@ class SessionAckPacket extends Packet<SessionAckPacketBody> {
   public static deserialize = (binary: Uint8Array): SessionAckPacket | pb.SessionAckPacket.AsObject => {
     const obj = pb.SessionAckPacket.deserializeBinary(binary).toObject();
     return SessionAckPacket.validate(obj) ? SessionAckPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.SessionAckPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.reqId
-      && obj.ephemeralPubKey
-    );
-  }
+    return !!(obj.id && obj.reqId && obj.ephemeralPubKey);
+  };
 
   private static convert = (obj: pb.SessionAckPacket.AsObject): SessionAckPacket => {
     return new SessionAckPacket({
@@ -37,11 +34,9 @@ class SessionAckPacket extends Packet<SessionAckPacketBody> {
         id: obj.id,
         reqId: obj.reqId,
       },
-      body: {
-        ephemeralPubKey: obj.ephemeralPubKey,
-      },
+      body: { ephemeralPubKey: obj.ephemeralPubKey },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SessionAckPacket();
@@ -50,7 +45,7 @@ class SessionAckPacket extends Packet<SessionAckPacketBody> {
     msg.setEphemeralPubKey(this.body!.ephemeralPubKey);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SessionAckPacket;

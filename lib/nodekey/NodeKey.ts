@@ -1,40 +1,41 @@
-import secp256k1 from 'secp256k1';
-import { randomBytes } from '../utils/utils';
-import { promises as fs } from 'fs';
-import { createCipheriv, createDecipheriv, createHash } from 'crypto';
 import { entropyToMnemonic } from 'bip39';
+import { createHash } from 'crypto';
+import { promises as fs } from 'fs';
+import secp256k1 from 'secp256k1';
 import { SwapClientType } from '../constants/enums';
+import { decrypt, encrypt, randomBytes } from '../utils/cryptoUtils';
+import { encipher } from '../utils/seedutil';
 
 /**
  * A class representing an ECDSA public/private key pair that identifies an XU node on the network
  * and can sign messages to prove their veracity.
  */
 class NodeKey {
-  private static ENCRYPTION_IV_LENGTH = 16;
+  public password?: string;
 
   /**
    * @param privKey The 32 byte private key
    * @param pubKey The public key in hex string format.
    */
-  constructor(public readonly privKey: Buffer, public readonly pubKey: string) { }
+  constructor(public readonly privKey: Buffer, public readonly pubKey: string, private readonly path: string) {}
 
   /**
    * Generates a random NodeKey.
    */
-  public static generate = async (): Promise<NodeKey> => {
+  public static generate = async (path?: string): Promise<NodeKey> => {
     let privKey: Buffer;
     do {
       privKey = await randomBytes(32);
     } while (!secp256k1.privateKeyVerify(privKey));
 
-    return NodeKey.fromBytes(privKey);
-  }
+    return NodeKey.fromBytes(privKey, path);
+  };
 
   /**
    * Converts a buffer of bytes to a NodeKey. Uses the first 32 bytes from the buffer to generate
    * the private key. If the buffer has fewer than 32 bytes, the buffer is right-padded with zeros.
    */
-  public static fromBytes = (bytes: Buffer): NodeKey => {
+  public static fromBytes = (bytes: Buffer, path?: string): NodeKey => {
     let privKey: Buffer;
     if (bytes.byteLength === 32) {
       privKey = bytes;
@@ -47,12 +48,8 @@ class NodeKey {
     const pubKeyBytes = secp256k1.publicKeyCreate(privKey);
     const pubKey = pubKeyBytes.toString('hex');
 
-    return new NodeKey(privKey, pubKey);
-  }
-
-  private static getCipherKey = (password: string) => {
-    return createHash('sha256').update(password).digest();
-  }
+    return new NodeKey(privKey, pubKey, path ?? '');
+  };
 
   /**
    * Load a NodeKey from a file.
@@ -66,27 +63,22 @@ class NodeKey {
 
     if (password) {
       // decrypt file using the password
-      // the first 16 bytes contain the initialization vector
-      const iv = fileBuffer.slice(0, NodeKey.ENCRYPTION_IV_LENGTH);
-      const key = NodeKey.getCipherKey(password);
-      const encrypted = fileBuffer.slice(NodeKey.ENCRYPTION_IV_LENGTH);
-      const decipher = createDecipheriv('aes-256-cbc', key, iv);
-      privKey = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+      privKey = decrypt(fileBuffer, password);
     } else {
       privKey = fileBuffer;
     }
     if (secp256k1.privateKeyVerify(privKey)) {
-      return NodeKey.fromBytes(privKey);
+      const nodeKey = NodeKey.fromBytes(privKey, path);
+      nodeKey.password = password;
+      return nodeKey;
     } else {
       throw new Error(`${path} does not contain a valid ECDSA private key`);
     }
-  }
+  };
 
   public static getPath = (xudir: string, instanceId = 0) => {
-    return instanceId > 0
-      ? `${xudir}/nodekey_${instanceId}.dat`
-      : `${xudir}/nodekey.dat`;
-  }
+    return instanceId > 0 ? `${xudir}/nodekey_${instanceId}.dat` : `${xudir}/nodekey.dat`;
+  };
 
   /**
    * Signs a message with the private key.
@@ -95,25 +87,23 @@ class NodeKey {
    */
   public sign = (msg: Buffer): Buffer => {
     return secp256k1.sign(msg, this.privKey).signature;
-  }
+  };
 
   /**
    * Saves the private key to a file, optionally encrypted by a password.
    * @param path the path at which to save the file
    * @param password an optional password parameter for encrypting the private key
    */
-  public toFile = async (path: string, password?: string): Promise<void> => {
+  public toFile = async (password?: string): Promise<void> => {
     let buf: Buffer;
     if (password) {
-      const iv = await randomBytes(NodeKey.ENCRYPTION_IV_LENGTH);
-      const key = NodeKey.getCipherKey(password);
-      const cipher = createCipheriv('aes-256-cbc', key, iv);
-      buf = Buffer.concat([iv, cipher.update(this.privKey), cipher.final()]);
+      this.password = password;
+      buf = await encrypt(this.privKey, password);
     } else {
       buf = this.privKey;
     }
-    await fs.writeFile(path, buf);
-  }
+    await fs.writeFile(this.path, buf);
+  };
 
   /**
    * Derives a child mnemonic seed from the private key for the swap client.
@@ -122,12 +112,17 @@ class NodeKey {
    */
   public childSeed = (swapClient: SwapClientType) => {
     const privKeyHex = this.privKey.toString('hex');
-    const childSeedEntropy = createHash('sha256')
-      .update(`${privKeyHex}-${swapClient}`)
-      .digest();
+    const childSeedEntropy = createHash('sha256').update(`${privKeyHex}-${swapClient}`).digest();
     return entropyToMnemonic(childSeedEntropy);
-  }
+  };
 
+  public getMnemonic = async () => {
+    const decipheredSeed = this.privKey.slice(0, 19);
+    const decipheredSeedHex = decipheredSeed.toString('hex');
+    const seedMnemonic = await encipher(decipheredSeedHex);
+
+    return seedMnemonic;
+  };
 }
 
 export default NodeKey;

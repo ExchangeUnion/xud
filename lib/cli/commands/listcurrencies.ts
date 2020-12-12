@@ -1,9 +1,9 @@
-import { callback, loadXudClient } from '../command';
-import { Arguments } from 'yargs';
-import colors from 'colors/safe';
 import Table, { HorizontalTable } from 'cli-table3';
-import { ListCurrenciesRequest, ListCurrenciesResponse } from '../../proto/xudrpc_pb';
+import colors from 'colors/safe';
+import { Arguments } from 'yargs';
 import { SwapClientType } from '../../constants/enums';
+import { ListCurrenciesRequest, ListCurrenciesResponse } from '../../proto/xudrpc_pb';
+import { callback, loadXudClient } from '../command';
 
 const HEADERS = [
   colors.blue('Ticker'),
@@ -23,9 +23,7 @@ const formatCurrencies = (currencies: ListCurrenciesResponse.AsObject) => {
 };
 
 const createTable = () => {
-  const table = new Table({
-    head: HEADERS,
-  }) as HorizontalTable;
+  const table = new Table({ head: HEADERS }) as HorizontalTable;
   return table;
 };
 

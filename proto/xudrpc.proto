@@ -73,6 +73,14 @@ service Xud {
     };
   }
 
+  /* Changes the xud master password, including the wallet passwords for any underlying clients.
+   * shell: xucli changepass*/
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/changepass"
+    };
+  }
+
   /* Closes any existing payment channels with a peer for the specified currency.
    * shell: xucli closechannel <currency> [node_identifier ] [--force]*/
   rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse) {
@@ -102,6 +110,15 @@ service Xud {
     };
   }
 
+  /* Gets an address to deposit a given currency directly into a channel.
+   * shell: xucli deposit <currency> */
+  rpc Deposit(DepositRequest) returns (DepositResponse) {
+    option (google.api.http) = {
+      post: "/v1/deposit"
+      body: "*"
+    };
+  }
+
   /* Discover nodes from a specific peer and apply new connections */
   rpc DiscoverNodes(DiscoverNodesRequest) returns (DiscoverNodesResponse) {
       option (google.api.http) = {
@@ -123,6 +140,14 @@ service Xud {
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
       get: "/v1/info"
+    };
+  }
+
+  /* Gets the master seed mnemonic .
+   * shell: xucli getnemonic */
+  rpc GetMnemonic(GetMnemonicRequest) returns (GetMnemonicResponse) {
+    option (google.api.http) = {
+      get: "/v1/mnemonic"
     };
   }
 
@@ -251,6 +276,15 @@ service Xud {
     };
   }
 
+  /* Set the logging level.
+   * shell: xucli loglevel <level> */
+  rpc SetLogLevel(SetLogLevelRequest) returns (SetLogLevelResponse) {
+    option (google.api.http) = {
+      post: "/v1/setloglevel"
+      body: "*"
+    };
+  }
+
   /* Begin gracefully shutting down xud.
    * shell: xucli shutdown */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
@@ -347,6 +381,16 @@ enum Role {
   INTERNAL = 2;
 }
 
+enum LogLevel {
+  ALERT = 0;
+  ERROR = 1;
+  WARN = 2;
+  INFO = 3;
+  VERBOSE = 4;
+  DEBUG = 5;
+  TRACE = 6;
+}
+
 message AddCurrencyResponse {}
 
 message AddPairRequest {
@@ -395,6 +439,12 @@ message Channels {
   // The number of channels that have been closed.
   uint32 closed = 4 [json_name = "closed"];
 }
+
+message ChangePasswordRequest {
+  string new_password = 1 [json_name = "new_password"];
+  string old_password = 2 [json_name = "old_password"];
+}
+message ChangePasswordResponse {}
 
 message CloseChannelRequest {
   // The node pub key or alias of the peer with which to close any channels with.
@@ -518,6 +568,11 @@ message GetInfoResponse {
   string network = 10 [json_name = "network"];
   repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
   ConnextInfo connext = 12 [json_name = "connext"];
+}
+
+message GetMnemonicRequest {}
+message GetMnemonicResponse {
+  repeated string seed_mnemonic = 1 [json_name = "seed_mnemonic"];
 }
 
 message GetNodeInfoRequest {
@@ -748,6 +803,12 @@ message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
   // and could not be removed until after the swaps finish.
   uint64 quantity_on_hold = 1 [json_name = "hold"];
+  // Remaining portion of the order if it was a partial removal.
+  uint64 remaining_quantity = 2 [json_name = "remaining_quantity"];
+  // Successfully removed portion of the order.
+  uint64 removed_quantity = 3 [json_name = "removed_quantity"];
+  // Removed order's pairId. (e.g. ETH/BTC)
+  string pair_id = 4 [json_name = "pair_id"];
 }
 
 message RemoveAllOrdersRequest {}
@@ -785,6 +846,11 @@ message RestoreNodeResponse {
   // Whether the connext wallet was initialized.
   bool restored_connext = 2;
 }
+
+message SetLogLevelRequest {
+  LogLevel log_level = 1 [json_name = "log_level"];
+}
+message SetLogLevelResponse {}
 
 message ShutdownRequest {}
 message ShutdownResponse {}
@@ -904,14 +970,14 @@ message TradeHistoryResponse {
 }
 
 message TradingLimits {
-  // Maximum outbound limit for an order denominated in satoshis.
+  // Maximum outbound limit for a sell order denominated in satoshis.
   uint64 max_sell = 1 [json_name = "max_sell"];
-  // Maximum inbound limit for an order denominated in satoshis.
+  // Maximum inbound limit for a buy order denominated in satoshis.
   uint64 max_buy = 2 [json_name = "max_buy"];
-  // The outbound amount reserved for open orders.
-  uint64 reserved_outbound = 3 [json_name = "reserved_outbound"];
-  // The inbound amount reserved for open orders.
-  uint64 reserved_inbound = 4 [json_name = "reserved_outbound"];
+  // The outbound amount reserved for open sell orders.
+  uint64 reserved_sell = 3 [json_name = "reserved_sell"];
+  // The inbound amount reserved for open buy orders.
+  uint64 reserved_buy = 4 [json_name = "reserved_buy"];
 }
 
 message TradingLimitsRequest {

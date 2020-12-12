@@ -1,0 +1,7 @@
+/node_modules
+/dist
+/lib/proto
+/test/simulation
+/typedoc
+/seedutil
+.eslintrc.js

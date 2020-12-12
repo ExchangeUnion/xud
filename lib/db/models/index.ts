@@ -5,3 +5,4 @@ export { default as Pair } from './Pair';
 export { default as ReputationEvent } from './ReputationEvent';
 export { default as SwapDeal } from './SwapDeal';
 export { default as Trade } from './Trade';
+export { default as Password } from './Password';

@@ -13,9 +13,9 @@ const errorCodes = {
   LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
   QUANTITY_DOES_NOT_MATCH: codesPrefix.concat('.10'),
   CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: codesPrefix.concat('.11'),
-  INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.12'),
   MIN_QUANTITY_VIOLATED: codesPrefix.concat('.13'),
   QUANTITY_ON_HOLD: codesPrefix.concat('.15'),
+  DUPLICATE_PAIR_CURRENCIES: codesPrefix.concat('.16'),
 };
 
 const errors = {
@@ -63,10 +63,6 @@ const errors = {
     message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),
-  INSUFFICIENT_OUTBOUND_BALANCE: (currency: string, amount: number, availableAmount: number) => ({
-    message: `${currency} outbound balance of ${availableAmount} is not sufficient for order amount of ${amount}`,
-    code: errorCodes.INSUFFICIENT_OUTBOUND_BALANCE,
-  }),
   MIN_QUANTITY_VIOLATED: (quantity: number, currency: string) => ({
     message: `order does not meet the minimum ${currency} quantity of ${quantity} satoshis`,
     code: errorCodes.MIN_QUANTITY_VIOLATED,
@@ -74,6 +70,10 @@ const errors = {
   QUANTITY_ON_HOLD: (localId: string, holdQuantity: number) => ({
     message: `order with local id ${localId} has a quantity of ${holdQuantity} satoshis on hold, try again later`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
+  }),
+  DUPLICATE_PAIR_CURRENCIES: (baseCurrency: string, quoteCurrency: string) => ({
+    message: `base asset (${baseCurrency}) and quote asset (${quoteCurrency}) have to be different`,
+    code: errorCodes.DUPLICATE_PAIR_CURRENCIES,
   }),
 };
 

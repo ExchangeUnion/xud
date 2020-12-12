@@ -1,9 +1,12 @@
-import { derivePairId } from '../utils/utils';
+import assert from 'assert';
+import { promises as fs } from 'fs';
 import { ModelCtor, Sequelize } from 'sequelize';
 import { XuNetwork } from '../constants/enums';
-import { defaultCurrencies, defaultNodes, defaultPairs } from '../db/seeds';
+import { defaultCurrencies, defaultNodes, defaultPairs } from './seeds';
 import Logger from '../Logger';
-import * as Models from './models';
+import { derivePairId } from '../utils/utils';
+import migrations from './migrations';
+import * as ModelDefinitions from './models';
 import * as db from './types';
 
 type Models = {
@@ -14,17 +17,19 @@ type Models = {
   ReputationEvent: ModelCtor<db.ReputationEventInstance>;
   Order: ModelCtor<db.OrderInstance>;
   Trade: ModelCtor<db.TradeInstance>;
+  Password: ModelCtor<db.PasswordInstance>;
 };
 
 function loadModels(sequelize: Sequelize): Models {
   const models: Models = {
-    Currency: Models.Currency(sequelize),
-    Node: Models.Node(sequelize),
-    Order: Models.Order(sequelize),
-    Pair: Models.Pair(sequelize),
-    ReputationEvent: Models.ReputationEvent(sequelize),
-    SwapDeal: Models.SwapDeal(sequelize),
-    Trade: Models.Trade(sequelize),
+    Currency: ModelDefinitions.Currency(sequelize),
+    Node: ModelDefinitions.Node(sequelize),
+    Order: ModelDefinitions.Order(sequelize),
+    Pair: ModelDefinitions.Pair(sequelize),
+    ReputationEvent: ModelDefinitions.ReputationEvent(sequelize),
+    SwapDeal: ModelDefinitions.SwapDeal(sequelize),
+    Trade: ModelDefinitions.Trade(sequelize),
+    Password: ModelDefinitions.Password(sequelize),
   };
 
   models.Currency.hasMany(models.Pair, {
@@ -78,8 +83,14 @@ function loadModels(sequelize: Sequelize): Models {
     foreignKey: 'quoteCurrency',
   });
 
-  models.Pair.beforeBulkCreate(pairs => pairs.forEach(pair => pair.id = derivePairId(pair)));
-  models.Pair.beforeCreate((pair) => { pair.id = derivePairId(pair); });
+  models.Pair.beforeBulkCreate((pairs) =>
+    pairs.forEach((pair) => {
+      pair.id = derivePairId(pair);
+    }),
+  );
+  models.Pair.beforeCreate((pair) => {
+    pair.id = derivePairId(pair);
+  });
 
   models.ReputationEvent.belongsTo(models.Node, {
     foreignKey: 'nodeId',
@@ -118,6 +129,8 @@ class DB {
   public sequelize: Sequelize;
   public models: Models;
 
+  private static VERSION = 1;
+
   /**
    * @param storage the file path for the sqlite database file, if ':memory:' or not specified the db is stored in memory
    */
@@ -136,6 +149,8 @@ class DB {
    * @param initDb whether to intialize a new database with default values if no database exists
    */
   public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
+    const isNewDb = await this.isNewDb();
+
     try {
       await this.sequelize.authenticate();
       this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
@@ -143,32 +158,47 @@ class DB {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
-    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade } = this.models;
+
+    if (isNewDb) {
+      await this.sequelize.query(`PRAGMA user_version=${DB.VERSION};`);
+    }
+
+    // version is useful for tracking migrations & upgrades to the xud database when
+    // the database schema is modified or restructured
+    const userVersionPragma = await this.sequelize.query('PRAGMA user_version;');
+    assert(Array.isArray(userVersionPragma) && Array.isArray(userVersionPragma[0]));
+    const userVersion = userVersionPragma[0][0].user_version;
+    assert(typeof userVersion === 'number');
+    const version = userVersion;
+    this.logger.trace(`db version is ${version}`);
+
+    if (version <= DB.VERSION) {
+      // if our db is not the latest version, we call each migration procedure necessary
+      // to bring us from our current version up to the latest version.
+      for (let n = version; n < DB.VERSION; n += 1) {
+        this.logger.info(`migrating db from version ${n} to version ${n + 1}`);
+        await migrations[n](this.sequelize);
+        await this.sequelize.query(`PRAGMA user_version=${n + 1};`);
+        this.logger.info(`migration to version ${n + 1} complete`);
+      }
+    }
+
+    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade, Password } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
-    await Promise.all([
-      Node.sync(),
-      Currency.sync(),
-    ]);
+    await Promise.all([Node.sync(), Currency.sync(), Password.sync()]);
+
     // Pair is dependent on Currency, ReputationEvent is dependent on Node
-    await Promise.all([
-      Pair.sync(),
-      ReputationEvent.sync(),
-    ]);
+    await Promise.all([Pair.sync(), ReputationEvent.sync()]);
     // Order is dependent on Pair
-    await Promise.all([
-      Order.sync(),
-    ]);
-    await Promise.all([
-      Trade.sync(),
-      SwapDeal.sync(),
-    ]);
+    await Promise.all([Order.sync()]);
+    await Promise.all([Trade.sync(), SwapDeal.sync()]);
 
     if (initDb) {
       // initialize database with the seed nodes for the configured network
       const nodes = defaultNodes(network);
       if (nodes) {
-        const existingNodes = await Models.Node(this.sequelize).findAll();
-        const newNodes = nodes.filter(node => (!existingNodes.find(n => (n.nodePubKey === node.nodePubKey))));
+        const existingNodes = await ModelDefinitions.Node(this.sequelize).findAll();
+        const newNodes = nodes.filter((node) => !existingNodes.find((n) => n.nodePubKey === node.nodePubKey));
 
         if (newNodes.length > 0) {
           await Node.bulkCreate(newNodes);
@@ -177,8 +207,8 @@ class DB {
       // initialize database with the default currencies for the configured network
       const currencies = defaultCurrencies(network);
       if (currencies) {
-        const existingCurrencies = await Models.Currency(this.sequelize).findAll();
-        const newCurrencies = currencies.filter(currency => (!existingCurrencies.find(n => (n.id === currency.id))));
+        const existingCurrencies = await ModelDefinitions.Currency(this.sequelize).findAll();
+        const newCurrencies = currencies.filter((currency) => !existingCurrencies.find((n) => n.id === currency.id));
 
         if (newCurrencies.length > 0) {
           await Currency.bulkCreate(newCurrencies);
@@ -188,20 +218,42 @@ class DB {
       // initialize database with the default trading pairs for the configured network
       const pairs = defaultPairs(network);
       if (pairs) {
-        const existingPairs = await Models.Pair(this.sequelize).findAll();
-        const newPairs = pairs.filter(pair => (!existingPairs.find(n => (n.baseCurrency === pair.baseCurrency &&
-            n.quoteCurrency === pair.quoteCurrency))));
+        const existingPairs = await ModelDefinitions.Pair(this.sequelize).findAll();
+        const newPairs = pairs.filter(
+          (pair) =>
+            !existingPairs.find((n) => n.baseCurrency === pair.baseCurrency && n.quoteCurrency === pair.quoteCurrency),
+        );
 
         if (newPairs.length > 0) {
           await Pair.bulkCreate(newPairs);
         }
       }
     }
-  }
+  };
+
+  /**
+   * Checks whether the database is new, in other words whether we are not
+   * loading a preexisting database from disk.
+   */
+  private isNewDb = async () => {
+    if (this.storage && this.storage !== ':memory:') {
+      // check if database file exists
+      try {
+        await fs.access(this.storage);
+        return false;
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          // we ignore errors due to file not existing, otherwise throw
+          throw err;
+        }
+      }
+    }
+    return true;
+  };
 
   public close = () => {
     return this.sequelize.close();
-  }
+  };
 }
 
 export default DB;
