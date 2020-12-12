@@ -812,6 +812,7 @@ class GrpcService {
         grpcPeer.setInbound(peer.inbound);
         grpcPeer.setNodePubKey(peer.nodePubKey || '');
         grpcPeer.setAlias(peer.alias || '');
+        grpcPeer.setConnextIdentifier(peer.connextIdentifier || '');
         if (peer.lndPubKeys) {
           const map = grpcPeer.getLndPubKeysMap();
           for (const key of Object.keys(peer.lndPubKeys)) {
@@ -819,7 +820,7 @@ class GrpcService {
           }
         }
         if (peer.lndUris) {
-          for (const key in peer.lndUris) {
+          for (const key of Object.keys(peer.lndUris)) {
             const grpcUri = new xudrpc.Peer.LndUris();
             grpcUri.setCurrency(key);
             grpcUri.getUriList().push(...(peer.lndUris[key] || []));
