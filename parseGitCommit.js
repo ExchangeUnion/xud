@@ -9,7 +9,7 @@ const getCommitHash = () => {
   const result = executeCommand('git reflog --decorate -1');
 
   // Do not show the commit hash if that commit is also a tag
-  const tag = result.match(/tag\:\s[a-zA-Z0-9\-\.]+\,/g);
+  const tag = result.match(/tag:\s[a-zA-Z0-9\-.]+,/g);
   if (tag && tag.length > 0) {
     return '';
   } else {

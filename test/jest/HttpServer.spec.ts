@@ -6,7 +6,7 @@ import { getUnusedPort } from '../utils';
 
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/service/Service');
-const mockedService = <jest.Mock<Service>><any>Service;
+const mockedService = <jest.Mock<Service>>(<any>Service);
 
 describe('HttpServer - preimage', () => {
   const httpLogger = new Logger({});
@@ -29,11 +29,7 @@ describe('HttpServer - preimage', () => {
   it('should receive and parse a preimage request', (done) => {
     request(`http://localhost:${port}`)
       .post('/preimage')
-      .send({
-        transfer: {
-          transferResolver: { preImage },
-        },
-      })
+      .send({ transfer: { transferResolver: { preImage } } })
       .expect(200)
       .expect('Content-Type', 'application/json')
       .end((err) => {
@@ -58,7 +54,7 @@ describe('HttpServer - preimage', () => {
   it('should 404 if a bad path is used', (done) => {
     request(`http://localhost:${port}`)
       .post('/badendpoint')
-      .send({ })
+      .send({})
       .expect(404)
       .end((err) => {
         expect(err).toBeNull();

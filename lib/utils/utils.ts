@@ -15,24 +15,28 @@ const MAX_DECIMAL_PLACES = 12;
  */
 export const getExternalIp = () => {
   return new Promise<string>((resolve, reject) => {
-    http.get('http://ipv4.icanhazip.com/', (res) => {
-      let body = '';
+    http
+      .get('http://ipv4.icanhazip.com/', (res) => {
+        let body = '';
 
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-      res.on('end', () => {
-        // Removes new line at the end of the string
-        body = body.trimRight();
-        resolve(body);
-      });
-      res.on('error', (err: Error) => {
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          // Removes new line at the end of the string
+          body = body.trimRight();
+          resolve(body);
+        });
+        res.on('error', (err: Error) => {
+          reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
+        });
+      })
+      .on('error', (err: Error) => {
+        reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
+      })
+      .on('error', (err: Error) => {
         reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
       });
-
-    }).on('error', (err: Error) => {
-      reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
-    });
   });
 };
 
@@ -40,7 +44,7 @@ export const getExternalIp = () => {
  * Check whether a variable is a non-array object
  */
 export const isObject = (val: any): boolean => {
-  return (val && typeof val === 'object' && !Array.isArray(val));
+  return val && typeof val === 'object' && !Array.isArray(val);
 };
 
 /**
@@ -85,7 +89,7 @@ export const getPublicMethods = (obj: any): any => {
   const ret: any = {};
   Object.getOwnPropertyNames(Object.getPrototypeOf(obj)).forEach((name) => {
     const func = obj[name];
-    if ((func instanceof Function) && name !== 'constructor' && !name.startsWith('_')) {
+    if (func instanceof Function && name !== 'constructor' && !name.startsWith('_')) {
       ret[name] = func;
     }
   });
@@ -171,11 +175,11 @@ export const removeUndefinedProps = <T>(typedObj: T): T => {
 };
 
 export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
-  for (const key in obj) {
+  Object.keys(obj).forEach((key) => {
     if (obj[key] !== undefined) {
       map.set(key, obj[key]);
     }
-  }
+  });
 };
 
 /**
@@ -184,7 +188,7 @@ export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) =
 export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: string]: T } => {
   const kvps: { [key: string]: T } = {};
   kvpArray.forEach((kvp) => {
-    kvps[kvp[0]] = kvp[1];
+    kvps[kvp[0]] = kvp[1]; // eslint-disable-line prefer-destructuring
   });
 
   return kvps;
@@ -195,9 +199,7 @@ export const sortOrders = <T extends SortableOrder>(orders: T[], isBuy: boolean)
     if (a.price === b.price) {
       return a.createdAt - b.createdAt;
     }
-    return isBuy
-      ? a.price - b.price
-      : b.price - a.price;
+    return isBuy ? a.price - b.price : b.price - a.price;
   });
 };
 

@@ -22,7 +22,7 @@ import { createSimnetChannels } from './utils/simnet-connext-channels';
 import { UnitConverter } from './utils/UnitConverter';
 import Alerts from './alerts/Alerts';
 
-const version: string = require('../package.json').version;
+const { version }: { version: string } = require('../package.json');
 
 interface Xud {
   on(event: 'shutdown', listener: () => void): this;
@@ -83,7 +83,12 @@ class Xud extends EventEmitter {
       }
     }
 
-    const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
+    const loggers = Logger.createLoggers(
+      this.config.loglevel,
+      this.config.logpath,
+      this.config.instanceid,
+      this.config.logdateformat,
+    );
     this.logger = loggers.global;
     if (configFileLoaded) {
       this.logger.info('config file loaded');
@@ -119,7 +124,10 @@ class Xud extends EventEmitter {
       this.unitConverter.init();
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
-      const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
+      const nodeKeyExists = await fs
+        .access(nodeKeyPath)
+        .then(() => true)
+        .catch(() => false);
 
       this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter, this.db.models);
       await this.swapClientManager.init();
@@ -135,9 +143,7 @@ class Xud extends EventEmitter {
 
         // we need to initialize connext every time xud starts, even in noencrypt mode
         // the call below is in lieu of the UnlockNode/CreateNode call flow
-        await this.swapClientManager.initConnext(
-          nodeKey.childSeed(SwapClientType.Connext),
-        );
+        await this.swapClientManager.initConnext(nodeKey.childSeed(SwapClientType.Connext));
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
@@ -228,19 +234,13 @@ class Xud extends EventEmitter {
 
       if (this.swapClientManager.connextClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
-        await this.httpServer.listen(
-          this.config.http.port,
-          this.config.http.host,
-        );
+        await this.httpServer.listen(this.config.http.port, this.config.http.host);
       }
 
       // if we're running in simnet mode and Connext is enabled we'll
       // attempt to request funds from the faucet and open a channel
       // to the node once we have received the on-chain funds
-      if (
-        this.config.network === XuNetwork.SimNet &&
-        this.swapClientManager.connextClient?.isOperational()
-      ) {
+      if (this.config.network === XuNetwork.SimNet && this.swapClientManager.connextClient?.isOperational()) {
         this.simnetChannels$ = createSimnetChannels({
           channels: [
             {
@@ -268,7 +268,6 @@ class Xud extends EventEmitter {
       // initialize rpc server last
       if (this.rpcServer) {
         this.rpcServer.grpcService.setService(this.service);
-
       } else {
         this.logger.info('RPC server is disabled.');
       }
@@ -276,7 +275,7 @@ class Xud extends EventEmitter {
       this.logger.error('Unexpected error during initialization, shutting down...', err);
       await this.shutdown();
     }
-  }
+  };
 
   private shutdown = async () => {
     if (this.shuttingDown) {
@@ -315,15 +314,15 @@ class Xud extends EventEmitter {
     this.logger.info('XUD shutdown gracefully');
 
     this.emit('shutdown');
-  }
+  };
 
   /**
    * Initiate graceful shutdown of xud. Emits the `shutdown` event when shutdown is complete.
    */
   public beginShutdown = () => {
     // we begin the shutdown process but return a response before it completes.
-    void (this.shutdown());
-  }
+    void this.shutdown();
+  };
 }
 
 if (!module.parent) {

@@ -32,16 +32,14 @@ const formatTradingLimits = (tradingLimits: TradingLimitsResponse.AsObject) => {
 };
 
 const createTable = () => {
-  const table = new Table({
-    head: HEADERS,
-  }) as HorizontalTable;
+  const table = new Table({ head: HEADERS }) as HorizontalTable;
   return table;
 };
 
 export const displayLimits = (limits: TradingLimitsResponse.AsObject) => {
   const table = createTable();
   const formatted = formatTradingLimits(limits);
-  formatted.forEach(limits => table.push(limits));
+  formatted.forEach((formattedLimit) => table.push(formattedLimit));
   console.log(colors.underline(colors.bold('\nTrading Limits:')));
   console.log(table.toString());
 };
@@ -50,13 +48,14 @@ export const command = 'tradinglimits [currency]';
 
 export const describe = 'trading limits for a given currency';
 
-export const builder = (argv: Argv) => argv
-  .option('currency', {
-    describe: 'the currency to query for',
-    type: 'string',
-  })
-  .example('$0 tradinglimits', 'get the trading limits for all currencies')
-  .example('$0 tradinglimits BTC', 'get the trading limits for BTC');
+export const builder = (argv: Argv) =>
+  argv
+    .option('currency', {
+      describe: 'the currency to query for',
+      type: 'string',
+    })
+    .example('$0 tradinglimits', 'get the trading limits for all currencies')
+    .example('$0 tradinglimits BTC', 'get the trading limits for BTC');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new TradingLimitsRequest();

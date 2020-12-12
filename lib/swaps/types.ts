@@ -1,9 +1,4 @@
-import {
-  SwapRole,
-  SwapPhase,
-  SwapState,
-  SwapFailureReason,
-} from '../constants/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from '../constants/enums';
 
 export type SwapDeal = {
   /** Our role in the swap. */
@@ -69,7 +64,10 @@ export type SwapDeal = {
 };
 
 /** The result of a successful swap. */
-export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' | 'rPreimage' | 'role'> & {
+export type SwapSuccess = Pick<
+  SwapDeal,
+  'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' | 'rPreimage' | 'role'
+> & {
   /** The amount received denominated in satoshis. */
   amountReceived: number;
   /** The amount sent denominated in satoshis. */
@@ -83,7 +81,7 @@ export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHa
 };
 
 /** A swap that has been accepted. */
-export type SwapAccepted = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' > & {
+export type SwapAccepted = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price'> & {
   amountReceiving: number;
   amountSending: number;
   currencyReceiving: string;
@@ -92,14 +90,14 @@ export type SwapAccepted = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rH
   quantity: number;
 };
 
-export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey' > & {
+export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey'> & {
   /** The quantity that was attempted and failed for the swap. */
   quantity: number;
   failureReason: SwapFailureReason;
 };
 
 export type Route = {
-  getTotalTimeLock: Function,
+  getTotalTimeLock: Function;
 };
 
 /** Tracks the state of a pending swap of 1 satoshi for 1 satoshi of a specified currency. */
@@ -110,65 +108,65 @@ export type SanitySwap = Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & 
 
 export type SwapCapacities = {
   /** Max outbound capacity for a distinct channel denominated in satoshis. */
-  maxOutboundChannelCapacity: number,
+  maxOutboundChannelCapacity: number;
   /** Max inbound capacity for a distinct channel denominated in satoshis. */
-  maxInboundChannelCapacity: number,
+  maxInboundChannelCapacity: number;
   /** The total outbound capacity. */
-  totalOutboundCapacity: number,
+  totalOutboundCapacity: number;
   /** The total inbound capacity. */
-  totalInboundCapacity: number,
+  totalInboundCapacity: number;
 };
 
 export type TradingLimits = {
   /** Maximum outbound limit for a sell order denominated in satoshis. */
-  maxSell: number,
+  maxSell: number;
   /** Maximum inbound limit for a buy order denominated in satoshis. */
-  maxBuy: number,
+  maxBuy: number;
   /**  The outbound amount reserved for open sell orders. */
-  reservedSell: number,
+  reservedSell: number;
   /**  The inbound amount reserved for open buy orders. */
-  reservedBuy: number,
+  reservedBuy: number;
 };
 
 export type ResolveRequest = {
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
-  amount: number,
-  rHash: string,
-  tokenAddress: string,
+  amount: number;
+  rHash: string;
+  tokenAddress: string;
   /** The number of blocks before the incoming payment expires. */
-  expiration: number,
-  chain_height: number,
+  expiration: number;
+  chainHeight: number;
 };
 
 export type CloseChannelParams = {
   /** The remote node with which to close channels.. */
-  remoteIdentifier?: string,
+  remoteIdentifier?: string;
   /**
    * The amount to extract from the channel, if applicable. If 0 or unspecified,
    * the entire off-chain balance for the specified currency will be extracted.
    */
-  units?: number,
-  currency?: string,
+  units?: number;
+  currency?: string;
   /**
    * The on-chain address to send funds extracted from the channel. If unspecified
    * the funds return to the default wallet for the client closing the channel.
    */
-  destination?: string,
-  force?: boolean,
+  destination?: string;
+  force?: boolean;
   /** The fee in sat per byte. */
-  fee?: number,
+  fee?: number;
 };
 
 export type OpenChannelParams = {
   /** The remote node with which to open the channel. */
-  remoteIdentifier?: string,
+  remoteIdentifier?: string;
   /** The size of the channel. */
-  units: number,
-  currency?: string,
+  units: number;
+  currency?: string;
   /** Uris with which to connect to the remote node. */
-  uris?: string[],
+  uris?: string[];
   /** The balance to assign to the remote node. */
-  pushUnits?: number,
+  pushUnits?: number;
   /** The fee in sat per byte. */
-  fee?: number,
+  fee?: number;
 };

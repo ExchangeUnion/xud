@@ -1,5 +1,4 @@
 import * as bodyParser from 'body-parser';
-import Logger from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
 import grpcGateway from '@exchangeunion/grpc-dynamic-gateway';
@@ -7,6 +6,7 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import grpc from 'grpc';
 import { promises as fs } from 'fs';
+import Logger from '../../Logger';
 
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
@@ -55,7 +55,7 @@ class GrpcWebProxyServer {
       });
       this.server.on('error', listenErrHandler);
     });
-  }
+  };
 
   /**
    * Stops listening for requests
@@ -63,19 +63,21 @@ class GrpcWebProxyServer {
   public close = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (this.server && this.server.listening) {
-        this.server.close(() => {
-          this.logger.info('gRPC Web API proxy stopped listening');
-          resolve();
-        }).once('error', (err) => {
-          this.logger.error(err);
-          reject(err);
-        });
+        this.server
+          .close(() => {
+            this.logger.info('gRPC Web API proxy stopped listening');
+            resolve();
+          })
+          .once('error', (err) => {
+            this.logger.error(err);
+            reject(err);
+          });
       } else {
         // there is already no server listening
         resolve();
       }
     });
-  }
+  };
 }
 
 export default GrpcWebProxyServer;

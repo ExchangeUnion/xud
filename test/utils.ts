@@ -61,7 +61,13 @@ export const getTempDir = (unique: boolean) => {
   return dir;
 };
 
-export const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms(), pairId = 'LTC/BTC'): OwnOrder => ({
+export const createOwnOrder = (
+  price: number,
+  quantity: number,
+  isBuy: boolean,
+  createdAt = ms(),
+  pairId = 'LTC/BTC',
+): OwnOrder => ({
   price,
   quantity,
   isBuy,

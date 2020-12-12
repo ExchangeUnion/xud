@@ -7,14 +7,14 @@ import Network from './Network';
 import Packet from './packets/Packet';
 
 type WireMsgHeader = {
-  magic?: number,
-  type: number,
-  length: number,
-  checksum?: number,
+  magic?: number;
+  type: number;
+  length: number;
+  checksum?: number;
 };
 
 type WireMsg = {
-  header: WireMsgHeader,
+  header: WireMsgHeader;
   packet: Buffer;
 };
 
@@ -26,8 +26,7 @@ class Framer {
   public static readonly ENCRYPTION_KEY_LENGTH = 32;
   public static readonly ENCRYPTION_IV_LENGTH = 16;
 
-  constructor(private network: Network) {
-  }
+  constructor(private network: Network) {}
 
   /**
    * Frame a packet with a header to be used as a wire msg
@@ -77,7 +76,7 @@ class Framer {
 
       return msg;
     }
-  }
+  };
 
   /**
    * Unframe a wire msg or an encrypted wire msg
@@ -110,7 +109,7 @@ class Framer {
     }
 
     return wireMsg;
-  }
+  };
 
   /**
    * Parse the length of a wire msg or an encrypted wire msg
@@ -135,7 +134,7 @@ class Framer {
     }
 
     return data.readUInt32LE(4);
-  }
+  };
 
   /**
    * Parse the header of a wire msg or an encrypted wire msg payload
@@ -168,14 +167,14 @@ class Framer {
 
       return { magic, type, length, checksum };
     }
-  }
+  };
 
   public encrypt = async (plaintext: Buffer, key: Buffer): Promise<Buffer> => {
     const iv = await randomBytes(Framer.ENCRYPTION_IV_LENGTH);
     const cipher = createCipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);
-  }
+  };
 
   public decrypt = (ciphertext: Buffer, key: Buffer): Buffer => {
     const iv = ciphertext.slice(0, Framer.ENCRYPTION_IV_LENGTH);
@@ -183,7 +182,7 @@ class Framer {
     const decipher = createDecipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  }
+  };
 }
 
 export default Framer;

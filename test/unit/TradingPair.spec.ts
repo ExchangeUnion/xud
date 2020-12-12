@@ -24,34 +24,22 @@ const init = () => {
 
 describe('TradingPair.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5, 10, true),
-      createOwnOrder(5.5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5, 10, true), createOwnOrder(5.5, 10, false));
     expect(res).to.equal(0);
   });
 
   it('should match buy order with a higher then a sell order', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5.5, 10, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5.5, 10, true), createOwnOrder(5, 10, false));
     expect(res).to.equal(10);
   });
 
   it('should match buy order with an equal price to a sell order', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5, 10, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5, 10, true), createOwnOrder(5, 10, false));
     expect(res).to.equal(10);
   });
 
   it('should match with lowest quantity of both orders', () => {
-    const res = TradingPair['getMatchingQuantity'](
-      createOwnOrder(5, 5, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = TradingPair['getMatchingQuantity'](createOwnOrder(5, 5, true), createOwnOrder(5, 10, false));
     expect(res).to.equal(5);
   });
 });
@@ -59,55 +47,37 @@ describe('TradingPair.getMatchingQuantity', () => {
 describe('TradingPair.getOrdersPriorityQueueComparator', () => {
   it('should prioritize lower price on ASC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
-    const res = comparator(
-      createOwnOrder(5, 10, true),
-      createOwnOrder(5.5, 10, false),
-    );
+    const res = comparator(createOwnOrder(5, 10, true), createOwnOrder(5.5, 10, false));
     expect(res).to.be.true;
   });
 
   it('should not prioritize higher price on ASC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
-    const res = comparator(
-      createOwnOrder(5.5, 10, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = comparator(createOwnOrder(5.5, 10, true), createOwnOrder(5, 10, false));
     expect(res).to.be.false;
   });
 
   it('should prioritize higher price on DESC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
-    const res = comparator(
-      createOwnOrder(5.5, 10, true),
-      createOwnOrder(5, 10, false),
-    );
+    const res = comparator(createOwnOrder(5.5, 10, true), createOwnOrder(5, 10, false));
     expect(res).to.be.true;
   });
 
   it('should not prioritize lower price on DESC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
-    const res = comparator(
-      createOwnOrder(5, 10, true),
-      createOwnOrder(5.5, 10, false),
-    );
+    const res = comparator(createOwnOrder(5, 10, true), createOwnOrder(5.5, 10, false));
     expect(res).to.be.false;
   });
 
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
-    const res = comparator(
-      createOwnOrder(5, 10, true, ms() - 1),
-      createOwnOrder(5, 10, false, ms()),
-    );
+    const res = comparator(createOwnOrder(5, 10, true, ms() - 1), createOwnOrder(5, 10, false, ms()));
     expect(res).to.be.true;
   });
 
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
     const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
-    const res = comparator(
-      createOwnOrder(5, 10, true, ms() - 1),
-      createOwnOrder(5, 10, false, ms()),
-    );
+    const res = comparator(createOwnOrder(5, 10, true, ms() - 1), createOwnOrder(5, 10, false, ms()));
     expect(res).to.be.true;
   });
 });
@@ -123,10 +93,9 @@ describe('TradingPair.splitOrderByQuantity', () => {
   });
 
   it('should not work when matchingQuantity higher than quantity of order', () => {
-    expect(() => TradingPair['splitOrderByQuantity'](
-      createOwnOrder(5, 5, true),
-      10,
-    )).to.throw('order quantity must be greater than matchingQuantity');
+    expect(() => TradingPair['splitOrderByQuantity'](createOwnOrder(5, 5, true), 10)).to.throw(
+      'order quantity must be greater than matchingQuantity',
+    );
   });
 });
 
@@ -260,8 +229,10 @@ describe('TradingPair.removePeerOrders', () => {
     const firstPeerPubKey = '026a848ebd1792001ff10c6e212f6077aec5669af3de890e1ae196b4e9730d75b9';
     const secondPeerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345';
 
-    const firstHostOrders = [createPeerOrder(0.01, 50000, false, ms(), firstPeerPubKey),
-      createPeerOrder(0.01, 50000, false, ms(), firstPeerPubKey)];
+    const firstHostOrders = [
+      createPeerOrder(0.01, 50000, false, ms(), firstPeerPubKey),
+      createPeerOrder(0.01, 50000, false, ms(), firstPeerPubKey),
+    ];
     tp.addPeerOrder(firstHostOrders[0]);
     tp.addPeerOrder(firstHostOrders[1]);
     tp.addPeerOrder(createPeerOrder(0.01, 50000, false, ms(), secondPeerPubKey));
@@ -299,13 +270,10 @@ describe('TradingPair.removePeerOrders', () => {
     const order = createPeerOrder(5, quantity, false);
     tp.addPeerOrder(order);
 
-    expect(() => tp.removePeerOrder(
-      order.id,
-      otherPeerPubKey,
-      quantity,
-    )).to.throw(`order with id ${order.id} could not be found`);
+    expect(() => tp.removePeerOrder(order.id, otherPeerPubKey, quantity)).to.throw(
+      `order with id ${order.id} could not be found`,
+    );
   });
-
 });
 
 describe('TradingPair queues and maps integrity', () => {
@@ -371,10 +339,9 @@ describe('TradingPair queues and maps integrity', () => {
     const matchingResult = tp.match(ownOrder);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
-    expect(() => tp.getPeerOrder(
-      peerOrder.id,
-      peerOrder.peerPubKey,
-    )).to.throw(`order with id ${peerOrder.id} for peer ${peerOrder.peerPubKey} could not be found`);
+    expect(() => tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey)).to.throw(
+      `order with id ${peerOrder.id} for peer ${peerOrder.peerPubKey} could not be found`,
+    );
     const queueRemainingOrder = tp.queues!.sellQueue.peek();
     expect(queueRemainingOrder).to.be.undefined;
   });
@@ -408,7 +375,9 @@ describe('TradingPair.addOrderHold & TradingPair.removeOrderHold', () => {
   it('should add a new ownOrder and fail putting more on hold than is available', async () => {
     const ownOrder = createOwnOrder(5, 5, false);
     tp.addOwnOrder(ownOrder);
-    expect(() => tp.addOrderHold(ownOrder.id, 10)).to.throw('the amount of an order on hold cannot exceed the available quantity');
+    expect(() => tp.addOrderHold(ownOrder.id, 10)).to.throw(
+      'the amount of an order on hold cannot exceed the available quantity',
+    );
   });
 
   it('should add a new ownOrder, add a hold, then remove the hold', async () => {
@@ -431,13 +400,17 @@ describe('TradingPair.addOrderHold & TradingPair.removeOrderHold', () => {
   it('should add a new ownOrder and fail removing a hold that does not exist', async () => {
     const ownOrder = createOwnOrder(5, 5, false);
     tp.addOwnOrder(ownOrder);
-    expect(() => tp.removeOrderHold(ownOrder.id, 1)).to.throw('cannot remove more than is currently on hold for an order');
+    expect(() => tp.removeOrderHold(ownOrder.id, 1)).to.throw(
+      'cannot remove more than is currently on hold for an order',
+    );
   });
 
   it('should add a new ownOrder, add a hold, and fail removing more than what is on hold', async () => {
     const ownOrder = createOwnOrder(5, 5, false);
     tp.addOwnOrder(ownOrder);
     tp.addOrderHold(ownOrder.id, 1);
-    expect(() => tp.removeOrderHold(ownOrder.id, 3)).to.throw('cannot remove more than is currently on hold for an order');
+    expect(() => tp.removeOrderHold(ownOrder.id, 3)).to.throw(
+      'cannot remove more than is currently on hold for an order',
+    );
   });
 });

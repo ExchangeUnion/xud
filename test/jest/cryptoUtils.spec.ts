@@ -19,6 +19,8 @@ describe('encrypt & decrypt', () => {
 
   test('can not decrypt message using wrong password', async () => {
     const encrypted = await encrypt(payload, password);
-    expect(() => decrypt(encrypted, 'wrongpass')).toThrow('error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt');
+    expect(() => decrypt(encrypted, 'wrongpass')).toThrow(
+      'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt',
+    );
   });
 });

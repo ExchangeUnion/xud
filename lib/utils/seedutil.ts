@@ -16,7 +16,9 @@ const exec = promisify(childProcessExec);
  * @param pathVal the path in which to create the keystore directory
  */
 async function keystore(mnemonic: string[], password: string, pathVal: string) {
-  const { stdout, stderr } = await exec(`${seedutilPath} keystore -pass=${password} -path=${pathVal} ${mnemonic.join(' ')}`);
+  const { stdout, stderr } = await exec(
+    `${seedutilPath} keystore -pass=${password} -path=${pathVal} ${mnemonic.join(' ')}`,
+  );
 
   if (stderr) {
     throw new Error(stderr);

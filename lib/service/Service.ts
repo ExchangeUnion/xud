@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import NodeKey from 'lib/nodekey/NodeKey';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
@@ -6,36 +7,65 @@ import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger, { Level, LevelPriority } from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
-import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
+import {
+  Currency,
+  isOwnOrder,
+  Order,
+  OrderPortion,
+  OwnLimitOrder,
+  OwnMarketOrder,
+  OwnOrder,
+  PeerOrder,
+  PlaceOrderEvent,
+} from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
+import Alerts from '../alerts/Alerts';
+import { SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
-import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
-import NodeKey from 'lib/nodekey/NodeKey';
-import Alerts from '../alerts/Alerts';
+import {
+  NodeIdentifier,
+  ServiceComponents,
+  ServiceOrder,
+  ServiceOrderSidesArrays,
+  ServicePlaceOrderEvent,
+  ServiceTrade,
+  XudInfo,
+} from './types';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
-  HAS_HOST: ({ host }: { host: string }) => { if (host === '') throw errors.INVALID_ARGUMENT('host must be specified'); },
-  HAS_ORDER_ID: ({ orderId }: { orderId: string }) => { if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified'); },
+  HAS_HOST: ({ host }: { host: string }) => {
+    if (host === '') throw errors.INVALID_ARGUMENT('host must be specified');
+  },
+  HAS_ORDER_ID: ({ orderId }: { orderId: string }) => {
+    if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified');
+  },
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_NODE_IDENTIFIER: ({ nodeIdentifier }: { nodeIdentifier: string }) => {
     if (nodeIdentifier === '') throw errors.INVALID_ARGUMENT('peerPubKey or alias must be specified');
   },
-  HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
-  HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
-  POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
-  PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+  HAS_PAIR_ID: ({ pairId }: { pairId: string }) => {
+    if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified');
+  },
+  HAS_RHASH: ({ rHash }: { rHash: string }) => {
+    if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified');
+  },
+  POSITIVE_AMOUNT: ({ amount }: { amount: number }) => {
+    if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0');
+  },
+  PRICE_NON_NEGATIVE: ({ price }: { price: number }) => {
+    if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative');
+  },
   PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
     if (checkDecimalPlaces(price)) throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
   },
@@ -45,12 +75,13 @@ const argChecks = {
     }
   },
   VALID_PORT: ({ port }: { port: number }) => {
-    if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
+    if (port < 1024 || port > 65535 || !Number.isInteger(port))
+      throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
     if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
-  VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType, fee?: number }) => {
+  VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType; fee?: number }) => {
     if (swapClient === SwapClientType.Connext && fee) throw errors.INVALID_ARGUMENT('fee is not valid for connext');
   },
 };
@@ -91,7 +122,12 @@ class Service extends EventEmitter {
   }
 
   /** Adds a currency. */
-  public addCurrency = async (args: { currency: string, swapClient: SwapClientType | number, decimalPlaces: number, tokenAddress?: string }) => {
+  public addCurrency = async (args: {
+    currency: string;
+    swapClient: SwapClientType | number;
+    decimalPlaces: number;
+    tokenAddress?: string;
+  }) => {
     argChecks.VALID_CURRENCY(args);
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
@@ -107,35 +143,35 @@ class Service extends EventEmitter {
       id: currency,
       tokenAddress: address,
     });
-  }
+  };
 
   /** Adds a trading pair. */
-  public addPair = async (args: { baseCurrency: string, quoteCurrency: string }) => {
+  public addPair = async (args: { baseCurrency: string; quoteCurrency: string }) => {
     await this.orderBook.addPair(args);
-  }
+  };
 
   /*
    * Remove placed order from the orderbook.
    */
-  public removeOrder = (args: { orderId: string, quantity?: number }) => {
+  public removeOrder = (args: { orderId: string; quantity?: number }) => {
     const { orderId, quantity } = args;
     argChecks.HAS_ORDER_ID(args);
 
     return this.orderBook.removeOwnOrderByLocalId(orderId, true, quantity);
-  }
+  };
 
   /*
    * Removes all placed orders from the orderbook.
    */
   public removeAllOrders = async () => {
     return this.orderBook.removeOwnOrders();
-  }
+  };
 
   /** Gets the total balance for one or all currencies. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const channelBalances = new Map<string, ChannelBalance>();
-    const walletBalances = new Map<string, { confirmedBalance: number, unconfirmedBalance: number }>();
+    const walletBalances = new Map<string, { confirmedBalance: number; unconfirmedBalance: number }>();
 
     if (currency) {
       argChecks.VALID_CURRENCY(args);
@@ -153,31 +189,52 @@ class Service extends EventEmitter {
       }
     } else {
       const balancePromises: Promise<any>[] = [];
-      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+      this.swapClientManager.swapClients.forEach((swapClient, swapClientCurrency) => {
         if (swapClient.isConnected()) {
-          balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
-            channelBalances.set(currency, channelBalance);
-          }).catch(this.logger.error));
-          balancePromises.push(swapClient.walletBalance(currency).then((walletBalance) => {
-            walletBalances.set(currency, walletBalance);
-          }).catch(this.logger.error));
+          balancePromises.push(
+            swapClient
+              .channelBalance(swapClientCurrency)
+              .then((channelBalance) => {
+                channelBalances.set(swapClientCurrency, channelBalance);
+              })
+              .catch(this.logger.error),
+          );
+          balancePromises.push(
+            swapClient
+              .walletBalance(swapClientCurrency)
+              .then((walletBalance) => {
+                walletBalances.set(swapClientCurrency, walletBalance);
+              })
+              .catch(this.logger.error),
+          );
         }
       });
       await Promise.all(balancePromises);
     }
-    const balances = new Map<string, {
-      channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
-      walletBalance: number, unconfirmedWalletBalance: number, totalBalance: number,
-    }>();
-    channelBalances.forEach((channelBalance, currency) => {
-      const walletBalance = walletBalances.get(currency);
+    const balances = new Map<
+      string,
+      {
+        channelBalance: number;
+        pendingChannelBalance: number;
+        inactiveChannelBalance: number;
+        walletBalance: number;
+        unconfirmedWalletBalance: number;
+        totalBalance: number;
+      }
+    >();
+    channelBalances.forEach((channelBalance, channelBalanceCurrency) => {
+      const walletBalance = walletBalances.get(channelBalanceCurrency);
       if (walletBalance) {
         // check to make sure we have a wallet balance, which isn't guaranteed since it may involve
         // a separate call from the one to get channel balance. unless we have both wallet and
         // channel balances for a given currency, we don't want to return any balance for it
-        const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance + channelBalance.inactiveBalance +
-          walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
-        balances.set(currency, {
+        const totalBalance =
+          channelBalance.balance +
+          channelBalance.pendingOpenBalance +
+          channelBalance.inactiveBalance +
+          walletBalance.confirmedBalance +
+          walletBalance.unconfirmedBalance;
+        balances.set(channelBalanceCurrency, {
           totalBalance,
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
@@ -188,7 +245,7 @@ class Service extends EventEmitter {
       }
     });
     return balances;
-  }
+  };
 
   /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for one or all currencies. */
   public tradingLimits = async (args: { currency: string }) => {
@@ -202,23 +259,28 @@ class Service extends EventEmitter {
       tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
-      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+      this.swapClientManager.swapClients.forEach((swapClient, swapClientCurrency) => {
         if (swapClient.isConnected()) {
-          promises.push(this.swapClientManager.tradingLimits(currency).then((tradingLimits) => {
-            tradingLimitsMap.set(currency, tradingLimits);
-          }).catch(this.logger.error));
+          promises.push(
+            this.swapClientManager
+              .tradingLimits(swapClientCurrency)
+              .then((tradingLimits) => {
+                tradingLimitsMap.set(swapClientCurrency, tradingLimits);
+              })
+              .catch(this.logger.error),
+          );
         }
       });
       await Promise.all(promises);
     }
 
     return tradingLimitsMap;
-  }
+  };
 
   /**
    * Connect to an XU node on a given node uri.
    */
-  public connect = async (args: { nodeUri: string, retryConnecting: boolean }) => {
+  public connect = async (args: { nodeUri: string; retryConnecting: boolean }) => {
     const { nodeUri, retryConnecting } = args;
 
     let uriParts: UriParts;
@@ -233,31 +295,42 @@ class Service extends EventEmitter {
     argChecks.VALID_PORT({ port });
 
     await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
-  }
+  };
 
   public walletDeposit = async (args: { currency: string }) => {
     const { currency } = args;
     const address = await this.swapClientManager.walletDeposit(currency.toUpperCase());
     return address;
-  }
+  };
 
   public deposit = async (args: { currency: string }) => {
     const { currency } = args;
     const address = await this.swapClientManager.deposit(currency.toUpperCase());
     return address;
-  }
+  };
 
-  public walletWithdraw = async (args: { currency: string, amount: number, destination: string, all: boolean, fee: number}) => {
+  public walletWithdraw = async (args: {
+    currency: string;
+    amount: number;
+    destination: string;
+    all: boolean;
+    fee: number;
+  }) => {
     const txId = await this.swapClientManager.withdraw(args);
     return txId;
-  }
+  };
 
   /*
    * Closes any payment channels for a specified node and currency.
    */
-  public closeChannel = async (
-    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number, fee?: number },
-  ) => {
+  public closeChannel = async (args: {
+    nodeIdentifier: string;
+    currency: string;
+    force: boolean;
+    destination: string;
+    amount: number;
+    fee?: number;
+  }) => {
     const { nodeIdentifier, currency, force, destination, amount, fee } = args;
     argChecks.VALID_CURRENCY({ currency });
 
@@ -289,18 +362,25 @@ class Service extends EventEmitter {
     }
 
     return closeChannelTxs;
-  }
+  };
 
   /*
    * Opens a payment channel to a specified node, currency and amount.
    */
-  public openChannel = async (
-    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number, fee?: number },
-  ) => {
+  public openChannel = async (args: {
+    nodeIdentifier: string;
+    amount: number;
+    currency: string;
+    pushAmount?: number;
+    fee?: number;
+  }) => {
     const { nodeIdentifier, amount, currency, pushAmount, fee } = args;
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
-    argChecks.VALID_FEE({ fee, swapClient: this.swapClientManager.getType(currency) });
+    argChecks.VALID_FEE({
+      fee,
+      swapClient: this.swapClientManager.getType(currency),
+    });
 
     let remoteIdentifier: string | undefined;
     let uris: string[] | undefined;
@@ -331,27 +411,31 @@ class Service extends EventEmitter {
       const errorMessage = e.message || 'unknown';
       throw errors.OPEN_CHANNEL_FAILURE(currency, amount, errorMessage, nodeIdentifier);
     }
-  }
+  };
 
   /*
    * Ban a XU node manually and disconnect from it.
    */
   public ban = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
+    const nodePubKey = isNodePubKey(args.nodeIdentifier)
+      ? args.nodeIdentifier
+      : this.pool.resolveAlias(args.nodeIdentifier);
     await this.pool.banNode(nodePubKey);
-  }
+  };
 
   /*
    * Remove ban from XU node manually and connenct to it.
    */
-  public unban = async (args: { nodeIdentifier: string, reconnect: boolean }) => {
+  public unban = async (args: { nodeIdentifier: string; reconnect: boolean }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
+    const nodePubKey = isNodePubKey(args.nodeIdentifier)
+      ? args.nodeIdentifier
+      : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.unbanNode(nodePubKey, args.reconnect);
-  }
+  };
 
-  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }) => {
+  public executeSwap = async (args: { orderId: string; pairId: string; peerPubKey: string; quantity: number }) => {
     if (!this.orderBook.nomatching) {
       throw errors.NOMATCHING_MODE_IS_REQUIRED();
     }
@@ -371,7 +455,7 @@ class Service extends EventEmitter {
     const swapSuccess = await this.orderBook.executeSwap(maker, taker);
     swapSuccess.localId = ''; // we shouldn't return the localId for ExecuteSwap in nomatching mode
     return swapSuccess;
-  }
+  };
 
   /**
    * Gets information about a specified node.
@@ -379,17 +463,19 @@ class Service extends EventEmitter {
   public getMnemonic = async () => {
     const mnemonic = await this.nodekey.getMnemonic();
     return mnemonic;
-  }
+  };
 
   /**
    * Gets information about a specified node.
    */
   public getNodeInfo = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
+    const nodePubKey = isNodePubKey(args.nodeIdentifier)
+      ? args.nodeIdentifier
+      : this.pool.resolveAlias(args.nodeIdentifier);
     const info = await this.pool.getNodeReputation(nodePubKey);
     return info;
-  }
+  };
 
   /**
    * Get general information about this Exchange Union node.
@@ -441,12 +527,12 @@ class Service extends EventEmitter {
       },
       pendingSwapHashes: this.swaps.getPendingSwapHashes(),
     };
-  }
+  };
 
   public setLogLevel = async (args: { logLevel: number }) => {
     const level = LevelPriority[args.logLevel] as Level;
     this.emit('logLevel', level);
-  }
+  };
 
   private toServiceOrder = (order: Order, includeAliases = false): ServiceOrder => {
     const { id, createdAt, pairId, price, quantity } = order;
@@ -483,33 +569,36 @@ class Service extends EventEmitter {
       };
     }
     return serviceOrder;
-  }
+  };
 
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public listOrders = (
-    args: { pairId: string, owner: Owner | number, limit: number, includeAliases: boolean },
-    ): Map<string, ServiceOrderSidesArrays> => {
+  public listOrders = (args: {
+    pairId: string;
+    owner: Owner | number;
+    limit: number;
+    includeAliases: boolean;
+  }): Map<string, ServiceOrderSidesArrays> => {
     const { pairId, owner, limit, includeAliases } = args;
     const includeOwnOrders = owner === Owner.Both || owner === Owner.Own;
     const includePeerOrders = owner === Owner.Both || owner === Owner.Peer;
 
     const result = new Map<string, ServiceOrderSidesArrays>();
 
-    const listOrderTypes = (pairId: string) => {
+    const listOrderTypes = (pairIdToList: string) => {
       let buyArray: Order[] = [];
       let sellArray: Order[] = [];
 
       if (includePeerOrders) {
-        const peerOrders = this.orderBook.getPeersOrders(pairId);
+        const peerOrders = this.orderBook.getPeersOrders(pairIdToList);
 
         buyArray = buyArray.concat(peerOrders.buyArray);
         sellArray = sellArray.concat(peerOrders.sellArray);
       }
 
       if (includeOwnOrders) {
-        const ownOrders = this.orderBook.getOwnOrders(pairId);
+        const ownOrders = this.orderBook.getOwnOrders(pairIdToList);
 
         buyArray = buyArray.concat(ownOrders.buyArray);
         sellArray = sellArray.concat(ownOrders.sellArray);
@@ -525,21 +614,21 @@ class Service extends EventEmitter {
       }
 
       return {
-        buyArray: buyArray.map(order => this.toServiceOrder(order, includeAliases)),
-        sellArray: sellArray.map(order => this.toServiceOrder(order, includeAliases)),
+        buyArray: buyArray.map((order) => this.toServiceOrder(order, includeAliases)),
+        sellArray: sellArray.map((order) => this.toServiceOrder(order, includeAliases)),
       };
     };
 
     if (pairId) {
       result.set(pairId, listOrderTypes(pairId));
     } else {
-      this.orderBook.pairIds.forEach((pairId) => {
-        result.set(pairId, listOrderTypes(pairId));
+      this.orderBook.pairIds.forEach((orderBookPairId) => {
+        result.set(orderBookPairId, listOrderTypes(orderBookPairId));
       });
     }
 
     return result;
-  }
+  };
 
   /**
    * Get the list of the order book's supported currencies
@@ -547,7 +636,7 @@ class Service extends EventEmitter {
    */
   public listCurrencies = (): Map<string, Currency> => {
     return this.orderBook.currencies;
-  }
+  };
 
   /**
    * Get the list of the order book's supported pairs.
@@ -555,7 +644,7 @@ class Service extends EventEmitter {
    */
   public listPairs = () => {
     return this.orderBook.pairIds;
-  }
+  };
 
   /**
    * Get information about currently connected peers.
@@ -563,7 +652,7 @@ class Service extends EventEmitter {
    */
   public listPeers = () => {
     return this.pool.listPeers();
-  }
+  };
 
   /**
    * Gets trading history.
@@ -646,15 +735,22 @@ class Service extends EventEmitter {
     });
 
     return serviceTrades;
-  }
+  };
 
   /**
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (
-    args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
-      replaceOrderId: string, immediateOrCancel: boolean },
+  public placeOrder = (
+    args: {
+      pairId: string;
+      price: number;
+      quantity: number;
+      orderId: string;
+      side: number;
+      replaceOrderId: string;
+      immediateOrCancel: boolean;
+    },
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
     argChecks.PRICE_NON_NEGATIVE(args);
@@ -671,15 +767,17 @@ class Service extends EventEmitter {
     };
 
     /** Modified callback that converts Order to ServiceOrder before passing to callback. */
-    const serviceCallback: ((e: PlaceOrderEvent) => void) | undefined = callback ? (e) => {
-      const { type, order, swapSuccess, swapFailure } = e;
-      callback({
-        type,
-        swapSuccess,
-        swapFailure,
-        order: order ? this.toServiceOrder(order, true) : undefined,
-      });
-    } : undefined;
+    const serviceCallback: ((e: PlaceOrderEvent) => void) | undefined = callback
+      ? (e) => {
+          const { type, order, swapSuccess, swapFailure } = e;
+          callback({
+            type,
+            swapSuccess,
+            swapFailure,
+            order: order ? this.toServiceOrder(order, true) : undefined,
+          });
+        }
+      : undefined;
 
     const placeOrderRequest = {
       order,
@@ -687,9 +785,10 @@ class Service extends EventEmitter {
       replaceOrderId,
       onUpdate: serviceCallback,
     };
-    return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
-      await this.orderBook.placeMarketOrder(placeOrderRequest);
-  }
+    return price > 0
+      ? this.orderBook.placeLimitOrder(placeOrderRequest)
+      : this.orderBook.placeMarketOrder(placeOrderRequest);
+  };
 
   /** Removes a currency. */
   public removeCurrency = async (args: { currency: string }) => {
@@ -697,7 +796,7 @@ class Service extends EventEmitter {
     const { currency } = args;
 
     await this.orderBook.removeCurrency(currency);
-  }
+  };
 
   /** Removes a trading pair. */
   public removePair = async (args: { pairId: string }) => {
@@ -705,14 +804,17 @@ class Service extends EventEmitter {
     const { pairId } = args;
 
     return this.orderBook.removePair(pairId);
-  }
+  };
 
   /** Discover nodes from a specific peer and apply new connections */
   public discoverNodes = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
+    const nodePubKey = isNodePubKey(args.nodeIdentifier)
+      ? args.nodeIdentifier
+      : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.discoverNodes(nodePubKey);
-  }
+  };
+
   /*
    * Subscribe to alerts.
    */
@@ -728,11 +830,11 @@ class Service extends EventEmitter {
       },
       error: this.logger.error,
     });
-  }
+  };
 
   private getMergedObservable$(observables: Observable<any>[], cancelled$: Observable<void>) {
     return merge(...observables).pipe(takeUntil(cancelled$));
-  }
+  };
 
   /*
    * Subscribe to orders being added to the order book.
@@ -746,10 +848,10 @@ class Service extends EventEmitter {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buyArray.forEach(order => callback(this.toServiceOrder(order, false)));
-        peerOrders.buyArray.forEach(order => callback(this.toServiceOrder(order, true)));
-        ownOrders.sellArray.forEach(order => callback(this.toServiceOrder(order, false)));
-        peerOrders.sellArray.forEach(order => callback(this.toServiceOrder(order, true)));
+        ownOrders.buyArray.forEach((order) => callback(this.toServiceOrder(order, false)));
+        peerOrders.buyArray.forEach((order) => callback(this.toServiceOrder(order, true)));
+        ownOrders.sellArray.forEach((order) => callback(this.toServiceOrder(order, false)));
+        peerOrders.sellArray.forEach((order) => callback(this.toServiceOrder(order, true)));
       });
     }
 
@@ -759,7 +861,7 @@ class Service extends EventEmitter {
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
     orderAdded$.subscribe({
-      next: order => callback(this.toServiceOrder(order, true)),
+      next: (order) => callback(this.toServiceOrder(order, true)),
       error: this.logger.error,
     });
 
@@ -771,10 +873,12 @@ class Service extends EventEmitter {
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
     orderRemoved$.subscribe({
-      next: (orderPortion) => { callback(undefined, orderPortion); },
+      next: (orderPortion) => {
+        callback(undefined, orderPortion);
+      },
       error: this.logger.error,
     });
-  }
+  };
 
   /*
    * Subscribe to completed swaps.
@@ -791,20 +895,19 @@ class Service extends EventEmitter {
       }
     };
 
-    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid')
-      .pipe(takeUntil(cancelled$));
+    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid').pipe(takeUntil(cancelled$));
 
     swapPaid$.subscribe({
       next: onSwapPaid,
       error: this.logger.error,
     });
-  }
+  };
 
   /*
    * Subscribe to completed swaps.
    */
   public subscribeSwapsAccepted = async (
-    _args: { },
+    _args: {},
     callback: (swapAccepted: SwapAccepted) => void,
     cancelled$: Observable<void>,
   ) => {
@@ -812,14 +915,13 @@ class Service extends EventEmitter {
       callback(swapSuccess);
     };
 
-    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted')
-      .pipe(takeUntil(cancelled$));
+    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted').pipe(takeUntil(cancelled$));
 
     swapAccepted.subscribe({
       next: onSwapAccepted,
       error: this.logger.error,
     });
-  }
+  };
 
   /*
    * Subscribe to failed swaps.
@@ -837,46 +939,36 @@ class Service extends EventEmitter {
       }
     };
 
-    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed')
-      .pipe(takeUntil(cancelled$));
+    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed').pipe(takeUntil(cancelled$));
 
     swapFailed$.subscribe({
       next: onSwapFailed,
       error: this.logger.error,
     });
-  }
-
-  /**
-   * Resolves a hash to its preimage.
-   */
-  public resolveHash = async (request: ResolveRequest) => {
-    argChecks.HAS_RHASH(request);
-    argChecks.POSITIVE_AMOUNT(request);
-    return this.swaps.handleResolveRequest(request);
-  }
+  };
 
   /**
    * Provides preimage for a hash.
    */
   public providePreimage = async (event: ProvidePreimageEvent) => {
     this.swapClientManager.connextClient?.emit('preimage', event);
-  }
+  };
 
   /**
    * Notifies Connext client that a transfer has been received.
    */
   public transferReceived = async (event: TransferReceivedEvent) => {
     this.swapClientManager.connextClient?.emit('transferReceived', event);
-  }
+  };
 
   /**
    * Notifies Connext client that a deposit has been confirmed.
    */
   public depositConfirmed = (hash: string) => {
     this.swapClientManager.connextClient?.emit('depositConfirmed', hash);
-  }
+  };
 
-  public changePassword = async ({ newPassword, oldPassword }: { newPassword: string, oldPassword: string }) => {
+  public changePassword = async ({ newPassword, oldPassword }: { newPassword: string; oldPassword: string }) => {
     if (!this.nodekey.password) {
       throw errors.NO_ENCRYPT_MODE_ENABLED;
     }
@@ -891,6 +983,6 @@ class Service extends EventEmitter {
     // we change the password for our node key right away, then we queue up lnd password changes
     await this.nodekey.toFile(newPassword);
     await this.swapClientManager.changeLndPasswords(oldPassword, newPassword);
-  }
+  };
 }
 export default Service;

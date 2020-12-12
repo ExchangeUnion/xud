@@ -16,6 +16,5 @@ export default function ReputationEvent(sequelize: Sequelize) {
     updatedAt: false,
   };
 
-  const Trade = sequelize.define<TradeInstance>('Trade', attributes, options);
-  return Trade;
+  return sequelize.define<TradeInstance>('Trade', attributes, options);
 }

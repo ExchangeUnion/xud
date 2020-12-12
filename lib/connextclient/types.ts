@@ -23,6 +23,11 @@ export type ConnextBlockNumberResponse = {
   result: string;
 };
 
+/** Response for eth_gasPrice call  */
+export type EthproviderGasPriceResponse = {
+  result: string;
+};
+
 type Balance = {
   amount: string[];
   to: string[];
@@ -248,7 +253,7 @@ export type ConnextPreimageRequest = {
           recipient: string;
           recipientChainId: number;
           recipientAssetId: string;
-        }
+        },
       ];
     };
     transferResolver: {

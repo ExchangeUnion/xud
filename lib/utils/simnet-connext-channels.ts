@@ -1,25 +1,10 @@
 import grpc from 'grpc';
 import http from 'http';
 import { defer, from, Observable, of, throwError } from 'rxjs';
-import {
-  catchError,
-  concat,
-  concatAll,
-  delay,
-  mergeMap,
-  retryWhen,
-  share,
-  take,
-  mapTo,
-} from 'rxjs/operators';
+import { catchError, concat, concatAll, delay, mergeMap, retryWhen, share, take, mapTo } from 'rxjs/operators';
 import { loadXudClient } from '../cli/command';
 import { XudClient } from '../proto/xudrpc_grpc_pb';
-import {
-  GetBalanceRequest,
-  GetBalanceResponse,
-  GetInfoRequest,
-  GetInfoResponse,
-} from '../proto/xudrpc_pb';
+import { GetBalanceRequest, GetBalanceResponse, GetInfoRequest, GetInfoResponse } from '../proto/xudrpc_pb';
 
 type Balances = {
   channelBalance: number;
@@ -47,10 +32,7 @@ const processResponse = (resolve: Function, reject: Function) => {
   };
 };
 
-const getBalance = async (
-  client: XudClient,
-  currency?: string,
-): Promise<GetBalanceResponse> => {
+const getBalance = async (client: XudClient, currency?: string): Promise<GetBalanceResponse> => {
   const request = new GetBalanceRequest();
   if (currency) {
     request.setCurrency(currency.toUpperCase());
@@ -84,14 +66,7 @@ const checkBalanceObservable = (
             return from(faucetRequest(connextAddress)).pipe(
               // we wait 31 seconds (~2 blocks) before checking the balance again
               delay(31000),
-              mergeMap(() =>
-                checkBalanceObservable(
-                  client,
-                  currency,
-                  minimumBalance,
-                  getBalance$,
-                ),
-              ),
+              mergeMap(() => checkBalanceObservable(client, currency, minimumBalance, getBalance$)),
             );
           }),
         );
@@ -136,9 +111,7 @@ const faucetRequest = (connextAddress: string) => {
       path: '/faucet',
     };
 
-    const payload = {
-      address: connextAddress,
-    };
+    const payload = { address: connextAddress };
 
     const payloadStr = JSON.stringify(payload);
     options.headers = {
@@ -180,15 +153,10 @@ const createSimnetChannel = ({
   retryInterval: number;
   getBalance$: Observable<GetBalanceResponse>;
 }) => {
-  const balances$ = checkBalanceObservable(
-    client,
-    currency,
-    channelAmount,
-    getBalance$,
-  );
+  const balances$ = checkBalanceObservable(client, currency, channelAmount, getBalance$);
   const simnetChannel$ = balances$.pipe(
     // when error happens
-    retryWhen(errors =>
+    retryWhen((errors) =>
       errors.pipe(
         // we wait for retryInterval and attempt again
         delay(retryInterval),
@@ -212,7 +180,7 @@ const createSimnetChannels = (config: ChannelsConfig): Observable<any> => {
       const getBalance$ = defer(() => from(getBalance(client))).pipe(share());
       return from(
         // we map our channels config into observables
-        config.channels.map(channelConfig =>
+        config.channels.map((channelConfig) =>
           createSimnetChannel({
             ...channelConfig,
             client,

@@ -13,7 +13,9 @@ jest.mock('../../lib/db/DB', () => {
     return {
       models: {
         Currency: {
-          findAll: () => { return [{ id: 'WETH', tokenAddress: '0x1234' }]; },
+          findAll: () => {
+            return [{ id: 'WETH', tokenAddress: '0x1234' }];
+          },
         },
       },
     };
@@ -52,7 +54,7 @@ jest.mock('../../lib/lndclient/LndClient', () => {
 });
 const tokenAddresses = new Map<string, string>();
 jest.mock('../../lib/swaps/SwapClient');
-const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
+const mockedSwapClient = <jest.Mock<SwapClient>>(<any>SwapClient);
 
 const logger = new Logger({});
 logger.error = jest.fn();
@@ -246,7 +248,11 @@ describe('Swaps.SwapClientManager', () => {
       const amount = 16000000;
       swapClientManager.get = jest.fn().mockReturnValue(undefined);
       try {
-        await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
+        await swapClientManager.openChannel({
+          remoteIdentifier,
+          currency,
+          amount,
+        });
       } catch (e) {
         expect(e).toMatchSnapshot();
       }
@@ -256,7 +262,11 @@ describe('Swaps.SwapClientManager', () => {
       const currency = 'BTC';
       const amount = 16000000;
       try {
-        await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
+        await swapClientManager.openChannel({
+          remoteIdentifier,
+          currency,
+          amount,
+        });
       } catch (e) {
         expect(e).toMatchSnapshot();
       }
@@ -266,11 +276,13 @@ describe('Swaps.SwapClientManager', () => {
       const currency = 'BTC';
       const amount = 16000000;
       const getClientSpy = jest.spyOn(swapClientManager, 'get');
-      const lndListeningUris = [
-        '123.456.789.321:9735',
-        '192.168.63.155:9777',
-      ];
-      await swapClientManager.openChannel({ remoteIdentifier, currency, amount, uris: lndListeningUris });
+      const lndListeningUris = ['123.456.789.321:9735', '192.168.63.155:9777'];
+      await swapClientManager.openChannel({
+        remoteIdentifier,
+        currency,
+        amount,
+        uris: lndListeningUris,
+      });
       expect(getClientSpy).toHaveBeenCalledWith(currency);
       expect(mockLndOpenChannel).toHaveBeenCalledTimes(1);
       expect(mockLndOpenChannel).toHaveBeenCalledWith(
@@ -308,7 +320,6 @@ describe('Swaps.SwapClientManager', () => {
         });
       });
       swapClientManager.swapClients.set('LTC', ltcClient);
-
     });
 
     test('returns trading limits for a currency', async () => {
@@ -328,7 +339,10 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY);
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
+        'code',
+        errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
+      );
     });
 
     test('throws if inbound swap capacity is insufficient for an order', async () => {
@@ -340,7 +354,10 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_INBOUND_CAPACITY);
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
+        'code',
+        errorCodes.INSUFFICIENT_INBOUND_CAPACITY,
+      );
     });
 
     test('throws if outbound swap capacity is insufficient for an order plus reserved amounts', async () => {
@@ -354,7 +371,10 @@ describe('Swaps.SwapClientManager', () => {
 
       swapClientManager['outboundReservedAmounts'].set('LTC', 200000);
 
-      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY);
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
+        'code',
+        errorCodes.INSUFFICIENT_OUTBOUND_CAPACITY,
+      );
     });
 
     test('throws if inbound swap capacity is insufficient for an order plus reserved amounts', async () => {
@@ -368,7 +388,10 @@ describe('Swaps.SwapClientManager', () => {
 
       swapClientManager['inboundReservedAmounts'].set('BTC', 200000);
 
-      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.INSUFFICIENT_INBOUND_CAPACITY);
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
+        'code',
+        errorCodes.INSUFFICIENT_INBOUND_CAPACITY,
+      );
     });
 
     test('returns if swap capacity is sufficient', async () => {
@@ -387,7 +410,10 @@ describe('Swaps.SwapClientManager', () => {
     });
 
     test('throws when swap client is not found', async () => {
-      await expect(swapClientManager.tradingLimits('BBB')).rejects.toHaveProperty('code', errorCodes.SWAP_CLIENT_NOT_FOUND);
+      await expect(swapClientManager.tradingLimits('BBB')).rejects.toHaveProperty(
+        'code',
+        errorCodes.SWAP_CLIENT_NOT_FOUND,
+      );
 
       const order: OwnLimitOrder = {
         price: 0.01,
@@ -397,7 +423,10 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty('code', errorCodes.SWAP_CLIENT_NOT_FOUND);
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
+        'code',
+        errorCodes.SWAP_CLIENT_NOT_FOUND,
+      );
     });
   });
 });

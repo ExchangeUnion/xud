@@ -37,7 +37,7 @@ git config commit.template .git-commit-template.txt
 
 New test cases are appreciated for any pull requests that changes or adds new functionality. Although the current test suites are in early stages, thorough testing and code coverage is an important long term goal.
 
-All code is linted with [tslint](https://github.com/palantir/tslint) using a slightly modified [tslint adaptation](https://github.com/progre/tslint-config-airbnb) of [Airbnb's javascript style guide](https://github.com/airbnb/javascript). Ensure that your contributions pass all linting rules by running `npm run lint` or using a code editor with a tslint plugin. Per-line or per-file exceptions to linting rules are allowable in certain cases.
+All code is linted with [eslint](https://github.com/eslint/eslint) using a slightly modified version of [Airbnb's typescript style guide](https://github.com/iamturns/eslint-config-airbnb-typescript). Style rules are enforced with [prettier](https://github.com/iamturns/eslint-config-airbnb-typescript). Ensure that your contributions pass all linting rules by running `npm run lint` or using a code editor with support for eslint and prettier. Per-line or per-file exceptions to linting rules are allowable in certain cases.
 
 ### Commenting & Documentation
 

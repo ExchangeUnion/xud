@@ -52,9 +52,7 @@ describe('authentication', () => {
       ephemeralPubKey: aliceEphemeralPubKey,
     };
 
-    const msgHash = createHash('sha256')
-      .update(JSON.stringify(msg))
-      .digest();
+    const msgHash = createHash('sha256').update(JSON.stringify(msg)).digest();
 
     // alice signs the hash of its handshake request data and send it to bob
     const { signature } = secp256k1.sign(msgHash, aliceNodePrivKey);

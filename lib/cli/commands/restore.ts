@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
-import { getDefaultBackupDir } from '../../utils/utils';
 import { join } from 'path';
 import readline from 'readline';
 import { Arguments } from 'yargs';
+import { getDefaultBackupDir } from '../../utils/utils';
 import { RestoreNodeRequest, RestoreNodeResponse } from '../../proto/xudrpc_pb';
 import { callback, loadXudInitClient } from '../command';
 import { getDefaultCertPath, waitForCert } from '../utils';
@@ -13,8 +13,7 @@ export const describe = 'restore an xud instance from seed';
 
 export const builder = {
   backup_directory: {
-    description:
-`The directory to which backups were written,
+    description: `The directory to which backups were written,
 uses the default directory if unspecified`,
     type: 'string',
   },
@@ -64,24 +63,15 @@ export const handler = async (argv: Arguments<any>) => {
     // we must load backup files from disk before sending the restore request
     const backupDirectory = await fs.readdir(backupDir);
     backupDirectory.forEach((filename) => {
-      readDbBackupPromises.push(new Promise(async (resolve) => {
-        const fileContent = await fs.readFile(join(backupDir, filename));
-
-        if (filename.startsWith('lnd-')) {
-          request.getLndBackupsMap().set(filename.substr(4), fileContent);
-
-          resolve();
-          return;
-        }
-
-        switch (filename) {
-          case 'xud':
+      readDbBackupPromises.push(
+        fs.readFile(join(backupDir, filename)).then((fileContent) => {
+          if (filename.startsWith('lnd-')) {
+            request.getLndBackupsMap().set(filename.substr(4), fileContent);
+          } else if (filename === 'xud') {
             request.setXudDatabase(fileContent);
-            break;
-        }
-
-        resolve();
-      }));
+          }
+        }),
+      );
     });
   } catch (err) {
     if (err.code !== 'ENOENT') {

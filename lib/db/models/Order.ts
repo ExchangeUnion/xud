@@ -28,6 +28,5 @@ export default function Order(sequelize: Sequelize) {
     timestamps: false,
   };
 
-  const Order = sequelize.define<OrderInstance>('Order', attributes, options);
-  return Order;
+  return sequelize.define<OrderInstance>('Order', attributes, options);
 }

@@ -1,4 +1,4 @@
 export type XudError = {
-  message: string,
-  code: string,
+  message: string;
+  code: string;
 };

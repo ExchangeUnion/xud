@@ -8,8 +8,8 @@ export const command = 'streamorders [existing]';
 
 export const describe = 'stream order added, removed, and swapped events (DEMO)';
 
-export const builder = (argv: Argv) => argv
-  .option('existing', {
+export const builder = (argv: Argv) =>
+  argv.option('existing', {
     description: 'whether to return existing orders',
     type: 'boolean',
     default: true,

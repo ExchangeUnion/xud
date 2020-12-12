@@ -1,5 +1,3 @@
-
-// tslint:disable: max-line-length
 import ConnextClient from '../../lib/connextclient/ConnextClient';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 import Logger from '../../lib/Logger';
@@ -23,9 +21,7 @@ jest.mock('http', () => {
   return {
     request: jest.fn().mockImplementation((options, cb) => {
       if (options.path === '/deposit') {
-        cb({
-          statusCode: 404,
-        });
+        cb({ statusCode: 404 });
       }
 
       let errorCb: any;
@@ -98,29 +94,26 @@ describe('ConnextClient', () => {
     const DESTINATION_ADDRESS = '0x12345';
 
     beforeEach(() => {
-      connext['getBalance'] = jest.fn().mockReturnValue({
-        freeBalanceOnChain: MOCK_FREE_BALANCE_ON_CHAIN,
-      });
+      connext['getBalance'] = jest.fn().mockReturnValue({ freeBalanceOnChain: MOCK_FREE_BALANCE_ON_CHAIN });
       connext['sendRequest'] = jest.fn();
     });
 
     afterEach(() => {
       jest.clearAllMocks();
     }),
-
-    it('fails with custom fee', async () => {
-      expect.assertions(1);
-      try {
-        await connext.withdraw({
-          currency: 'ETH',
-          destination: DESTINATION_ADDRESS,
-          amount: 123,
-          fee: 1,
-        });
-      } catch (e) {
-        expect(e).toMatchSnapshot();
-      }
-    });
+      it('fails with custom fee', async () => {
+        expect.assertions(1);
+        try {
+          await connext.withdraw({
+            currency: 'ETH',
+            destination: DESTINATION_ADDRESS,
+            amount: 123,
+            fee: 1,
+          });
+        } catch (e) {
+          expect(e).toMatchSnapshot();
+        }
+      });
 
     it('fails to withdraw all ETH', async () => {
       expect.assertions(1);
@@ -226,72 +219,47 @@ describe('ConnextClient', () => {
   describe('lookupPayment', () => {
     it('returns PaymentState.Pending', async () => {
       expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockReturnValue({
-          transferState: {
-            expiry: '10001',
-          },
-          transferResolver: {},
-        });
-      connext['getHeight'] = jest
-        .fn()
-        .mockReturnValue(10000);
+      connext['getHashLockStatus'] = jest.fn().mockReturnValue({
+        transferState: { expiry: '10001' },
+        transferResolver: {},
+      });
+      connext['getHeight'] = jest.fn().mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Pending });
     });
 
     it('returns PaymentState.Completed with preimage', async () => {
       expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockReturnValue({
-          transferState: {
-            expiry: '10001',
-          },
-          transferResolver: {
-            preImage: '0x1337',
-          },
-        });
-      connext['getHeight'] = jest
-        .fn()
-        .mockReturnValue(10000);
+      connext['getHashLockStatus'] = jest.fn().mockReturnValue({
+        transferState: { expiry: '10001' },
+        transferResolver: { preImage: '0x1337' },
+      });
+      connext['getHeight'] = jest.fn().mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
-      expect(result).toEqual({ state: PaymentState.Succeeded, preimage: '1337' });
+      expect(result).toEqual({
+        state: PaymentState.Succeeded,
+        preimage: '1337',
+      });
     });
 
     it('returns PaymentState.Failed when preimage is hash zero', async () => {
       expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockReturnValue({
-          transferState: {
-            expiry: '10001',
-          },
-          transferResolver: {
-            preImage: '0x0000000000000000000000000000000000000000000000000000000000000000',
-          },
-        });
-      connext['getHeight'] = jest
-        .fn()
-        .mockReturnValue(10000);
+      connext['getHashLockStatus'] = jest.fn().mockReturnValue({
+        transferState: { expiry: '10001' },
+        transferResolver: { preImage: '0x0000000000000000000000000000000000000000000000000000000000000000' },
+      });
+      connext['getHeight'] = jest.fn().mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Failed });
     });
 
     it('returns PaymentState.Failed when EXPIRED', async () => {
       expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockReturnValue({
-          transferState: {
-            expiry: '10001',
-          },
-          transferResolver: {},
-        });
-      connext['getHeight'] = jest
-        .fn()
-        .mockReturnValue(10001);
+      connext['getHashLockStatus'] = jest.fn().mockReturnValue({
+        transferState: { expiry: '10001' },
+        transferResolver: {},
+      });
+      connext['getHeight'] = jest.fn().mockReturnValue(10001);
       connext['sendRequest'] = jest.fn().mockReturnValue(Promise.resolve());
       const hash = '8f28fb27a164ae992fb4808b11c137d06e8e7d9304043a6b7163323f7cf53920';
       const currency = 'ETH';
@@ -301,22 +269,18 @@ describe('ConnextClient', () => {
 
     it('returns PaymentState.Pending when error is unknown', async () => {
       expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockImplementation(() => {
-          throw new Error('unknown error');
-        });
+      connext['getHashLockStatus'] = jest.fn().mockImplementation(() => {
+        throw new Error('unknown error');
+      });
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Pending });
     });
 
     it('returns PaymentState.Failed when error is NOT_FOUND', async () => {
       expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockImplementation(() => {
-          throw errors.NOT_FOUND;
-        });
+      connext['getHashLockStatus'] = jest.fn().mockImplementation(() => {
+        throw errors.NOT_FOUND;
+      });
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Failed });
     });
@@ -336,7 +300,12 @@ describe('ConnextClient', () => {
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
         'POST',
-        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: (amount * 1.03 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          amount: (amount * 1.03 * 10 ** 10).toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+        }),
       );
     });
 
@@ -346,7 +315,12 @@ describe('ConnextClient', () => {
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
         'POST',
-        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: (amount * 1.03 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          amount: (amount * 1.03 * 10 ** 10).toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+        }),
       );
     });
 
@@ -366,19 +340,28 @@ describe('ConnextClient', () => {
     });
 
     it('requests collateral plus 5% buffer when there is none', async () => {
-      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError(
+        'channel collateralization in progress, please try again in ~1 minute',
+      );
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
         'POST',
-        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: (quantity * 1.05 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          amount: (quantity * 1.05 * 10 ** 10).toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+        }),
       );
     });
 
     it('does not request collateral when there is a pending request', async () => {
       connext['requestCollateralPromises'].set('ETH', Promise.resolve());
-      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError(
+        'channel collateralization in progress, please try again in ~1 minute',
+      );
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(0);
     });
@@ -387,37 +370,58 @@ describe('ConnextClient', () => {
       const partialCollateral = 5000;
       connext['inboundAmounts'].set('ETH', partialCollateral);
 
-      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError(
+        'channel collateralization in progress, please try again in ~1 minute',
+      );
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
         'POST',
-        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: (quantity * 1.05 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          amount: (quantity * 1.05 * 10 ** 10).toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+        }),
       );
     });
 
     it('requests the hardcoded minimum if the collateral shortage is below it', async () => {
       const minCollateralRequestUnits = ConnextClient['MIN_COLLATERAL_REQUEST_SIZES']['ETH']! * 10 ** 10;
 
-      expect(() => connext.checkInboundCapacity(smallQuantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+      expect(() => connext.checkInboundCapacity(smallQuantity, 'ETH')).toThrowError(
+        'channel collateralization in progress, please try again in ~1 minute',
+      );
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
         'POST',
-        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: minCollateralRequestUnits.toLocaleString('fullwide', { useGrouping: false }) }),
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          amount: minCollateralRequestUnits.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+        }),
       );
     });
 
     it('requests collateral plus 5% buffer for a small shortage when there is no hardcoded minimum for the currency', async () => {
-      expect(() => connext.checkInboundCapacity(smallQuantity, 'XUC')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+      expect(() => connext.checkInboundCapacity(smallQuantity, 'XUC')).toThrowError(
+        'channel collateralization in progress, please try again in ~1 minute',
+      );
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
         'POST',
-        expect.objectContaining({ assetId: XUC_ASSET_ID, amount: (smallQuantity * 1.05 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+        expect.objectContaining({
+          assetId: XUC_ASSET_ID,
+          amount: (smallQuantity * 1.05 * 10 ** 10).toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+        }),
       );
     });
 

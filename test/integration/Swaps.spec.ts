@@ -90,9 +90,7 @@ describe('Swaps.Integration', () => {
     pool.tryGetPeer = () => peer;
     // getRoute response
     getRouteResponse = () => {
-      return Promise.resolve({
-        getTotalTimeLock: () => 1,
-      });
+      return Promise.resolve({ getTotalTimeLock: () => 1 });
     };
     swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
     swapClientManager['swapClients'] = new Map<string, SwapClient>();
@@ -126,14 +124,12 @@ describe('Swaps.Integration', () => {
   });
 
   describe('executeSwap', () => {
-
     it('will resolve valid maker and taker order upon swap paid', async () => {
       const swapListenersAdded = sandbox.spy(swaps, 'on');
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
       const swapSuccess = validSwapSuccess();
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.equal(swapSuccess);
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to.eventually.equal(swapSuccess);
       await waitForSpy(swapListenersAdded);
       expect(addDealSpy.calledOnce).to.equal(true);
       swapSuccess.rHash = addDealSpy.args[0][0].rHash;
@@ -146,8 +142,7 @@ describe('Swaps.Integration', () => {
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
       const swapDeal = getValidDeal();
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejected;
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to.eventually.be.rejected;
       await waitForSpy(swapListenersAdded);
       expect(addDealSpy.calledOnce).to.equal(true);
       swapDeal.rHash = addDealSpy.args[0][0].rHash;
@@ -161,14 +156,16 @@ describe('Swaps.Integration', () => {
         ...validMakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
-      expect(swaps.executeSwap(invalidMakerOrder, validTakerOrder()))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.InvalidOrders);
+      expect(swaps.executeSwap(invalidMakerOrder, validTakerOrder())).to.eventually.be.rejected.and.equal(
+        SwapFailureReason.InvalidOrders,
+      );
       const invalidTakerOrder = {
         ...validTakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
-      expect(swaps.executeSwap(validMakerOrder(), invalidTakerOrder))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.InvalidOrders);
+      expect(swaps.executeSwap(validMakerOrder(), invalidTakerOrder)).to.eventually.be.rejected.and.equal(
+        SwapFailureReason.InvalidOrders,
+      );
     });
 
     it('will reject if unable to retrieve routes', async () => {
@@ -181,8 +178,9 @@ describe('Swaps.Integration', () => {
       let ltcSwapClient = swapClientManager.get('LTC');
       ltcSwapClient!.getRoute = noRoutesFound;
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to.eventually.be.rejected.and.equal(
+        SwapFailureReason.NoRouteFound,
+      );
       const rejectsWithUnknownError = () => {
         return Promise.reject('UNKNOWN');
       };
@@ -192,8 +190,9 @@ describe('Swaps.Integration', () => {
       ltcSwapClient = swapClientManager.get('LTC');
       ltcSwapClient!.getRoute = rejectsWithUnknownError;
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder())).to.eventually.be.rejected.and.equal(
+        SwapFailureReason.UnexpectedClientError,
+      );
     });
   });
 });

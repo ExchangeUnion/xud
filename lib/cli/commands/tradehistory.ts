@@ -39,6 +39,8 @@ const displayTrades = (trades: TradeHistoryResponse.AsObject) => {
         counterpartyOrderId = trim(trade.makerOrder?.id ?? '', 8);
         role = 'Internal';
         break;
+      default:
+        throw new Error('unrecognized trade role');
     }
     let side: string;
     switch (trade.side) {
@@ -51,6 +53,8 @@ const displayTrades = (trades: TradeHistoryResponse.AsObject) => {
       case OrderSide.BOTH:
         side = trade.takerOrder!.side === OrderSide.BUY ? 'Buy' : 'Sell';
         break;
+      default:
+        throw new Error('unrecognized trade side');
     }
 
     const details = [
@@ -65,7 +69,7 @@ const displayTrades = (trades: TradeHistoryResponse.AsObject) => {
 
     table.push(details);
   });
-  console.log(colors.underline(colors.bold('\Trades:')));
+  console.log(colors.underline(colors.bold('Trades:')));
   console.log(table.toString());
 };
 
@@ -73,19 +77,20 @@ export const command = 'tradehistory [limit]';
 
 export const describe = 'list completed trades';
 
-export const builder = (argv: Argv) => argv
-  .option('limit', {
-    description: 'the maximum number of trades to display',
-    type: 'number',
-    default: 15,
-  })
-  .option('all', {
-    description: 'whether to display the complete trade history',
-    type: 'boolean',
-    default: false,
-  })
-  .example('$0 tradehistory', 'list most recent trades')
-  .example('$0 tradehistory 50', 'list the 50 most recent trades');
+export const builder = (argv: Argv) =>
+  argv
+    .option('limit', {
+      description: 'the maximum number of trades to display',
+      type: 'number',
+      default: 15,
+    })
+    .option('all', {
+      description: 'whether to display the complete trade history',
+      type: 'boolean',
+      default: false,
+    })
+    .example('$0 tradehistory', 'list most recent trades')
+    .example('$0 tradehistory 50', 'list the 50 most recent trades');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new TradeHistoryRequest();

@@ -36,16 +36,17 @@ export default function Node(sequelize: Sequelize) {
     banned: { type: DataTypes.BOOLEAN, allowNull: true },
   };
 
-  const indexes: IndexesOptions[] = [{
-    unique: true,
-    fields: ['nodePubKey'],
-  }];
+  const indexes: IndexesOptions[] = [
+    {
+      unique: true,
+      fields: ['nodePubKey'],
+    },
+  ];
 
   const options: ModelOptions = {
     indexes,
     tableName: 'nodes',
   };
 
-  const Node = sequelize.define<NodeInstance>('Node', attributes, options);
-  return Node;
+  return sequelize.define<NodeInstance>('Node', attributes, options);
 }

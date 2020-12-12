@@ -71,10 +71,7 @@ describe('P2P Pool Tests', async () => {
     const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
     const openPromise = pool['openPeer'](peer, nodeKeyOne.pubKey);
-    await Promise.all([
-      openPromise,
-      new Promise(resolve => pool.on('peer.active', resolve)),
-    ]);
+    await Promise.all([openPromise, new Promise((resolve) => pool.on('peer.active', resolve))]);
   });
 
   it('should close a peer', async () => {
@@ -95,14 +92,10 @@ describe('P2P Pool Tests', async () => {
 
     await Promise.all([
       await pool['openPeer'](peer, nodeKeyOne.pubKey),
-      new Promise(resolve => pool.on('peer.active', resolve)),
+      new Promise((resolve) => pool.on('peer.active', resolve)),
     ]);
 
-    const nodeInstance = await db.models.Node.findOne({
-      where: {
-        nodePubKey: nodeKeyOne.pubKey,
-      },
-    });
+    const nodeInstance = await db.models.Node.findOne({ where: { nodePubKey: nodeKeyOne.pubKey } });
     expect(nodeInstance).to.not.be.undefined;
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
@@ -119,10 +112,7 @@ describe('P2P Pool Tests', async () => {
       tryConnectNodeStub = sinon.stub();
       pool['tryConnectNode'] = tryConnectNodeStub;
       const openPromise = pool['openPeer'](dcPeer, nodeKeyOne.pubKey);
-      await Promise.all([
-        openPromise,
-        new Promise(resolve => pool.on('peer.active', resolve)),
-      ]);
+      await Promise.all([openPromise, new Promise((resolve) => pool.on('peer.active', resolve))]);
     });
 
     it('should not reconnect upon shutdown inbound', async () => {
@@ -143,7 +133,6 @@ describe('P2P Pool Tests', async () => {
       await pool['handlePeerClose'](dcPeer);
       expect(tryConnectNodeStub.calledOnce).to.be.equal(true);
     });
-
   });
 
   after(async () => {

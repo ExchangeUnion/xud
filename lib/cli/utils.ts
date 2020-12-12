@@ -27,7 +27,7 @@ export function getDefaultCertPath() {
 }
 
 export function shorten(key: string, length = 10) {
-  if (key.length <= (length * 2) + 3) {
+  if (key.length <= length * 2 + 3) {
     return key;
   }
   return `${key.slice(0, length)}...${key.slice(key.length - length)}`;

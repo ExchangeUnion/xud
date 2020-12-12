@@ -21,9 +21,9 @@ export default function ReputationEvent(sequelize: Sequelize) {
     localId: { type: DataTypes.STRING, allowNull: false },
     proposedQuantity: { type: DataTypes.BIGINT, allowNull: false },
     quantity: { type: DataTypes.BIGINT, allowNull: true },
-    takerAmount: { type: DataTypes.BIGINT , allowNull: false },
-    takerCurrency: { type: DataTypes.STRING , allowNull: false },
-    takerPubKey: { type: DataTypes.STRING , allowNull: true },
+    takerAmount: { type: DataTypes.BIGINT, allowNull: false },
+    takerCurrency: { type: DataTypes.STRING, allowNull: false },
+    takerPubKey: { type: DataTypes.STRING, allowNull: true },
     takerCltvDelta: { type: DataTypes.SMALLINT, allowNull: false },
     makerCltvDelta: { type: DataTypes.SMALLINT, allowNull: true },
     makerAmount: { type: DataTypes.BIGINT, allowNull: false },
@@ -38,6 +38,5 @@ export default function ReputationEvent(sequelize: Sequelize) {
     timestamps: false,
   };
 
-  const SwapDeal = sequelize.define<SwapDealInstance>('SwapDeal', attributes, options);
-  return SwapDeal;
+  return sequelize.define<SwapDealInstance>('SwapDeal', attributes, options);
 }

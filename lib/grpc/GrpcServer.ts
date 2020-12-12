@@ -66,12 +66,16 @@ class GrpcServer {
       privateKey = Buffer.from(tlsKey);
     }
 
-    // tslint:disable-next-line:no-null-keyword
-    const credentials = grpc.ServerCredentials.createSsl(null,
-      [{
-        cert_chain: certificate,
-        private_key: privateKey,
-      }], false);
+    const credentials = grpc.ServerCredentials.createSsl(
+      null,
+      [
+        {
+          cert_chain: certificate,
+          private_key: privateKey,
+        },
+      ],
+      false,
+    );
 
     const bindCode = this.server.bind(`${host}:${port}`, credentials);
     if (bindCode !== port) {
@@ -82,7 +86,7 @@ class GrpcServer {
 
     this.server.start();
     this.logger.info(`gRPC server listening on ${host}:${port}`);
-  }
+  };
 
   /**
    * Stop listening for requests
@@ -97,13 +101,16 @@ class GrpcServer {
         resolve();
       });
     });
-  }
+  };
 
   /**
    * Generate a new certificate and save it to the disk
    * @returns the cerificate and its private key
    */
-  private generateCertificate = async (tlsCertPath: string, tlsKeyPath: string): Promise<{ tlsCert: string, tlsKey: string }> => {
+  private generateCertificate = async (
+    tlsCertPath: string,
+    tlsKeyPath: string,
+  ): Promise<{ tlsCert: string; tlsKey: string }> => {
     const keys = pki.rsa.generateKeyPair(1024);
     const cert = pki.createCertificate();
 
@@ -156,7 +163,7 @@ class GrpcServer {
       tlsCert: certificate,
       tlsKey: privateKey,
     };
-  }
+  };
 }
 
 export default GrpcServer;
