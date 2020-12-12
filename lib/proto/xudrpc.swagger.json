@@ -1698,6 +1698,13 @@
             "type": "string"
           },
           "description": "The local order ids that were on hold and failed to be removed."
+        },
+        "errored_order_ids": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "A map of local order ids to errors caught while removing the order"
         }
       }
     },

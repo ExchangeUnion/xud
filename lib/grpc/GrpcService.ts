@@ -309,11 +309,18 @@ class GrpcService {
       return;
     }
     try {
-      const { removedOrderLocalIds, onHoldOrderLocalIds } = await this.service.removeAllOrders();
+      const {
+        removedOrderLocalIds,
+        onHoldOrderLocalIds,
+        erroredOrdersByLocalId,
+      } = await this.service.removeAllOrders();
 
       const response = new xudrpc.RemoveAllOrdersResponse();
       response.setRemovedOrderIdsList(removedOrderLocalIds);
       response.setOnHoldOrderIdsList(onHoldOrderLocalIds);
+      erroredOrdersByLocalId.forEach((error, orderId) => {
+        response.getErroredOrderIdsMap().set(orderId, error);
+      });
 
       callback(null, response);
     } catch (err) {
