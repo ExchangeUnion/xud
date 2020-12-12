@@ -9,7 +9,7 @@ import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
 import { SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
-import { BalanceAlert } from '../alerts/types';
+import { Alert } from '../alerts/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -992,13 +992,13 @@ class GrpcService {
     }
 
     const cancelled$ = getCancelled$(call);
-    this.service.subscribeAlerts((serviceAlert: any) => {
+    this.service.subscribeAlerts((serviceAlert: Alert) => {
       const alert = new xudrpc.Alert();
       alert.setType(serviceAlert.type as number);
       alert.setMessage(serviceAlert.message);
       alert.setDate(serviceAlert.date);
       if (serviceAlert.type === AlertType.LowTradingBalance) {
-        const balanceServiceAlert = serviceAlert as BalanceAlert;
+        const balanceServiceAlert = serviceAlert as Alert;
         const balanceAlert = new xudrpc.BalanceAlert();
         balanceAlert.setBound(balanceServiceAlert.bound);
         balanceAlert.setSide(balanceServiceAlert.side as number);

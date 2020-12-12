@@ -1,14 +1,13 @@
 import { EventEmitter } from 'events';
-import { BalanceAlert } from './types';
+import { Alert, BalanceAlert } from './types';
 import SwapClientManager from '../swaps/SwapClientManager';
-import { MIN_BALANCE_ALERT_THRESHOLD_IN_MS } from './consts';
 import Logger from '../Logger';
 import { AlertType, ChannelSide } from '../constants/enums';
 import { satsToCoinsStr } from '../cli/utils';
 
 interface Alerts {
-  on(event: 'alert', listener: (alert: any) => void): this;
-  emit(event: 'alert', alert: any): boolean;
+  on(event: 'alert', listener: (alert: Alert) => void): this;
+  emit(event: 'alert', alert: Alert): boolean;
 }
 
 // TODO this class still requires a cleanup if alert is not being thrown anymore after a while
@@ -17,6 +16,8 @@ interface Alerts {
  * and re-thrown if last thrown time was before the minimum threshold that set in consts.ts
  */
 class Alerts extends EventEmitter {
+  /** The minimum time in miliseconds to be passed to rethrow a balance alert. */
+  private static readonly MIN_BALANCE_ALERT_THRESHOLD_IN_MS = 10000;
   private alerts = new Map<string, number>();
   private logger: Logger;
 
@@ -35,6 +36,7 @@ class Alerts extends EventEmitter {
   }
 
   private onLowTradingBalance = (balanceAlert: BalanceAlert) => {
+    // TODO don't use JSON.stringify instead find a way to define unique ids per alert and keep in the map to avoid memory issues
     const stringRepresentation = JSON.stringify(balanceAlert);
     this.logger.trace(`received low trading balance alert ${stringRepresentation}`);
     if (this.alerts.get(stringRepresentation) === undefined || this.checkAlertThreshold(stringRepresentation)) {
@@ -56,7 +58,7 @@ class Alerts extends EventEmitter {
   private checkAlertThreshold(stringRepresentation: string) {
     const lastThrownTime = this.alerts.get(stringRepresentation) || 0;
     const passedTime = Date.now() - lastThrownTime;
-    return passedTime > MIN_BALANCE_ALERT_THRESHOLD_IN_MS;
+    return passedTime > Alerts.MIN_BALANCE_ALERT_THRESHOLD_IN_MS;
   }
 }
 

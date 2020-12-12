@@ -1,6 +1,8 @@
 import { AlertType, ChannelSide } from '../constants/enums';
 
-export type BalanceAlert = Alert & {
+export type Alert = BalanceAlert;
+
+export type BalanceAlert = BaseAlert & {
   /** The total balance of the channel when the alert is triggered. */
   totalBalance: number;
   /** The side of the balance either local or remote. */
@@ -13,7 +15,7 @@ export type BalanceAlert = Alert & {
   currency: string;
 };
 
-export type Alert = {
+type BaseAlert = {
   type: AlertType;
   message: string;
   date: number;

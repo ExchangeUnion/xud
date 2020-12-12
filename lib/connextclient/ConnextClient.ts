@@ -5,7 +5,7 @@ import { combineLatest, defer, from, fromEvent, interval, Observable, of, Subscr
 import { catchError, distinctUntilChanged, filter, mergeMap, mergeMapTo, pluck, take, timeout } from 'rxjs/operators';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
-import { BalanceAlert } from '../alerts/types';
+import { Alert } from '../alerts/types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
 import SwapClient, {
@@ -51,7 +51,7 @@ interface ConnextClient {
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
-  on(event: 'lowTradingBalance', listener: (alert: BalanceAlert) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: Alert) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -59,7 +59,7 @@ interface ConnextClient {
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
   emit(event: 'depositConfirmed', hash: string): void;
-  emit(event: 'lowTradingBalance', alert: BalanceAlert): boolean;
+  emit(event: 'lowTradingBalance', alert: Alert): boolean;
 }
 
 const getRouterNodeIdentifier = (network: string): string => {

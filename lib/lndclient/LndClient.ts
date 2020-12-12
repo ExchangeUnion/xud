@@ -27,7 +27,7 @@ import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
-import { BalanceAlert } from '../alerts/types';
+import { Alert } from '../alerts/types';
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
@@ -35,7 +35,7 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
-  on(event: 'lowTradingBalance', listener: (alert: BalanceAlert) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: Alert) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
 
@@ -45,7 +45,7 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
-  emit(event: 'lowTradingBalance', alert: BalanceAlert): boolean;
+  emit(event: 'lowTradingBalance', alert: Alert): boolean;
 }
 
 const GRPC_CLIENT_OPTIONS = {

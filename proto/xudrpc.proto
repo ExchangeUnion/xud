@@ -448,11 +448,11 @@ message BalanceAlert {
     LOCAL = 1;
   }
   Side side = 2 [json_name = "side"];
-  // The bound of the low balance in percentage.
-  uint32 bound = 3 [json_name = "bound"];
+  // The percent of the total trading balance.
+  uint32 percent = 3 [json_name = "percent"];
   // The current side balance.
   uint64 side_balance = 4 [json_name = "side_balance"];
-  // The currency of the alert.
+  // The currency of the channel this alert is for.
   string currency = 5 [json_name = "currency"];
 }
 

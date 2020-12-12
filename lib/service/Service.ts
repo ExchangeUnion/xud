@@ -39,6 +39,7 @@ import {
   ServiceTrade,
   XudInfo,
 } from './types';
+import { Alert } from '../alerts/types';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -818,9 +819,9 @@ class Service extends EventEmitter {
   /*
    * Subscribe to alerts.
    */
-  public subscribeAlerts = (callback: (payload: any) => void, cancelled$: Observable<void>) => {
-    const observables: Observable<any>[] = [];
-    observables.push(fromEvent<any>(this.alerts, 'alert'));
+  public subscribeAlerts = (callback: (payload: Alert) => void, cancelled$: Observable<void>) => {
+    const observables: Observable<Alert>[] = [];
+    observables.push(fromEvent<Alert>(this.alerts, 'alert'));
 
     const mergedObservable$ = this.getMergedObservable$(observables, cancelled$);
 
@@ -832,7 +833,7 @@ class Service extends EventEmitter {
     });
   };
 
-  private getMergedObservable$(observables: Observable<any>[], cancelled$: Observable<void>) {
+  private getMergedObservable$(observables: Observable<Alert>[], cancelled$: Observable<void>) {
     return merge(...observables).pipe(takeUntil(cancelled$));
   }
 

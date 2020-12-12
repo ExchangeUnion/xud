@@ -7,7 +7,7 @@ import Xud from '../../lib/Xud';
 import { getTempDir } from '../utils';
 import { TestScheduler } from 'rxjs/testing';
 import { Observable } from 'rxjs';
-import { BalanceAlert } from '../../lib/alerts/types';
+import { Alert } from '../../lib/alerts/types';
 
 chai.use(chaiAsPromised);
 
@@ -225,23 +225,23 @@ describe('API Service', () => {
 
     it('should continue without cancelled$', async () => {
       testScheduler.run(({ cold, expectObservable }) => {
-        const firstLowBalanceEvent = cold('-a--b---c---') as Observable<BalanceAlert>;
-        const secondLowBalanceEvent = cold('--a-b|') as Observable<BalanceAlert>;
+        const firstLowBalanceEvent = cold('-a--b---c---') as Observable<Alert>;
+        const secondLowBalanceEvent = cold('--a-b|') as Observable<Alert>;
         const cancelled = cold('-') as Observable<void>;
 
-        const lowBalanceObservables: Observable<BalanceAlert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
+        const lowBalanceObservables: Observable<Alert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
         const finalObservable = service['getMergedObservable$'](lowBalanceObservables, cancelled);
         expectObservable(finalObservable).toBe('-aa-(bb)c---');
       });
     });
 
-    it('should cancelled with cancelled$', async () => {
+    it('should cancel with cancelled$', async () => {
       testScheduler.run(({ cold, expectObservable }) => {
-        const firstLowBalanceEvent = cold('-a--b---c---') as Observable<BalanceAlert>;
-        const secondLowBalanceEvent = cold('--a-b|') as Observable<BalanceAlert>;
+        const firstLowBalanceEvent = cold('-a--b---c---') as Observable<Alert>;
+        const secondLowBalanceEvent = cold('--a-b|') as Observable<Alert>;
         const cancelled = cold('---a') as Observable<void>;
 
-        const lowBalanceObservables: Observable<BalanceAlert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
+        const lowBalanceObservables: Observable<Alert>[] = [firstLowBalanceEvent, secondLowBalanceEvent];
         const finalObservable = service['getMergedObservable$'](lowBalanceObservables, cancelled);
         expectObservable(finalObservable).toBe('-aa|');
       });
