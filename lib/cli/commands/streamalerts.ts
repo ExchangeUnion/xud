@@ -1,19 +1,17 @@
 import { Arguments, Argv } from 'yargs';
+import moment from 'moment';
 import { XudClient } from '../../proto/xudrpc_grpc_pb';
 import * as xudrpc from '../../proto/xudrpc_pb';
 import { loadXudClient } from '../command';
 import { AlertType, ChannelSide } from '../../constants/enums';
 import { onStreamError, waitForClient } from '../utils';
-import moment from 'moment';
 
 export const command = 'streamalerts';
 
 export const describe = 'stream alert notifications from xud';
 
 export const builder = (argv: Argv) => argv
-    .option('pretty', {
-      type: 'boolean',
-    })
+    .option('pretty', {type: 'boolean',})
     .example('$0 streamalerts -j', 'prints alert payload in a JSON structure')
     .example('$0 streamalerts', 'prints alert message only');
 

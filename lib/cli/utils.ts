@@ -2,9 +2,9 @@ import colors from 'colors/safe';
 import { accessSync, watch } from 'fs';
 import os from 'os';
 import path from 'path';
-import { XudClient } from '../proto/xudrpc_grpc_pb';
 import { Arguments } from 'yargs';
 import { ServiceError, status } from 'grpc';
+import { XudClient } from '../proto/xudrpc_grpc_pb';
 import { setTimeoutPromise } from '../utils/utils';
 
 const SATOSHIS_PER_COIN = 10 ** 8;
@@ -114,7 +114,7 @@ export const waitForClient = (client: XudClient, argv: Arguments, ensureConnecti
       }
 
       if (printError) console.error(`${error.name}: ${error.message}`);
-      setTimeout(ensureConnection.bind(undefined, argv, printError), 3000);
+      setTimeout(ensureConnection, 3000);
     } else {
       console.log('Successfully connected, streaming');
       successCallback(argv);
