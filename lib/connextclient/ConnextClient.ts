@@ -5,6 +5,7 @@ import { combineLatest, defer, from, fromEvent, interval, Observable, of, Subscr
 import { catchError, distinctUntilChanged, filter, mergeMap, mergeMapTo, pluck, take, timeout } from 'rxjs/operators';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
+import { BalanceAlert } from '../alerts/types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
 import SwapClient, {
