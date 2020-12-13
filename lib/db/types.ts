@@ -83,6 +83,7 @@ export type NodeAttributes = NodeCreationAttributes & {
   addressesText: string;
   lastAddressText: string;
   lastAddress: Address;
+  consecutiveConnFailures: number;
 };
 
 export interface NodeInstance extends Model<NodeAttributes, NodeCreationAttributes>, NodeAttributes {
