@@ -3,6 +3,7 @@ import assert from 'assert';
 import http from 'http';
 import { combineLatest, defer, from, fromEvent, interval, Observable, of, Subscription, throwError, timer } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, mergeMap, mergeMapTo, pluck, take, timeout } from 'rxjs/operators';
+// import { ContractABIs } from 'boltz-core';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
@@ -43,6 +44,7 @@ import {
   ProvidePreimageEvent,
   TransferReceivedEvent,
 } from './types';
+import { onChainSendERC20 } from './ethprovider';
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
@@ -377,6 +379,38 @@ class ConnextClient extends SwapClient {
       this.emit('connectionVerified', { newIdentifier: publicIdentifier });
       this.setStatus(ClientStatus.ConnectionVerified);
       this.reconcileDeposit();
+      /*
+      const provider = new ethers.providers.JsonRpcProvider(
+        {
+          url: `http://${this.host}:${this.port}/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`,
+        },
+        {
+          name: 'simnet',
+          chainId: 1337,
+        },
+      );
+      const erc20abi = [
+        'function balanceOf(address) view returns (uint)',
+        'function transfer(address to, uint amount)',
+      ];
+      const address = this.getTokenAddress('USDT');
+      const signer = ethers.Wallet.fromMnemonic(this.seed).connect(provider);
+      const erc20 = new ethers.Contract(address, erc20abi, signer);
+      const balance = await erc20.balanceOf(signer.address);
+      const ethBalance = await provider.getBalance(signer.address);
+      console.log('ethBalance', ethBalance.toString());
+      try {
+        const amountToSend = balance.div(10);
+        const gasPrice = await provider.getGasPrice();
+        // const someRandom = ethers.Wallet.createRandom();
+        const { hash } = await erc20.transfer('0xE223A8135A27733Fed9e4812f443EC15ece31BA6', amountToSend, {
+          gasPrice,
+        });
+        console.log('transfer complete', hash);
+      } catch (e) {
+        this.logger.error(e);
+      }
+      */
     } catch (err) {
       this.logger.error(
         `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_INTERVAL} ms`,
@@ -391,7 +425,7 @@ class ConnextClient extends SwapClient {
       this._reconcileDepositSubscriber.unsubscribe();
     }
     const ethBalance$ = interval(30000).pipe(
-      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!))),
+      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!, this.getTokenAddress('ETH')))),
       // only emit new ETH balance events when the balance changes
       distinctUntilChanged(),
     );
@@ -774,13 +808,18 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
-  private getBalanceForAddress = async (assetId: string) => {
-    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
-      method: 'eth_getBalance',
-      params: [assetId, 'latest'],
-    });
-    const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
-    return parseInt(getBalanceResponse.result, 16);
+  private getBalanceForAddress = async (address: string, assetId: string) => {
+    if (assetId === this.getTokenAddress('ETH')) {
+      const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
+        method: 'eth_getBalance',
+        params: [address, 'latest'],
+      });
+      const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
+      return parseInt(getBalanceResponse.result, 16);
+    } else {
+      // TODO: fixme
+      return '123';
+    }
   };
 
   public getInfo = async (): Promise<ConnextInfo> => {
@@ -912,7 +951,7 @@ class ConnextClient extends SwapClient {
       const tokenAddress = this.getTokenAddress(currency);
       getBalancePromise = Promise.all([
         this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET'),
-        this.getBalanceForAddress(this.signerAddress!),
+        this.getBalanceForAddress(this.signerAddress!, tokenAddress),
       ])
         .then(async ([channelDetailsRes, onChainBalance]) => {
           const channelDetails = await parseResponseBody<ConnextChannelDetails>(channelDetailsRes);
@@ -1043,13 +1082,33 @@ class ConnextClient extends SwapClient {
       throw new Error('either all must be true or amount must be non-zero');
     }
 
-    const res = await this.sendRequest('/onchain-transfer', 'POST', {
-      assetId: this.getTokenAddress(currency),
-      amount: unitsStr,
-      recipient: destination,
+    if (!this.seed) {
+      throw new Error('cannot broadcast transaction without seed');
+    }
+
+    // This is a bridge between the imperative and functional code. First step is to get rid of all of the external state.
+    const broadcastTransaction$ = onChainSendERC20(
+      this.host,
+      this.port,
+      CHAIN_IDENTIFIERS[this.network],
+      this.seed,
+      this.getTokenAddress(currency),
+      destination,
+    );
+    broadcastTransaction$.subscribe({
+      // portal pack to imperative world
+      next: (transaction) => {
+        this.logger.info(`on-chain transfer broadcasted, transaction hash: ${transaction.hash}`);
+      },
+      error: (e) => {
+        this.logger.error(`could not broadcast on-chain transfer: ${JSON.stringify(e)}`);
+      },
+      complete: () => {
+        // on-chain transfer complete
+      },
     });
-    const { txhash } = await parseResponseBody<OnchainTransferResponse>(res);
-    return txhash;
+    const transaction = await broadcastTransaction$.toPromise();
+    return transaction.hash;
   };
 
   /** Connext client specific cleanup. */
