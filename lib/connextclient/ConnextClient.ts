@@ -155,7 +155,7 @@ class ConnextClient extends SwapClient {
   private unitConverter: UnitConverter;
   private network: string;
   private seed: string | undefined;
-  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '172800';
+  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = (60 * 60 * 24 * 14).toString(); // 14 days
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextChannelBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
