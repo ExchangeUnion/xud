@@ -61,4 +61,17 @@ const onChainSendERC20 = curry(
   },
 );
 
-export { getProvider, getSigner, getContract, onChainSendERC20 };
+const getEthprovider = (host: string, port: number, name: string, chainId: number, seed: string) => {
+  const provider = getProvider(host, port, name, chainId);
+  const signer = getSigner(provider, seed);
+  return {
+    getContract: getContract(signer),
+    onChainSendERC20: onChainSendERC20(signer),
+  };
+};
+
+type EthProvider = ReturnType<typeof getEthprovider>;
+
+export { getEthprovider, EthProvider };
+
+// export { getProvider, getSigner, getContract, onChainSendERC20 };

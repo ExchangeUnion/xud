@@ -42,7 +42,7 @@ import {
   ProvidePreimageEvent,
   TransferReceivedEvent,
 } from './types';
-import { onChainSendERC20, getProvider, getSigner, getContract } from './ethprovider';
+import { EthProvider, getEthprovider } from './ethprovider';
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
@@ -146,6 +146,7 @@ class ConnextClient extends SwapClient {
   public publicIdentifier: string | undefined;
   /** On-chain deposit address */
   public signerAddress: string | undefined;
+  private ethProvider: EthProvider | undefined;
   /** The set of hashes for outgoing transfers. */
   private outgoingTransferHashes = new Set<string>();
   private port: number;
@@ -212,6 +213,7 @@ class ConnextClient extends SwapClient {
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
+    this.ethProvider = getEthprovider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network], this.seed);
   };
 
   public initConnextClient = async (seedMnemonic: string) => {
@@ -1048,17 +1050,13 @@ class ConnextClient extends SwapClient {
       throw new Error('either all must be true or amount must be non-zero');
     }
 
-    if (!this.seed) {
-      throw new Error('cannot broadcast transaction without seed');
+    if (!this.ethProvider) {
+      throw new Error('cannot send transaction without ethProvider');
     }
 
-    // This is a bridge between the imperative and functional code. First step is to get rid of all of the external state.
-    const provider = getProvider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network]);
-    const signer = getSigner(provider, this.seed);
-    const contract = getContract(signer, this.getTokenAddress(currency));
-    const sendTransaction$ = onChainSendERC20(signer)(contract)(destination)(unitsStr);
+    const contract = this.ethProvider.getContract(this.getTokenAddress(currency));
+    const sendTransaction$ = this.ethProvider.onChainSendERC20(contract, destination, unitsStr);
     sendTransaction$.subscribe({
-      // portal pack to imperative world
       next: (transaction) => {
         this.logger.info(`on-chain transfer sent, transaction hash: ${transaction.hash}`);
       },
