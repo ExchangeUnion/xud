@@ -285,7 +285,7 @@ class NodeList extends EventEmitter {
   public incrementConsecutiveConnFailures = async (nodePubKey: string) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
-      node.consecutiveConnFailures = node.consecutiveConnFailures + 1;
+      node.consecutiveConnFailures += 1;
       await node.save();
     }
   };
