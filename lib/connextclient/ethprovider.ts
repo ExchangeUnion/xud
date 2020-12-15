@@ -34,16 +34,19 @@ const getSigner = (
   return ethers.Wallet.fromMnemonic(seed).connect(provider);
 }
 
+const getContract = (signer: ethers.Wallet, contractAddress: string): ethers.Contract => {
+  const erc20abi = ['function balanceOf(address) view returns (uint)', 'function transfer(address to, uint amount)'];
+  return new ethers.Contract(contractAddress, erc20abi, signer);
+};
+
 const onChainSendERC20 = (
   signer: ethers.Wallet,
-  contractAddress: string,
+  contract: ethers.Contract,
   destinationAddress: string,
   units: string,
 ): Observable<OnChainTransaction> => {
-  const erc20abi = ['function balanceOf(address) view returns (uint)', 'function transfer(address to, uint amount)'];
-  const erc20 = new ethers.Contract(contractAddress, erc20abi, signer);
   // convert promises to observables
-  const erc20balance$ = from(erc20.balanceOf(signer.address)) as Observable<BigNumber>;
+  const erc20balance$ = from(contract.balanceOf(signer.address)) as Observable<BigNumber>;
   const ethBalance$ = from(signer.provider.getBalance(signer.address));
   const gasPrice$ = from(signer.provider.getGasPrice());
   // gather up all the observables so that we wait for each one to emit a value before
@@ -52,9 +55,9 @@ const onChainSendERC20 = (
   return readyToTransfer$.pipe(
     mergeMap(([_erc20balance, _ethBalance, gasPrice]) => {
       // const amountToSend = erc20balance.div(10);
-      return from(erc20.transfer(destinationAddress, units, { gasPrice })) as Observable<OnChainTransaction>;
+      return from(contract.transfer(destinationAddress, units, { gasPrice })) as Observable<OnChainTransaction>;
     }),
   );
 };
 
-export { getProvider, getSigner, onChainSendERC20 };
+export { getProvider, getSigner, getContract, onChainSendERC20 };
