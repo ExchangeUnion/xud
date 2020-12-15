@@ -3,7 +3,6 @@ import assert from 'assert';
 import http from 'http';
 import { combineLatest, defer, from, fromEvent, interval, Observable, of, Subscription, throwError, timer } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, mergeMap, mergeMapTo, pluck, take, timeout } from 'rxjs/operators';
-// import { ContractABIs } from 'boltz-core';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
@@ -378,38 +377,6 @@ class ConnextClient extends SwapClient {
       this.emit('connectionVerified', { newIdentifier: publicIdentifier });
       this.setStatus(ClientStatus.ConnectionVerified);
       this.reconcileDeposit();
-      /*
-      const provider = new ethers.providers.JsonRpcProvider(
-        {
-          url: `http://${this.host}:${this.port}/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`,
-        },
-        {
-          name: 'simnet',
-          chainId: 1337,
-        },
-      );
-      const erc20abi = [
-        'function balanceOf(address) view returns (uint)',
-        'function transfer(address to, uint amount)',
-      ];
-      const address = this.getTokenAddress('USDT');
-      const signer = ethers.Wallet.fromMnemonic(this.seed).connect(provider);
-      const erc20 = new ethers.Contract(address, erc20abi, signer);
-      const balance = await erc20.balanceOf(signer.address);
-      const ethBalance = await provider.getBalance(signer.address);
-      console.log('ethBalance', ethBalance.toString());
-      try {
-        const amountToSend = balance.div(10);
-        const gasPrice = await provider.getGasPrice();
-        // const someRandom = ethers.Wallet.createRandom();
-        const { hash } = await erc20.transfer('0xE223A8135A27733Fed9e4812f443EC15ece31BA6', amountToSend, {
-          gasPrice,
-        });
-        console.log('transfer complete', hash);
-      } catch (e) {
-        this.logger.error(e);
-      }
-      */
     } catch (err) {
       this.logger.error(
         `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_INTERVAL} ms`,
