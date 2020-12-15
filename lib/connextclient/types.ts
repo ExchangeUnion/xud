@@ -319,7 +319,3 @@ export type TransferReceivedEvent = {
   units: bigint;
   routingId: string;
 };
-
-export type OnchainTransferResponse = {
-  txhash: string;
-};

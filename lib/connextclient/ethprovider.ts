@@ -17,29 +17,35 @@ type OnChainTransaction = {
   hash: string;
 };
 
-const onChainSendERC20 = (
-  host: string,
-  port: number,
-  chainId: number,
+const getProvider = (host: string, port: number, name: string, chainId: number): ethers.providers.JsonRpcProvider => {
+  return new ethers.providers.JsonRpcProvider(
+    { url: `http://${host}:${port}/ethprovider/${chainId}` },
+    {
+      name,
+      chainId,
+    },
+  );
+};
+
+const getSigner = (
+  provider: ethers.providers.JsonRpcProvider,
   seed: string,
+): ethers.Wallet => {
+  return ethers.Wallet.fromMnemonic(seed).connect(provider);
+}
+
+const onChainSendERC20 = (
+  signer: ethers.Wallet,
   contractAddress: string,
   destinationAddress: string,
   units: string,
 ): Observable<OnChainTransaction> => {
-  const provider = new ethers.providers.JsonRpcProvider(
-    { url: `http://${host}:${port}/ethprovider/${chainId}` },
-    {
-      name: 'simnet',
-      chainId,
-    },
-  );
   const erc20abi = ['function balanceOf(address) view returns (uint)', 'function transfer(address to, uint amount)'];
-  const signer = ethers.Wallet.fromMnemonic(seed).connect(provider);
   const erc20 = new ethers.Contract(contractAddress, erc20abi, signer);
   // convert promises to observables
   const erc20balance$ = from(erc20.balanceOf(signer.address)) as Observable<BigNumber>;
-  const ethBalance$ = from(provider.getBalance(signer.address));
-  const gasPrice$ = from(provider.getGasPrice());
+  const ethBalance$ = from(signer.provider.getBalance(signer.address));
+  const gasPrice$ = from(signer.provider.getGasPrice());
   // gather up all the observables so that we wait for each one to emit a value before
   // we emit ready to transfer event
   const readyToTransfer$ = combineLatest(erc20balance$, ethBalance$, gasPrice$);
@@ -51,4 +57,4 @@ const onChainSendERC20 = (
   );
 };
 
-export { onChainSendERC20 };
+export { getProvider, getSigner, onChainSendERC20 };

@@ -40,11 +40,10 @@ import {
   EthproviderGasPriceResponse,
   ExpectedIncomingTransfer,
   GetBlockByNumberResponse,
-  OnchainTransferResponse,
   ProvidePreimageEvent,
   TransferReceivedEvent,
 } from './types';
-import { onChainSendERC20 } from './ethprovider';
+import { onChainSendERC20, getProvider, getSigner } from './ethprovider';
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
@@ -1087,13 +1086,18 @@ class ConnextClient extends SwapClient {
     }
 
     // This is a bridge between the imperative and functional code. First step is to get rid of all of the external state.
-    const broadcastTransaction$ = onChainSendERC20(
+    const provider = getProvider(
       this.host,
       this.port,
+      this.network,
       CHAIN_IDENTIFIERS[this.network],
-      this.seed,
+    );
+    const signer = getSigner(provider, this.seed);
+    const broadcastTransaction$ = onChainSendERC20(
+      signer,
       this.getTokenAddress(currency),
       destination,
+      units,
     );
     broadcastTransaction$.subscribe({
       // portal pack to imperative world
