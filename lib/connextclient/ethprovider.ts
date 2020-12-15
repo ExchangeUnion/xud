@@ -1,5 +1,5 @@
-import { Observable, from, combineLatest } from 'rxjs';
-import { ethers, BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
+import { from, Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 
 type OnChainTransaction = {
@@ -27,12 +27,9 @@ const getProvider = (host: string, port: number, name: string, chainId: number):
   );
 };
 
-const getSigner = (
-  provider: ethers.providers.JsonRpcProvider,
-  seed: string,
-): ethers.Wallet => {
+const getSigner = (provider: ethers.providers.JsonRpcProvider, seed: string): ethers.Wallet => {
   return ethers.Wallet.fromMnemonic(seed).connect(provider);
-}
+};
 
 const getContract = (signer: ethers.Wallet, contractAddress: string): ethers.Contract => {
   const erc20abi = ['function balanceOf(address) view returns (uint)', 'function transfer(address to, uint amount)'];
@@ -45,18 +42,13 @@ const onChainSendERC20 = (
   destinationAddress: string,
   units: string,
 ): Observable<OnChainTransaction> => {
-  // convert promises to observables
-  const erc20balance$ = from(contract.balanceOf(signer.address)) as Observable<BigNumber>;
-  const ethBalance$ = from(signer.provider.getBalance(signer.address));
-  const gasPrice$ = from(signer.provider.getGasPrice());
-  // gather up all the observables so that we wait for each one to emit a value before
-  // we emit ready to transfer event
-  const readyToTransfer$ = combineLatest(erc20balance$, ethBalance$, gasPrice$);
-  return readyToTransfer$.pipe(
-    mergeMap(([_erc20balance, _ethBalance, gasPrice]) => {
-      // const amountToSend = erc20balance.div(10);
-      return from(contract.transfer(destinationAddress, units, { gasPrice })) as Observable<OnChainTransaction>;
-    }),
+  // get the gas price
+  return from(signer.provider.getGasPrice()).pipe(
+    mergeMap(
+      (gasPrice) =>
+        // then send the transaction
+        from(contract.transfer(destinationAddress, units, { gasPrice })) as Observable<OnChainTransaction>,
+    ),
   );
 };
 
