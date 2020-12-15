@@ -2,11 +2,12 @@ import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import Logger from '../../lib/Logger';
+import { OwnLimitOrder } from '../../lib/orderbook/types';
+import { errorCodes } from '../../lib/swaps/errors';
 import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
-import { OwnLimitOrder } from '../../lib/orderbook/types';
-import { errorCodes } from '../../lib/swaps/errors';
+import { getUnitConverter } from '../utils';
 
 jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
@@ -108,8 +109,7 @@ describe('Swaps.SwapClientManager', () => {
     };
     config.strict = true;
     db = new DB(loggers.db, config.dbpath);
-    unitConverter = new UnitConverter();
-    unitConverter.init();
+    unitConverter = getUnitConverter();
     tokenAddresses.set('WETH', '0x1234');
   });
 
@@ -287,7 +287,7 @@ describe('Swaps.SwapClientManager', () => {
       expect(mockLndOpenChannel).toHaveBeenCalledWith(
         expect.objectContaining({
           remoteIdentifier,
-          units: amount,
+          units: BigInt(amount),
           uris: lndListeningUris,
         }),
       );
@@ -422,9 +422,8 @@ describe('Swaps.SwapClientManager', () => {
         localId: 'test',
       };
 
-      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toHaveProperty(
-        'code',
-        errorCodes.SWAP_CLIENT_NOT_FOUND,
+      await expect(swapClientManager.checkSwapCapacities(order)).rejects.toThrow(
+        'cannot convert AAA amount of 600000 to units because decimal places per currency was not found in the database',
       );
     });
   });

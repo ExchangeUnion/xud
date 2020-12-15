@@ -30,7 +30,7 @@ export type SwapDeal = {
   /** The amount the taker is expecting to receive denominated in satoshis. */
   takerAmount: number;
   /** The number of the smallest base units of the currency (like satoshis or wei) the maker is expecting to receive. */
-  takerUnits: number;
+  takerUnits: bigint;
   /** The currency the taker is expecting to receive. */
   takerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
@@ -40,7 +40,7 @@ export type SwapDeal = {
   /** The amount the maker is expecting to receive denominated in satoshis. */
   makerAmount: number;
   /** The number of the smallest base units of the currency (like satoshis or wei) the maker is expecting to receive. */
-  makerUnits: number;
+  makerUnits: bigint;
   /** The currency the maker is expecting to receive. */
   makerCurrency: string;
   /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
@@ -130,7 +130,7 @@ export type TradingLimits = {
 
 export type ResolveRequest = {
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
-  amount: number;
+  units: bigint;
   rHash: string;
   tokenAddress: string;
   /** The number of blocks before the incoming payment expires. */
@@ -145,7 +145,7 @@ export type CloseChannelParams = {
    * The amount to extract from the channel, if applicable. If 0 or unspecified,
    * the entire off-chain balance for the specified currency will be extracted.
    */
-  units?: number;
+  units?: bigint;
   currency?: string;
   /**
    * The on-chain address to send funds extracted from the channel. If unspecified
@@ -161,12 +161,12 @@ export type OpenChannelParams = {
   /** The remote node with which to open the channel. */
   remoteIdentifier?: string;
   /** The size of the channel. */
-  units: number;
+  units: bigint;
   currency?: string;
   /** Uris with which to connect to the remote node. */
   uris?: string[];
   /** The balance to assign to the remote node. */
-  pushUnits?: number;
+  pushUnits?: bigint;
   /** The fee in sat per byte. */
   fee?: number;
 };

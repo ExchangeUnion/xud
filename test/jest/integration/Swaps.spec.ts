@@ -1,8 +1,8 @@
 import {
+  ReputationEvent,
   SwapClientType,
   SwapFailureReason,
   SwapPhase,
-  ReputationEvent,
   SwapRole,
   SwapState,
 } from '../../../lib/constants/enums';
@@ -15,7 +15,7 @@ import Pool from '../../../lib/p2p/Pool';
 import SwapClientManager from '../../../lib/swaps/SwapClientManager';
 import Swaps, { OrderToAccept } from '../../../lib/swaps/Swaps';
 import { SwapDeal } from '../../../lib/swaps/types';
-import { getValidDeal } from '../../utils';
+import { getUnitConverter, getValidDeal } from '../../utils';
 
 const addReputationEvent = jest.fn().mockImplementation(() => {
   return { catch: () => {} };
@@ -93,6 +93,7 @@ describe('Swaps Integration', () => {
   let lndLtc: LndClient;
   let makerCurrency: string;
   let takerCurrency: string;
+  const unitConverter = getUnitConverter();
 
   beforeEach(() => {
     logger = new mockedLogger();
@@ -117,6 +118,7 @@ describe('Swaps Integration', () => {
       logger,
       pool,
       swapClientManager,
+      unitConverter,
       models: db.models,
     });
   });
@@ -298,7 +300,7 @@ describe('Swaps Integration', () => {
       const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
       expect(dealAccepted).toEqual(true);
       expect(lndBtc.getRoute).toHaveBeenCalledWith(
-        1000,
+        1000n,
         peerLndBtcPubKey,
         takerCurrency,
         swapRequestBody.takerCltvDelta,
@@ -307,7 +309,7 @@ describe('Swaps Integration', () => {
       const expectedMakerCltvDelta = 1641;
       expect(lndLtc.addInvoice).toHaveBeenCalledWith({
         rHash: swapRequestBody.rHash,
-        units: swapRequestBody.proposedQuantity,
+        units: BigInt(swapRequestBody.proposedQuantity),
         expiry: expectedMakerCltvDelta,
         currency: makerCurrency,
       });
@@ -395,6 +397,99 @@ describe('Swaps Integration', () => {
       expect(lndBtc.removeInvoice).toHaveBeenCalledTimes(1);
       expect(lndBtc.removeInvoice).toHaveBeenCalledWith(deal.rHash);
       expect(deal.state).toEqual(SwapState.Error);
+    });
+  });
+
+  describe('calculateMakerTakerAmounts', () => {
+    const quantity = 1000000;
+    const price = 0.005;
+    const takerCltvDelta = 144;
+    const orderId = 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8';
+    const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
+    const pairId = 'LTC/BTC';
+    const peerPubKey = '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
+    /** A swap deal for a buy order. */
+    const buyDeal: SwapDeal = {
+      quantity,
+      price,
+      takerCltvDelta,
+      orderId,
+      rHash,
+      pairId,
+      peerPubKey,
+      role: SwapRole.Maker,
+      phase: SwapPhase.SwapCreated,
+      state: SwapState.Active,
+      localId: '1',
+      proposedQuantity: quantity,
+      isBuy: true,
+      makerCurrency: 'LTC',
+      takerCurrency: 'BTC',
+      makerAmount: quantity,
+      takerAmount: quantity * price,
+      makerUnits: BigInt(quantity),
+      takerUnits: BigInt(quantity * price),
+      createTime: 1540716251106,
+    };
+
+    const buyDealEth = {
+      ...buyDeal,
+      pairId: 'ETH/BTC',
+      makerCurrency: 'ETH',
+      takerCurrency: 'BTC',
+      makerAmount: quantity,
+      takerAmount: quantity * price,
+      makerUnits: 10n ** 10n * BigInt(quantity),
+      takerUnits: BigInt(quantity * price),
+    };
+
+    /** A swap deal for a sell order, mirrored from the buy deal for convenience. */
+    const sellDeal = {
+      ...buyDeal,
+      isBuy: false,
+      takerCurrency: buyDeal.makerCurrency,
+      makerCurrency: buyDeal.takerCurrency,
+      takerAmount: buyDeal.makerAmount,
+      makerAmount: buyDeal.takerAmount,
+      takerUnits: buyDeal.makerUnits,
+      makerUnits: buyDeal.takerUnits,
+    };
+
+    it('should calculate swap amounts and currencies for a buy order', () => {
+      const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } = swaps[
+        'calculateMakerTakerAmounts'
+      ](buyDeal.quantity!, buyDeal.price, buyDeal.isBuy, buyDeal.pairId);
+      expect(makerAmount).toEqual(buyDeal.makerAmount);
+      expect(takerAmount).toEqual(buyDeal.takerAmount);
+      expect(makerUnits).toEqual(buyDeal.makerUnits);
+      expect(takerUnits).toEqual(buyDeal.takerUnits);
+      expect(makerCurrency).toEqual(buyDeal.makerCurrency);
+      expect(takerCurrency).toEqual(buyDeal.takerCurrency);
+    });
+
+    it('should calculate swap amounts and currencies for a sell order', () => {
+      const { makerCurrency, makerAmount, takerCurrency, takerAmount, makerUnits, takerUnits } = swaps[
+        'calculateMakerTakerAmounts'
+      ](sellDeal.quantity!, sellDeal.price, sellDeal.isBuy, sellDeal.pairId);
+      expect(makerAmount).toEqual(sellDeal.makerAmount);
+      expect(takerAmount).toEqual(sellDeal.takerAmount);
+      expect(makerUnits).toEqual(sellDeal.makerUnits);
+      expect(takerUnits).toEqual(sellDeal.takerUnits);
+      expect(makerCurrency).toEqual(sellDeal.makerCurrency);
+      expect(takerCurrency).toEqual(sellDeal.takerCurrency);
+    });
+
+    it('should calculate swap amounts and currencies for an ETH buy order', () => {
+      const { makerCurrency, makerAmount, takerCurrency, takerAmount } = swaps['calculateMakerTakerAmounts'](
+        buyDealEth.quantity!,
+        buyDealEth.price,
+        buyDealEth.isBuy,
+        buyDealEth.pairId,
+      );
+      expect(makerAmount).toEqual(buyDealEth.makerAmount);
+      expect(takerAmount).toEqual(buyDealEth.takerAmount);
+      expect(makerCurrency).toEqual(buyDealEth.makerCurrency);
+      expect(takerCurrency).toEqual(buyDealEth.takerCurrency);
     });
   });
 });

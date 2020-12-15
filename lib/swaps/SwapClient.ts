@@ -71,8 +71,10 @@ export type WithdrawArguments = {
 
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, units: bigint, currency?: string) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
+  emit(event: 'htlcAccepted', rHash: string, units: bigint, currency?: string): boolean;
   emit(event: 'initialized'): boolean;
 }
 
@@ -287,7 +289,7 @@ abstract class SwapClient extends EventEmitter {
    * @returns routes
    */
   public abstract async getRoute(
-    units: number,
+    units: bigint,
     destination: string,
     currency: string,
     finalCltvDelta?: number,
@@ -314,7 +316,7 @@ abstract class SwapClient extends EventEmitter {
     currency,
   }: {
     rHash: string;
-    units: number;
+    units: bigint;
     expiry?: number;
     currency?: string;
   }): Promise<void>;
