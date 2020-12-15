@@ -1056,7 +1056,7 @@ class ConnextClient extends SwapClient {
     const provider = getProvider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network]);
     const signer = getSigner(provider, this.seed);
     const contract = getContract(signer, this.getTokenAddress(currency));
-    const sendTransaction$ = onChainSendERC20(signer, contract, destination, unitsStr);
+    const sendTransaction$ = onChainSendERC20(signer)(contract)(destination)(unitsStr);
     sendTransaction$.subscribe({
       // portal pack to imperative world
       next: (transaction) => {

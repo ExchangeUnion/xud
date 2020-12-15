@@ -157,6 +157,7 @@
   "dependencies": {
     "@ethersproject/solidity": "5.0.3",
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.10",
+    "@types/ramda": "0.27.33",
     "bip39": "3.0.2",
     "body-parser": "^1.19.0",
     "chalk": "^2.4.2",
@@ -175,6 +176,7 @@
     "keccak": "^2.1.0",
     "moment": "^2.29.1",
     "node-forge": "^0.10.0",
+    "ramda": "0.27.1",
     "rxjs": "^6.6.3",
     "secp256k1": "^3.7.1",
     "semver": "^6.3.0",
