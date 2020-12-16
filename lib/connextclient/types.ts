@@ -121,15 +121,6 @@ export type ConnextChannelBalanceResponse = {
   freeBalanceOnChain: string;
 };
 
-/**
- * The response for ethprovider eth_getBalance call.
- */
-export type ConnextBalanceResponse = {
-  id: number;
-  jsonrpc: string;
-  result: string;
-};
-
 export type GetBlockByNumberResponse = {
   result: {
     difficulty: string;

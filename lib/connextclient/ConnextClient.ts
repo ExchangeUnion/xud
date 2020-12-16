@@ -22,7 +22,6 @@ import { UnitConverter } from '../utils/UnitConverter';
 import { parseResponseBody } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import {
-  ConnextBalanceResponse,
   ConnextBlockNumberResponse,
   ConnextChannelBalanceResponse,
   ConnextChannelDetails,
@@ -776,37 +775,14 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
-  private getBalanceForAddress = async (address: string, _assetId: string) => {
-    /*
-    assert(this.ethProvider, 'Cannot get balance without ethProvider');
-    const ethBalance$ = this.ethProvider.getEthBalance();
-    const ethBalance = await ethBalance$.toPromise();
-    console.log('ethBalance new', ethBalance.toString(), typeof ethBalance.toString());
-    */
-    // const val = BigInt(ethBalance.toString());
-    // old
-    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
-      method: 'eth_getBalance',
-      params: [address, 'latest'],
-    });
-    const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
-    const returnBalanec = parseInt(getBalanceResponse.result, 16);
-    console.log('old balance to return', returnBalanec, typeof returnBalanec);
-    return returnBalanec;
-    /*
-    this.ethProvider?.getEthBalance().subscribe((bal) => {
-      console.log('balance is', bal.toString());
-    });
-    console.log('returnBalanec', returnBalanec);
-    return returnBalanec;
-    */
-    /*
-    if (assetId === this.getTokenAddress('ETH')) {
+  private getBalanceForAddress = async (_address: string, assetId: string) => {
+    if (assetId === this.tokenAddresses.get('ETH')) {
+      assert(this.ethProvider, 'Cannot get balance without ethProvider');
+      const ethBalance$ = this.ethProvider.getEthBalance();
+      return BigInt(await ethBalance$.toPromise());
     } else {
-      // TODO: fixme
-      return 123;
+      return 0;
     }
-    */
   };
 
   public getInfo = async (): Promise<ConnextInfo> => {
