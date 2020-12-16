@@ -21,6 +21,7 @@ import { XudError } from '../types';
 import { UnitConverter } from '../utils/UnitConverter';
 import { parseResponseBody } from '../utils/utils';
 import errors, { errorCodes } from './errors';
+import { EthProvider, getEthprovider } from './ethprovider';
 import {
   ConnextBlockNumberResponse,
   ConnextChannelBalanceResponse,
@@ -41,7 +42,6 @@ import {
   ProvidePreimageEvent,
   TransferReceivedEvent,
 } from './types';
-import { EthProvider, getEthprovider } from './ethprovider';
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
@@ -391,38 +391,47 @@ class ConnextClient extends SwapClient {
     if (this._reconcileDepositSubscriber) {
       this._reconcileDepositSubscriber.unsubscribe();
     }
-    const ethBalance$ = interval(30000).pipe(
-      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!, this.getTokenAddress('ETH')))),
-      // only emit new ETH balance events when the balance changes
-      distinctUntilChanged(),
-    );
-    this._reconcileDepositSubscriber = ethBalance$
-      // when ETH balance changes
-      .pipe(
-        mergeMap(() => {
-          if (this.status === ClientStatus.ConnectionVerified) {
-            return defer(() => {
-              // create new commitment transaction
-              return from(
-                this.sendRequest('/deposit', 'POST', {
-                  channelAddress: this.channelAddress,
-                  publicIdentifier: this.publicIdentifier,
-                  assetId: '0x0000000000000000000000000000000000000000', // TODO: multi currency support
-                }),
-              );
-            });
-          }
-          return throwError('stopping deposit calls because client is no longer connected');
-        }),
-      )
-      .subscribe({
-        next: () => {
-          this.logger.trace('deposit successfully reconciled');
-        },
-        error: (e) => {
-          this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
-        },
-      });
+    const getBalance$ = (assetId: string, pollInterval: number) => {
+      return interval(pollInterval).pipe(
+        mergeMap(() => from(this.getBalanceForAddress(assetId, this.channelAddress))),
+        // only emit new balance events when the balance changes
+        distinctUntilChanged(),
+      );
+    };
+    /// const ethBalance$ = getBalance$(this.getTokenAddress('ETH'), 30000);
+
+    const reconcileForAsset = (assetId: string, balance$: ReturnType<typeof getBalance$>) => {
+      return (
+        balance$
+          // when ETH balance changes
+          .pipe(
+            mergeMap(() => {
+              if (this.status === ClientStatus.ConnectionVerified) {
+                return defer(() => {
+                  // create new commitment transaction
+                  return from(
+                    this.sendRequest('/deposit', 'POST', {
+                      channelAddress: this.channelAddress,
+                      publicIdentifier: this.publicIdentifier,
+                      assetId,
+                    }),
+                  );
+                });
+              }
+              return throwError('stopping deposit calls because client is no longer connected');
+            }),
+          )
+      );
+    };
+    const assetId = this.getTokenAddress('ETH');
+    this._reconcileDepositSubscriber = reconcileForAsset(assetId, getBalance$(assetId, 30000)).subscribe({
+      next: () => {
+        this.logger.trace('deposit successfully reconciled');
+      },
+      error: (e) => {
+        this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
+      },
+    });
   };
 
   public sendSmallestAmount = async () => {
@@ -775,15 +784,17 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
-  private getBalanceForAddress = async (_address: string, assetId: string) => {
+  private getBalanceForAddress = async (assetId: string, address?: string) => {
     assert(this.ethProvider, 'Cannot get balance without ethProvider');
     if (assetId === this.tokenAddresses.get('ETH')) {
-      const ethBalance$ = this.ethProvider.getEthBalance();
+      const ethBalance$ = address ? this.ethProvider.getEthBalanceByAddress(address) : this.ethProvider.getEthBalance();
       return BigInt(await ethBalance$.toPromise());
     } else {
       const contract = this.ethProvider.getContract(assetId);
-      const erc20balance$ = this.ethProvider.getERC20Balance(contract);
-      const erc20balance = (await erc20balance$.toPromise());
+      const erc20balance$ = address
+        ? this.ethProvider.getERC20BalanceByAddress(address, contract)
+        : this.ethProvider.getERC20Balance(contract);
+      const erc20balance = await erc20balance$.toPromise();
       console.log(`erc20balance for ${assetId} is ${erc20balance}`);
       return BigInt(erc20balance);
     }
@@ -920,7 +931,7 @@ class ConnextClient extends SwapClient {
       const tokenAddress = this.getTokenAddress(currency);
       getBalancePromise = Promise.all([
         this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET'),
-        this.getBalanceForAddress(this.signerAddress!, tokenAddress),
+        this.getBalanceForAddress(tokenAddress),
       ])
         .then(async ([channelDetailsRes, onChainBalance]) => {
           const channelDetails = await parseResponseBody<ConnextChannelDetails>(channelDetailsRes);

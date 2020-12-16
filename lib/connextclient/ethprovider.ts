@@ -42,17 +42,25 @@ const onChainSendERC20 = curry(
   },
 );
 
-const getERC20Balance = curry((signer: ethers.Wallet, contract: ethers.Contract): Observable<ethers.BigNumber> => {
-  return from(contract.balanceOf(signer.address)) as Observable<ethers.BigNumber>;
-});
+const getEthBalanceByAddress = curry((provider: ethers.providers.JsonRpcProvider, address: string) =>
+  from(provider.getBalance(address)),
+);
+
+const getERC20Balance = curry(
+  (address: string, contract: ethers.Contract): Observable<ethers.BigNumber> => {
+    return from(contract.balanceOf(address)) as Observable<ethers.BigNumber>;
+  },
+);
 
 const getEthprovider = (host: string, port: number, name: string, chainId: number, seed: string) => {
   const provider = getProvider(host, port, name, chainId);
   const signer = getSigner(provider, seed);
   return {
     getEthBalance: () => from(signer.getBalance()),
+    getEthBalanceByAddress: getEthBalanceByAddress(provider),
     getContract: getContract(signer),
-    getERC20Balance: getERC20Balance(signer),
+    getERC20Balance: getERC20Balance(signer.address),
+    getERC20BalanceByAddress: getERC20Balance,
     onChainSendERC20: onChainSendERC20(signer),
   };
 };
