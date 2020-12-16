@@ -162,7 +162,7 @@ class ConnextClient extends SwapClient {
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
-  private _reconcileDepositSubscriber: Subscription | undefined;
+  private _reconcileDepositSubscriptions: Subscription[] = [];
 
   /** Channel multisig address */
   private channelAddress: string | undefined;
@@ -388,9 +388,7 @@ class ConnextClient extends SwapClient {
   };
 
   private reconcileDeposit = () => {
-    if (this._reconcileDepositSubscriber) {
-      this._reconcileDepositSubscriber.unsubscribe();
-    }
+    this._reconcileDepositSubscriptions.forEach((subscription) => subscription.unsubscribe());
     const getBalance$ = (assetId: string, pollInterval: number) => {
       return interval(pollInterval).pipe(
         mergeMap(() => from(this.getBalanceForAddress(assetId, this.channelAddress))),
@@ -398,8 +396,6 @@ class ConnextClient extends SwapClient {
         distinctUntilChanged(),
       );
     };
-    /// const ethBalance$ = getBalance$(this.getTokenAddress('ETH'), 30000);
-
     const reconcileForAsset = (assetId: string, balance$: ReturnType<typeof getBalance$>) => {
       return (
         balance$
@@ -423,14 +419,18 @@ class ConnextClient extends SwapClient {
           )
       );
     };
-    const assetId = this.getTokenAddress('ETH');
-    this._reconcileDepositSubscriber = reconcileForAsset(assetId, getBalance$(assetId, 30000)).subscribe({
-      next: () => {
-        this.logger.trace('deposit successfully reconciled');
-      },
-      error: (e) => {
-        this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
-      },
+    this.tokenAddresses.forEach((assetId) => {
+      const subscription = reconcileForAsset(assetId, getBalance$(assetId, 30000)).subscribe({
+        next: () => {
+          this.logger.trace(`deposit successfully reconciled for ${this.getCurrencyByTokenaddress(assetId)}`);
+        },
+        error: (e) => {
+          this.logger.trace(
+            `stopped ${this.getCurrencyByTokenaddress(assetId)} deposit calls because: ${JSON.stringify(e)}`,
+          );
+        },
+      });
+      this._reconcileDepositSubscriptions.push(subscription);
     });
   };
 
@@ -794,9 +794,7 @@ class ConnextClient extends SwapClient {
       const erc20balance$ = address
         ? this.ethProvider.getERC20BalanceByAddress(address, contract)
         : this.ethProvider.getERC20Balance(contract);
-      const erc20balance = await erc20balance$.toPromise();
-      console.log(`erc20balance for ${assetId} is ${erc20balance}`);
-      return BigInt(erc20balance);
+      return BigInt(await erc20balance$.toPromise());
     }
   };
 
@@ -907,13 +905,11 @@ class ConnextClient extends SwapClient {
 
     const { freeBalanceOnChain } = await this.getBalance(currency);
 
-    console.log('getting to the conversion');
     const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: BigInt(freeBalanceOnChain),
     });
 
-    console.log('returning from walletBalance', confirmedBalanceAmount);
     return {
       totalBalance: confirmedBalanceAmount,
       confirmedBalance: confirmedBalanceAmount,
@@ -1084,9 +1080,7 @@ class ConnextClient extends SwapClient {
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
-    if (this._reconcileDepositSubscriber) {
-      this._reconcileDepositSubscriber.unsubscribe();
-    }
+    this._reconcileDepositSubscriptions.forEach((subscription) => subscription.unsubscribe());
     this.setStatus(ClientStatus.Disconnected);
 
     for (const req of this.pendingRequests) {

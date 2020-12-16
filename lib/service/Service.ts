@@ -241,7 +241,6 @@ class Service extends EventEmitter {
         });
       }
     });
-    console.log('returning from service');
     return balances;
   };
 
