@@ -1060,10 +1060,7 @@ class ConnextClient extends SwapClient {
       throw new Error('either all must be true or amount must be non-zero');
     }
 
-    if (!this.ethProvider) {
-      throw new Error('cannot send transaction without ethProvider');
-    }
-
+    assert(this.ethProvider, 'cannot send transaction without ethProvider');
     const contract = this.ethProvider.getContract(this.getTokenAddress(currency));
     const sendTransaction$ = this.ethProvider.onChainSendERC20(contract, destination, unitsStr);
     sendTransaction$.subscribe({
