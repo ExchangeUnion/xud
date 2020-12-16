@@ -782,6 +782,10 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
+  /**
+   * Returns the on-chain balance for a given assetId and address.
+   * Address defaults to signer address.
+   */
   private getBalanceForAddress = async (assetId: string, address?: string) => {
     assert(this.ethProvider, 'Cannot get balance without ethProvider');
     if (assetId === this.tokenAddresses.get('ETH')) {
