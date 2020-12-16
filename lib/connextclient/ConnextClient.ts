@@ -776,18 +776,37 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
-  private getBalanceForAddress = async (address: string, assetId: string) => {
+  private getBalanceForAddress = async (address: string, _assetId: string) => {
+    /*
+    assert(this.ethProvider, 'Cannot get balance without ethProvider');
+    const ethBalance$ = this.ethProvider.getEthBalance();
+    const ethBalance = await ethBalance$.toPromise();
+    console.log('ethBalance new', ethBalance.toString(), typeof ethBalance.toString());
+    */
+    // const val = BigInt(ethBalance.toString());
+    // old
+    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
+      method: 'eth_getBalance',
+      params: [address, 'latest'],
+    });
+    const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
+    const returnBalanec = parseInt(getBalanceResponse.result, 16);
+    console.log('old balance to return', returnBalanec, typeof returnBalanec);
+    return returnBalanec;
+    /*
+    this.ethProvider?.getEthBalance().subscribe((bal) => {
+      console.log('balance is', bal.toString());
+    });
+    console.log('returnBalanec', returnBalanec);
+    return returnBalanec;
+    */
+    /*
     if (assetId === this.getTokenAddress('ETH')) {
-      const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
-        method: 'eth_getBalance',
-        params: [address, 'latest'],
-      });
-      const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
-      return parseInt(getBalanceResponse.result, 16);
     } else {
       // TODO: fixme
-      return '123';
+      return 123;
     }
+    */
   };
 
   public getInfo = async (): Promise<ConnextInfo> => {
@@ -897,11 +916,13 @@ class ConnextClient extends SwapClient {
 
     const { freeBalanceOnChain } = await this.getBalance(currency);
 
+    console.log('getting to the conversion');
     const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: BigInt(freeBalanceOnChain),
     });
 
+    console.log('returning from walletBalance', confirmedBalanceAmount);
     return {
       totalBalance: confirmedBalanceAmount,
       confirmedBalance: confirmedBalanceAmount,
@@ -1064,7 +1085,9 @@ class ConnextClient extends SwapClient {
         this.logger.error(`could not send on-chain transfer: ${JSON.stringify(e)}`);
       },
     });
+    console.log('sendTransaction$', sendTransaction$);
     const transaction = await sendTransaction$.toPromise();
+    console.log('transaction is', transaction);
     return transaction.hash;
   };
 

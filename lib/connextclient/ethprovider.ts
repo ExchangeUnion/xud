@@ -61,6 +61,7 @@ const getEthprovider = (host: string, port: number, name: string, chainId: numbe
   const provider = getProvider(host, port, name, chainId);
   const signer = getSigner(provider, seed);
   return {
+    getEthBalance: () => from(signer.getBalance()),
     getContract: getContract(signer),
     onChainSendERC20: onChainSendERC20(signer),
   };
