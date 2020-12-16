@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import { curry } from 'ramda';
 import { from, Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
+// This file will be a separate module with the above dependencies.
 
 const getProvider = (host: string, port: number, name: string, chainId: number): ethers.providers.JsonRpcProvider => {
   return new ethers.providers.JsonRpcProvider(
@@ -24,6 +25,8 @@ const getContract = curry(
   },
 );
 
+// we curry the functions below so that arguments
+// can be provided 1 by 1 if necessary
 const onChainSendERC20 = curry(
   (
     signer: ethers.Wallet,
@@ -57,6 +60,8 @@ const getEthprovider = (host: string, port: number, name: string, chainId: numbe
   const signer = getSigner(provider, seed);
   return {
     getEthBalance: () => from(signer.getBalance()),
+    // before exposing the functions we provide signer and provider
+    // when required
     getEthBalanceByAddress: getEthBalanceByAddress(provider),
     getContract: getContract(signer),
     getERC20Balance: getERC20Balance(signer.address),
