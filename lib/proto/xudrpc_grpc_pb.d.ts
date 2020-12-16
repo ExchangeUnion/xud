@@ -2,6 +2,7 @@
 // file: xudrpc.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as grpc from "grpc";
 import * as xudrpc_pb from "./xudrpc_pb";

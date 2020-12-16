@@ -2,6 +2,7 @@
 // file: lndinvoices.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";

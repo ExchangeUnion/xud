@@ -2,6 +2,7 @@
 // file: lndinvoices.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as grpc from "grpc";
 import * as lndinvoices_pb from "./lndinvoices_pb";

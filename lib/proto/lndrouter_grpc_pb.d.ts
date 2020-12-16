@@ -2,6 +2,7 @@
 // file: lndrouter.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as grpc from "grpc";
 import * as lndrouter_pb from "./lndrouter_pb";

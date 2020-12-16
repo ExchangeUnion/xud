@@ -736,6 +736,14 @@ message Peer {
   uint32 seconds_connected = 7 [json_name = "seconds_connected"];
   // The alias for this peer's public key
   string alias = 9 [json_name = "alias"];
+  // A map of ticker symbols to lnd uris for this peer
+  message LndUris {
+     string currency = 1;
+     repeated string uri = 2;
+  }
+  repeated LndUris lnd_uris = 10 [json_name = "lnd_uris"];
+  // The connext identifier for this peer
+  string connext_identifier = 11 [json_name = "connext_identifier"];
 }
 
 message PlaceOrderRequest {

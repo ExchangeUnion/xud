@@ -2,6 +2,7 @@
 // file: lndwalletunlocker.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as grpc from "grpc";
 import * as lndwalletunlocker_pb from "./lndwalletunlocker_pb";

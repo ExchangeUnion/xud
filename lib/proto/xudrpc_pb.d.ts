@@ -2,6 +2,7 @@
 // file: xudrpc.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";
@@ -1278,7 +1279,7 @@ export namespace OrderUpdate {
     }
 
     export enum OrderUpdateCase {
-        ORDERUPDATE_NOT_SET = 0,
+        ORDER_UPDATE_NOT_SET = 0,
     
     ORDER = 1,
 
@@ -1316,6 +1317,14 @@ export class Peer extends jspb.Message {
     getAlias(): string;
     setAlias(value: string): void;
 
+    clearLndUrisList(): void;
+    getLndUrisList(): Array<Peer.LndUris>;
+    setLndUrisList(value: Array<Peer.LndUris>): void;
+    addLndUris(value?: Peer.LndUris, index?: number): Peer.LndUris;
+
+    getConnextIdentifier(): string;
+    setConnextIdentifier(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Peer.AsObject;
@@ -1338,7 +1347,38 @@ export namespace Peer {
         xudVersion: string,
         secondsConnected: number,
         alias: string,
+        lndUrisList: Array<Peer.LndUris.AsObject>,
+        connextIdentifier: string,
     }
+
+
+    export class LndUris extends jspb.Message { 
+        getCurrency(): string;
+        setCurrency(value: string): void;
+
+        clearUriList(): void;
+        getUriList(): Array<string>;
+        setUriList(value: Array<string>): void;
+        addUri(value: string, index?: number): string;
+
+
+        serializeBinary(): Uint8Array;
+        toObject(includeInstance?: boolean): LndUris.AsObject;
+        static toObject(includeInstance: boolean, msg: LndUris): LndUris.AsObject;
+        static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+        static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+        static serializeBinaryToWriter(message: LndUris, writer: jspb.BinaryWriter): void;
+        static deserializeBinary(bytes: Uint8Array): LndUris;
+        static deserializeBinaryFromReader(message: LndUris, reader: jspb.BinaryReader): LndUris;
+    }
+
+    export namespace LndUris {
+        export type AsObject = {
+            currency: string,
+            uriList: Array<string>,
+        }
+    }
+
 }
 
 export class PlaceOrderRequest extends jspb.Message { 

@@ -2,6 +2,7 @@
 // file: lndrpc.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as grpc from "grpc";
 import * as lndrpc_pb from "./lndrpc_pb";

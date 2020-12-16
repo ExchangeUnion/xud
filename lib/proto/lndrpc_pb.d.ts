@@ -2,6 +2,7 @@
 // file: lndrpc.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as jspb from "google-protobuf";
 
@@ -513,7 +514,7 @@ export namespace ChannelPoint {
     }
 
     export enum FundingTxidCase {
-        FUNDINGTXID_NOT_SET = 0,
+        FUNDING_TXID_NOT_SET = 0,
     
     FUNDING_TXID_BYTES = 1,
 
