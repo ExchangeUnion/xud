@@ -1,33 +1,36 @@
-import { UnitConverter } from '../../lib/utils/UnitConverter';
+import { getUnitConverter } from '../utils';
+
+export const UNITS_PER_CURRENCY: { [key: string]: bigint } = {
+  BTC: 1n,
+  LTC: 1n,
+  ETH: 10n ** 10n,
+};
 
 describe('UnitConverter', () => {
-  const unitConverter = new UnitConverter();
+  const unitConverter = getUnitConverter();
 
   describe('amountToUnits', () => {
     test('converts BTC amount to units', () => {
-      unitConverter.init();
       const amount = 99999999;
       expect(
         unitConverter.amountToUnits({
           amount,
           currency: 'BTC',
         }),
-      ).toEqual(amount);
+      ).toEqual(BigInt(amount));
     });
 
-    test('converts WETH amount to units', () => {
-      unitConverter.init();
+    test('converts ETH amount to units', () => {
       expect(
         unitConverter.amountToUnits({
           amount: 7500000,
-          currency: 'WETH',
+          currency: 'ETH',
         }),
-      ).toEqual(75000000000000000);
+      ).toEqual(75000000000000000n);
     });
 
     test('throws error upon unknown currency', () => {
       expect.assertions(1);
-      unitConverter.init();
       try {
         unitConverter.amountToUnits({
           amount: 123,
@@ -41,32 +44,29 @@ describe('UnitConverter', () => {
 
   describe('unitsToAmount', () => {
     test('converts BTC units to amount', () => {
-      unitConverter.init();
-      const units = 99999999;
+      const units = 99999999n;
       expect(
         unitConverter.unitsToAmount({
           units,
           currency: 'BTC',
         }),
-      ).toEqual(units);
+      ).toEqual(Number(units));
     });
 
-    test('converts WETH units to amount', () => {
-      unitConverter.init();
+    test('converts ETH units to amount', () => {
       expect(
         unitConverter.unitsToAmount({
-          units: 75000000000000000,
-          currency: 'WETH',
+          units: 75000000000000000n,
+          currency: 'ETH',
         }),
       ).toEqual(7500000);
     });
 
     test('throws error upon unknown currency', () => {
       expect.assertions(1);
-      unitConverter.init();
       try {
         unitConverter.unitsToAmount({
-          units: 123,
+          units: 123n,
           currency: 'ABC',
         });
       } catch (e) {
@@ -75,10 +75,12 @@ describe('UnitConverter', () => {
     });
   });
 
-  describe('calculateSwapAmounts', () => {
+  describe('calculateInboundOutboundAmounts', () => {
     const pairId = 'LTC/BTC';
     const quantity = 250000;
+    const bigQuantity = 250000n;
     const price = 0.01;
+    const priceDivisor = 100n;
 
     test('calculate inbound and outbound amounts and currencies for a buy order', () => {
       const {
@@ -88,13 +90,13 @@ describe('UnitConverter', () => {
         outboundAmount,
         inboundUnits,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, true, pairId);
+      } = unitConverter.calculateInboundOutboundAmounts(quantity, price, true, pairId);
       expect(inboundCurrency).toEqual('LTC');
       expect(inboundAmount).toEqual(quantity);
-      expect(inboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['LTC'] * quantity);
+      expect(inboundUnits).toEqual(UNITS_PER_CURRENCY['LTC'] * bigQuantity);
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(quantity * price);
-      expect(outboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price);
+      expect(outboundUnits).toEqual((UNITS_PER_CURRENCY['BTC'] * bigQuantity) / priceDivisor);
     });
 
     test('calculate inbound and outbound amounts and currencies for a sell order', () => {
@@ -105,17 +107,17 @@ describe('UnitConverter', () => {
         outboundAmount,
         inboundUnits,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, false, pairId);
+      } = unitConverter.calculateInboundOutboundAmounts(quantity, price, false, pairId);
       expect(inboundCurrency).toEqual('BTC');
       expect(inboundAmount).toEqual(quantity * price);
-      expect(inboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price);
+      expect(inboundUnits).toEqual((UNITS_PER_CURRENCY['BTC'] * bigQuantity) / priceDivisor);
       expect(outboundCurrency).toEqual('LTC');
       expect(outboundAmount).toEqual(quantity);
-      expect(outboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['LTC'] * quantity);
+      expect(outboundUnits).toEqual(UNITS_PER_CURRENCY['LTC'] * bigQuantity);
     });
 
     test('calculate 0 outbound amount for a market buy order', () => {
-      const { outboundCurrency, outboundAmount, outboundUnits } = UnitConverter.calculateInboundOutboundAmounts(
+      const { outboundCurrency, outboundAmount, outboundUnits } = unitConverter.calculateInboundOutboundAmounts(
         quantity,
         0,
         true,
@@ -123,11 +125,11 @@ describe('UnitConverter', () => {
       );
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(0);
-      expect(outboundUnits).toEqual(0);
+      expect(outboundUnits).toEqual(0n);
     });
 
     test('calculate 0 inbound amount for a market sell order', () => {
-      const { inboundCurrency, inboundAmount, inboundUnits } = UnitConverter.calculateInboundOutboundAmounts(
+      const { inboundCurrency, inboundAmount, inboundUnits } = unitConverter.calculateInboundOutboundAmounts(
         quantity,
         Number.POSITIVE_INFINITY,
         false,
@@ -135,7 +137,7 @@ describe('UnitConverter', () => {
       );
       expect(inboundCurrency).toEqual('BTC');
       expect(inboundAmount).toEqual(0);
-      expect(inboundUnits).toEqual(0);
+      expect(inboundUnits).toEqual(0n);
     });
 
     test('calculate inbound and outbound amounts and currencies for a Connext order', () => {
@@ -146,13 +148,13 @@ describe('UnitConverter', () => {
         outboundAmount,
         inboundUnits,
         outboundUnits,
-      } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, true, 'ETH/BTC');
+      } = unitConverter.calculateInboundOutboundAmounts(quantity, price, true, 'ETH/BTC');
       expect(inboundCurrency).toEqual('ETH');
       expect(inboundAmount).toEqual(quantity);
-      expect(inboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['ETH'] * quantity);
+      expect(inboundUnits).toEqual(UNITS_PER_CURRENCY['ETH'] * bigQuantity);
       expect(outboundCurrency).toEqual('BTC');
       expect(outboundAmount).toEqual(quantity * price);
-      expect(outboundUnits).toEqual(unitConverter['UNITS_PER_CURRENCY']['BTC'] * quantity * price);
+      expect(outboundUnits).toEqual((UNITS_PER_CURRENCY['BTC'] * bigQuantity) / priceDivisor);
     });
   });
 });

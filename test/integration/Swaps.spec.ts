@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonSandbox } from 'sinon';
-import { SwapFailureReason } from '../../lib/constants/enums';
+import { SwapClientType, SwapFailureReason } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import Logger, { Level } from '../../lib/Logger';
 import Peer from '../../lib/p2p/Peer';
@@ -9,6 +9,7 @@ import Pool from '../../lib/p2p/Pool';
 import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Swaps from '../../lib/swaps/Swaps';
+import { UnitConverter } from '../../lib/utils/UnitConverter';
 import { getValidDeal, waitForSpy } from '../utils';
 
 chai.use(chaiAsPromised);
@@ -57,6 +58,11 @@ const validSwapSuccess = () => {
     role: 0,
   };
 };
+
+const currencies = [
+  { id: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
+  { id: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
+];
 
 describe('Swaps.Integration', () => {
   const loggers = Logger.createLoggers(Level.Warn);
@@ -114,6 +120,7 @@ describe('Swaps.Integration', () => {
     swaps = new Swaps({
       pool,
       swapClientManager,
+      unitConverter: new UnitConverter(currencies),
       logger: loggers.swaps,
       models: db.models,
     });

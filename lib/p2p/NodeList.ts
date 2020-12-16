@@ -43,6 +43,9 @@ class NodeList extends EventEmitter {
   private static readonly BAN_THRESHOLD = -50;
   private static readonly MAX_REPUTATION_SCORE = 100;
 
+  private static readonly PRIMARY_PEER_CONN_FAILURES_THRESHOLD = 200;
+  private static readonly SECONDARY_PEER_CONN_FAILURES_THRESHOLD = 1500;
+
   public get count() {
     return this.nodes.size;
   }
@@ -72,6 +75,24 @@ class NodeList extends EventEmitter {
 
   public forEach = (callback: (node: NodeInstance) => void) => {
     this.nodes.forEach(callback);
+  };
+
+  public rank = (): { primary: NodeInstance[]; secondary: NodeInstance[] } => {
+    const primary: NodeInstance[] = [];
+    const secondary: NodeInstance[] = [];
+
+    this.nodes.forEach((node) => {
+      if (node.consecutiveConnFailures < NodeList.PRIMARY_PEER_CONN_FAILURES_THRESHOLD) {
+        primary.push(node);
+      } else if (node.consecutiveConnFailures < NodeList.SECONDARY_PEER_CONN_FAILURES_THRESHOLD) {
+        secondary.push(node);
+      }
+    });
+
+    if (primary.length === 0) {
+      return { primary: secondary, secondary: [] };
+    }
+    return { primary, secondary };
   };
 
   /**
@@ -259,6 +280,22 @@ class NodeList extends EventEmitter {
     }
 
     return false;
+  };
+
+  public incrementConsecutiveConnFailures = async (nodePubKey: string) => {
+    const node = this.nodes.get(nodePubKey);
+    if (node) {
+      node.consecutiveConnFailures += 1;
+      await node.save();
+    }
+  };
+
+  public resetConsecutiveConnFailures = async (nodePubKey: string) => {
+    const node = this.nodes.get(nodePubKey);
+    if (node && node.consecutiveConnFailures > 0) {
+      node.consecutiveConnFailures = 0;
+      await node.save();
+    }
   };
 
   private setBanStatus = (node: NodeInstance, status: boolean) => {

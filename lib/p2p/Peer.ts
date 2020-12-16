@@ -47,6 +47,8 @@ enum PeerStatus {
 }
 
 interface Peer {
+  on(event: 'connect', listener: () => void): this;
+  on(event: 'connFailure', listener: () => void): this;
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   /** Adds a listener to be called when the peer's advertised but inactive pairs should be verified. */
@@ -56,6 +58,7 @@ interface Peer {
   on(event: 'nodeStateUpdate', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   emit(event: 'connect'): boolean;
+  emit(event: 'connFailure'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'close'): boolean;
   emit(event: 'packet', packet: Packet): boolean;
@@ -591,6 +594,8 @@ class Peer extends EventEmitter {
 
       const onError = async (err: Error) => {
         cleanup();
+
+        this.emit('connFailure');
 
         if (!retry) {
           await this.close();

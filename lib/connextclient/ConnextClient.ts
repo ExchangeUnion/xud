@@ -47,11 +47,11 @@ import {
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
   on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
-  on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, units: bigint, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
   once(event: 'initialized', listener: () => void): this;
-  emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
+  emit(event: 'htlcAccepted', rHash: string, units: bigint, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
@@ -64,7 +64,7 @@ const getRouterNodeIdentifier = (network: string): string => {
     case 'regtest':
     case 'simnet':
       // public key of our simnet router node
-      return 'vector5nFoanppRq7kkU9aARjJwZsdm64969rFde7yQhrXQZ7uWs4jLt';
+      return 'vector6YgGnwSox2vCh8vsKChD3r8nRWbZJFX8o9sP5GS2ZEoeWcsrqq';
     case 'testnet':
       // public key of our testnet router node
       return 'vector5ZGTZ1izRvvM73c5Rt1cMK34SdPVGLccMdc72v2B2HBmcTXRiD';
@@ -155,7 +155,7 @@ class ConnextClient extends SwapClient {
   private unitConverter: UnitConverter;
   private network: string;
   private seed: string | undefined;
-  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '172800';
+  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = (60 * 60 * 24 * 14).toString(); // 14 days
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextChannelBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
@@ -249,7 +249,7 @@ class ConnextClient extends SwapClient {
    * if one doesn't exist, starts a new request for the specified amount. Then
    * calls channelBalance to refresh the inbound capacity for the currency.
    */
-  private requestCollateralInBackground = (currency: string, units: number) => {
+  private requestCollateralInBackground = (currency: string, units: bigint) => {
     // first check whether we already have a pending collateral request for this currency
     // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
     const requestCollateralPromise =
@@ -257,7 +257,7 @@ class ConnextClient extends SwapClient {
       this.sendRequest('/request-collateral', 'POST', {
         channelAddress: this.channelAddress,
         assetId: this.tokenAddresses.get(currency),
-        amount: units.toLocaleString('fullwide', { useGrouping: false }),
+        amount: units.toString(),
         publicIdentifier: this.publicIdentifier,
       })
         .then(() => {
@@ -452,7 +452,7 @@ class ConnextClient extends SwapClient {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
+        amount = deal.takerUnits.toString();
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const expiry = await this.getExpiry(this.finalLock);
         const executeTransfer = this.executeHashLockTransfer({
@@ -477,7 +477,7 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
+        amount = deal.makerUnits.toString();
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         secret = deal.rPreimage!;
         assert(deal.makerCltvDelta, 'cannot send transfer without deal.makerCltvDelta');
@@ -518,7 +518,7 @@ class ConnextClient extends SwapClient {
     currency: expectedCurrency,
   }: {
     rHash: string;
-    units: number;
+    units: bigint;
     expiry?: number;
     currency?: string;
   }) => {
@@ -841,12 +841,12 @@ class ConnextClient extends SwapClient {
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(freeBalanceOffChain),
+      units: BigInt(freeBalanceOffChain),
     });
 
     const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(nodeFreeBalanceOffChain),
+      units: BigInt(nodeFreeBalanceOffChain),
     });
 
     this.outboundAmounts.set(currency, freeBalanceAmount);
@@ -890,7 +890,7 @@ class ConnextClient extends SwapClient {
 
     const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(freeBalanceOnChain),
+      units: BigInt(freeBalanceOnChain),
     });
 
     return {
@@ -985,7 +985,7 @@ class ConnextClient extends SwapClient {
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       publicIdentifier: this.publicIdentifier,
       channelAddress: this.channelAddress,
-      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
+      amount: amount.toString(),
       assetId: this.tokenAddresses.get(currency),
       recipient: destination,
       fee: gasPriceGwei,
@@ -1012,19 +1012,13 @@ class ConnextClient extends SwapClient {
   };
 
   // Withdraw on-chain funds
-  public withdraw = async ({
-    all,
-    currency,
-    amount: argAmount,
-    destination,
-    fee,
-  }: WithdrawArguments): Promise<string> => {
+  public withdraw = async ({ all, currency, amount, destination, fee }: WithdrawArguments): Promise<string> => {
     if (fee) {
       // TODO: allow overwriting gas price
       throw Error('setting fee for Ethereum withdrawals is not supported yet');
     }
 
-    let units = '';
+    let unitsStr: string;
 
     const { freeBalanceOnChain } = await this.getBalance(currency);
 
@@ -1033,21 +1027,23 @@ class ConnextClient extends SwapClient {
         // TODO: query Ether balance, subtract gas price times 21000 (gas usage of transferring Ether), and set that as amount
         throw new Error('withdrawing all ETH is not supported yet');
       }
-      units = freeBalanceOnChain;
-    } else if (argAmount) {
-      const argUnits = this.unitConverter.amountToUnits({
+      unitsStr = freeBalanceOnChain;
+    } else if (amount) {
+      const units = this.unitConverter.amountToUnits({
         currency,
-        amount: argAmount,
+        amount,
       });
-      if (Number(freeBalanceOnChain) < argUnits) {
+      if (Number(freeBalanceOnChain) < units) {
         throw errors.INSUFFICIENT_BALANCE;
       }
-      units = argUnits.toString();
+      unitsStr = units.toString();
+    } else {
+      throw new Error('either all must be true or amount must be non-zero');
     }
 
     const res = await this.sendRequest('/onchain-transfer', 'POST', {
       assetId: this.getTokenAddress(currency),
-      amount: units,
+      amount: unitsStr,
       recipient: destination,
     });
     const { txhash } = await parseResponseBody<OnchainTransferResponse>(res);

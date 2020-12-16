@@ -37,7 +37,7 @@ class HttpService {
       const rHash = lockHash.slice(2);
       const expiry = parseInt(expiryString, 10);
       const { amount } = balance;
-      const units = parseInt(amount[0], 10);
+      const units = BigInt(amount[0]);
       await this.service.transferReceived({
         rHash,
         expiry,

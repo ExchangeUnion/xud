@@ -81,6 +81,7 @@ class Pool extends EventEmitter {
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   private loadingNodesPromise?: Promise<void>;
+  private secondaryPeersTimeout?: NodeJS.Timeout;
   /** A collection of opened, active peers. */
   private peers = new Map<string, Peer>();
   private server?: Server;
@@ -97,6 +98,9 @@ class Pool extends EventEmitter {
   private nodeKey: NodeKey;
   /** The minimum version of xud we accept for peers */
   private minCompatibleVersion: string;
+
+  /** Secondary peers connection attempt delay. */
+  private static readonly SECONDARY_PEERS_DELAY = 600000; // 10 min
 
   constructor({
     config,
@@ -201,11 +205,29 @@ class Pool extends EventEmitter {
     this.loadingNodesPromise = this.nodes.load();
     this.loadingNodesPromise
       .then(async () => {
-        if (this.nodes.count > 0 && !this.disconnecting) {
+        if (this.disconnecting) {
+          this.loadingNodesPromise = undefined;
+          return;
+        }
+
+        const { primary, secondary } = this.nodes.rank();
+
+        // delay connection attempts to secondary peers - whom we've had trouble connecting to in the past -
+        // to prevent overwhelming xud at startup
+        if (secondary.length > 0) {
+          this.secondaryPeersTimeout = setTimeout(async () => {
+            this.logger.info('Connecting to secondary known / previously connected peers');
+            await this.connectNodes(secondary, true, true);
+            this.logger.info('Completed start-up connections to secondary known peers');
+          }, Pool.SECONDARY_PEERS_DELAY);
+        }
+
+        if (primary.length > 0) {
           this.logger.info('Connecting to known / previously connected peers');
-          await this.connectNodes(this.nodes, true, true);
+          await this.connectNodes(primary, true, true);
           this.logger.info('Completed start-up connections to known peers');
         }
+
         this.loadingNodesPromise = undefined;
       })
       .catch((reason) => {
@@ -293,6 +315,11 @@ class Pool extends EventEmitter {
   public disconnect = async (): Promise<void> => {
     if (!this.connected) {
       return;
+    }
+
+    if (this.secondaryPeersTimeout) {
+      clearTimeout(this.secondaryPeersTimeout);
+      this.secondaryPeersTimeout = undefined;
     }
 
     this.disconnecting = true;
@@ -1039,6 +1066,14 @@ class Pool extends EventEmitter {
       if (peer.nodePubKey) {
         await this.addReputationEvent(peer.nodePubKey, event);
       }
+    });
+
+    peer.on('connFailure', async () => {
+      await this.nodes.incrementConsecutiveConnFailures(peer.expectedNodePubKey!);
+    });
+
+    peer.on('connect', async () => {
+      await this.nodes.resetConsecutiveConnFailures(peer.expectedNodePubKey!);
     });
   };
 
