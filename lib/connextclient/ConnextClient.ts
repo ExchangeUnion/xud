@@ -403,16 +403,14 @@ class ConnextClient extends SwapClient {
           .pipe(
             mergeMap(() => {
               if (this.status === ClientStatus.ConnectionVerified) {
-                return defer(() => {
-                  // create new commitment transaction
-                  return from(
-                    this.sendRequest('/deposit', 'POST', {
-                      channelAddress: this.channelAddress,
-                      publicIdentifier: this.publicIdentifier,
-                      assetId,
-                    }),
-                  );
-                });
+                // create new commitment transaction
+                return from(
+                  this.sendRequest('/deposit', 'POST', {
+                    channelAddress: this.channelAddress,
+                    publicIdentifier: this.publicIdentifier,
+                    assetId,
+                  }),
+                );
               }
               return throwError('stopping deposit calls because client is no longer connected');
             }),
@@ -1072,9 +1070,7 @@ class ConnextClient extends SwapClient {
         this.logger.error(`could not send on-chain transfer: ${JSON.stringify(e)}`);
       },
     });
-    console.log('sendTransaction$', sendTransaction$);
     const transaction = await sendTransaction$.toPromise();
-    console.log('transaction is', transaction);
     return transaction.hash;
   };
 
