@@ -18,23 +18,19 @@ type OnChainTransaction = {
   hash: string;
 };
 
-const getProvider = curry(
-  (host: string, port: number, name: string, chainId: number): ethers.providers.JsonRpcProvider => {
-    return new ethers.providers.JsonRpcProvider(
-      { url: `http://${host}:${port}/ethprovider/${chainId}` },
-      {
-        name,
-        chainId,
-      },
-    );
-  },
-);
+const getProvider = (host: string, port: number, name: string, chainId: number): ethers.providers.JsonRpcProvider => {
+  return new ethers.providers.JsonRpcProvider(
+    { url: `http://${host}:${port}/ethprovider/${chainId}` },
+    {
+      name,
+      chainId,
+    },
+  );
+};
 
-const getSigner = curry(
-  (provider: ethers.providers.JsonRpcProvider, seed: string): ethers.Wallet => {
-    return ethers.Wallet.fromMnemonic(seed).connect(provider);
-  },
-);
+const getSigner = (provider: ethers.providers.JsonRpcProvider, seed: string): ethers.Wallet => {
+  return ethers.Wallet.fromMnemonic(seed).connect(provider);
+};
 
 const getContract = curry(
   (signer: ethers.Wallet, contractAddress: string): ethers.Contract => {
@@ -73,5 +69,3 @@ const getEthprovider = (host: string, port: number, name: string, chainId: numbe
 type EthProvider = ReturnType<typeof getEthprovider>;
 
 export { getEthprovider, EthProvider };
-
-// export { getProvider, getSigner, getContract, onChainSendERC20 };
