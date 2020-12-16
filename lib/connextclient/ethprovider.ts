@@ -1,22 +1,7 @@
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
+import { curry } from 'ramda';
 import { from, Observable } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
-import { curry } from 'ramda';
-
-type OnChainTransaction = {
-  nonce: number;
-  gasPrice: BigNumber;
-  gasLimit: BigNumber;
-  to: string;
-  value: BigNumber;
-  data: string;
-  chainId: number;
-  v: number;
-  r: string;
-  s: string;
-  from: string;
-  hash: string;
-};
 
 const getProvider = (host: string, port: number, name: string, chainId: number): ethers.providers.JsonRpcProvider => {
   return new ethers.providers.JsonRpcProvider(
@@ -45,17 +30,21 @@ const onChainSendERC20 = curry(
     contract: ethers.Contract,
     destinationAddress: string,
     units: string,
-  ): Observable<OnChainTransaction> => {
+  ): Observable<ethers.ContractTransaction> => {
     // get the gas price
     return from(signer.provider.getGasPrice()).pipe(
       mergeMap(
         (gasPrice) =>
           // then send the transaction
-          from(contract.transfer(destinationAddress, units, { gasPrice })) as Observable<OnChainTransaction>,
+          from(contract.transfer(destinationAddress, units, { gasPrice })) as Observable<ethers.ContractTransaction>,
       ),
     );
   },
 );
+
+const getERC20Balance = curry((signer: ethers.Wallet, contract: ethers.Contract): Observable<ethers.BigNumber> => {
+  return from(contract.balanceOf(signer.address)) as Observable<ethers.BigNumber>;
+});
 
 const getEthprovider = (host: string, port: number, name: string, chainId: number, seed: string) => {
   const provider = getProvider(host, port, name, chainId);
@@ -63,6 +52,7 @@ const getEthprovider = (host: string, port: number, name: string, chainId: numbe
   return {
     getEthBalance: () => from(signer.getBalance()),
     getContract: getContract(signer),
+    getERC20Balance: getERC20Balance(signer),
     onChainSendERC20: onChainSendERC20(signer),
   };
 };

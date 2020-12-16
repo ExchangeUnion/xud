@@ -776,12 +776,16 @@ class ConnextClient extends SwapClient {
   };
 
   private getBalanceForAddress = async (_address: string, assetId: string) => {
+    assert(this.ethProvider, 'Cannot get balance without ethProvider');
     if (assetId === this.tokenAddresses.get('ETH')) {
-      assert(this.ethProvider, 'Cannot get balance without ethProvider');
       const ethBalance$ = this.ethProvider.getEthBalance();
       return BigInt(await ethBalance$.toPromise());
     } else {
-      return 0;
+      const contract = this.ethProvider.getContract(assetId);
+      const erc20balance$ = this.ethProvider.getERC20Balance(contract);
+      const erc20balance = (await erc20balance$.toPromise());
+      console.log(`erc20balance for ${assetId} is ${erc20balance}`);
+      return BigInt(erc20balance);
     }
   };
 
