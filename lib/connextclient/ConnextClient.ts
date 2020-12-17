@@ -399,7 +399,7 @@ class ConnextClient extends SwapClient {
     const reconcileForAsset = (assetId: string, balance$: ReturnType<typeof getBalance$>) => {
       return (
         balance$
-          // when ETH balance changes
+          // when balance changes
           .pipe(
             mergeMap(() => {
               if (this.status === ClientStatus.ConnectionVerified) {
