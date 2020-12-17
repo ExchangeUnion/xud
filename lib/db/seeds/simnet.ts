@@ -2,7 +2,6 @@ import * as db from '../types';
 import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
-  /*
   {
     nodePubKey: '03ece33a30db1dbce4b62fa96a5e9541138a24997ef5672eebed2d332270e39542',
     addresses: [
@@ -23,7 +22,6 @@ const nodes = [
       },
     ],
   },
-  */
 ] as db.NodeAttributes[];
 
 const currencies = [
@@ -58,12 +56,12 @@ const currencies = [
 ] as db.CurrencyAttributes[];
 
 const pairs = [
-  // { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
-  // { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
+  { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
+  { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
+  // { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   // { baseCurrency: 'ETH', quoteCurrency: 'DAI' },
   // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
-  { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   // { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
   // { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
   // { baseCurrency: 'USDT', quoteCurrency: 'DAI' },
