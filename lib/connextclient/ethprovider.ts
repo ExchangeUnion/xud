@@ -45,6 +45,22 @@ const onChainSendERC20 = curry(
   },
 );
 
+const onChainSendETH = curry(
+  (signer: ethers.Wallet, destinationAddress: string, units: string): Observable<ethers.ContractTransaction> => {
+    return from(signer.provider.getGasPrice()).pipe(
+      mergeMap((gasPrice) => {
+        const ether = ethers.utils.formatEther(units);
+        const value = ethers.utils.parseEther(ether);
+        return signer.sendTransaction({
+          to: destinationAddress,
+          value,
+          gasPrice,
+        });
+      }),
+    );
+  },
+);
+
 const getEthBalanceByAddress = curry((provider: ethers.providers.JsonRpcProvider, address: string) =>
   from(provider.getBalance(address)),
 );
@@ -67,6 +83,7 @@ const getEthprovider = (host: string, port: number, name: string, chainId: numbe
     getERC20Balance: getERC20Balance(signer.address),
     getERC20BalanceByAddress: getERC20Balance,
     onChainSendERC20: onChainSendERC20(signer),
+    onChainSendETH: onChainSendETH(signer),
   };
 };
 

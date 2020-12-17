@@ -1062,12 +1062,13 @@ class ConnextClient extends SwapClient {
       throw new Error('either all must be true or amount must be non-zero');
     }
 
+    let sendTransaction$;
     if (currency === 'ETH') {
-      throw new Error('sending eth not supported, yet');
+      sendTransaction$ = this.ethProvider.onChainSendETH(destination, unitsStr);
+    } else {
+      const contract = this.ethProvider.getContract(this.getTokenAddress(currency));
+      sendTransaction$ = this.ethProvider.onChainSendERC20(contract, destination, unitsStr);
     }
-
-    const contract = this.ethProvider.getContract(this.getTokenAddress(currency));
-    const sendTransaction$ = this.ethProvider.onChainSendERC20(contract, destination, unitsStr);
     const transaction = await sendTransaction$.toPromise();
     this.logger.info(`on-chain transfer sent, transaction hash: ${transaction.hash}`);
     return transaction.hash;
