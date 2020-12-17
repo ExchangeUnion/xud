@@ -74,16 +74,28 @@ const getERC20Balance = curry(
 const getEthprovider = (host: string, port: number, name: string, chainId: number, seed: string) => {
   const provider = getProvider(host, port, name, chainId);
   const signer = getSigner(provider, seed);
+  const getERC20BalanceWithSigner = getERC20Balance(signer.address);
+  const getContractWithSigner = getContract(signer);
+  const onChainSendERC20WithSigner = onChainSendERC20(signer);
+  const onChainSendETHWithSigner = onChainSendETH(signer);
+  const getEthBalanceByAddressWithProvider = getEthBalanceByAddress(provider);
+  const onChainTransfer = (contractAddress: string, destinationAddress: string, units: string) => {
+    if (contractAddress === ethers.constants.AddressZero) {
+      return onChainSendETHWithSigner(destinationAddress, units);
+    } else {
+      const contract = getContractWithSigner(contractAddress);
+      return onChainSendERC20WithSigner(contract, destinationAddress, units);
+    }
+  };
   return {
     getEthBalance: () => from(signer.getBalance()),
     // before exposing the functions we provide signer and provider
     // when required
-    getEthBalanceByAddress: getEthBalanceByAddress(provider),
-    getContract: getContract(signer),
-    getERC20Balance: getERC20Balance(signer.address),
+    getEthBalanceByAddress: getEthBalanceByAddressWithProvider,
+    getContract: getContractWithSigner,
+    getERC20Balance: getERC20BalanceWithSigner,
     getERC20BalanceByAddress: getERC20Balance,
-    onChainSendERC20: onChainSendERC20(signer),
-    onChainSendETH: onChainSendETH(signer),
+    onChainTransfer,
   };
 };
 
