@@ -6,7 +6,6 @@ module.exports = {
   },
   rules: {
     'no-empty': 'off',
-    "object-curly-newline": 0,
   },
   plugins: [
     '@typescript-eslint',
