@@ -61,7 +61,7 @@
     "test:sim:logs": "cd test/simulation && ./logs.sh",
     "test:jest": "jest --testMatch='<rootDir>/test/jest/**/*.spec.[jt]s?(x)' --unhandled-rejections=strict --forceExit",
     "test:seedutil": "jest --testMatch='<rootDir>/seedutil/*.spec.[jt]s?(x)'",
-    "test:jest:watch": "jest --watch",
+    "test:jest:watch": "jest --watch --testMatch='<rootDir>/test/jest/**/*.spec.[jt]s?(x)'",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run test:sim:build && npm run test:sim",
     "postversion": "npm run compile",
