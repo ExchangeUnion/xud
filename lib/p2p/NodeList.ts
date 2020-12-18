@@ -54,7 +54,8 @@ class NodeList extends EventEmitter {
   private static readonly BAN_THRESHOLD = -50;
   private static readonly MAX_REPUTATION_SCORE = 100;
 
-  public get count() {
+  public get count() { // number of nodes currently connected
+    console.log("NL connected node count is ", this.inbound.size + this.outbound.size + this.customOutbound.size);
     return this.inbound.size + this.outbound.size + this.customOutbound.size;
   }
 
@@ -94,8 +95,11 @@ class NodeList extends EventEmitter {
   }
   
   public forEach = (callback: (node: NodeInstance) => void) => {
-    this.nodes.addrMap.forEach(callback);
+    this.outbound.forEach(callback);
+    this.customOutbound.forEach(callback);
+    this.inbound.forEach(callback);
   }
+    
 
   /**
    * Get the node for a given node id.
@@ -190,6 +194,7 @@ class NodeList extends EventEmitter {
     nodes.forEach((node) => {
       console.log("NL adding loaded node");
       this.addNode(node, "none");
+      //this.outbound.set(node.nodePubKey, node);
       const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
         node.reputationScore = 0;
         events.forEach(({ event }) => {
@@ -200,6 +205,7 @@ class NodeList extends EventEmitter {
       reputationLoadPromises.push(reputationLoadPromise);
     });
     await Promise.all(reputationLoadPromises);
+    console.log("NL done loading seed nodes");
   };
 
   /**
@@ -241,15 +247,18 @@ class NodeList extends EventEmitter {
    * @return true if the specified node exists and was updated, false otherwise
    */
   public updateAddresses = async (
-    nodePubKey: string,
+    /*nodePubKey: string,
     addresses: Address[] = [],
-    lastAddress?: Address,
+    lastAddress?: Address,*/
   ): Promise<boolean> => {
+    console.log("failing to update addresses...");
+    /* TODO update correctly 
     const node = this.nodes.get(nodePubKey);
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
       node.addresses = addresses.map((newAddress) => {
         const oldAddress = node.addresses.find((address) => addressUtils.areEqual(address, newAddress));
+     
         if (oldAddress && !newAddress.lastConnected) {
           return oldAddress;
         } else {
@@ -264,7 +273,7 @@ class NodeList extends EventEmitter {
       await node.save();
       return true;
     }
-
+     */
     return false;
   };
 

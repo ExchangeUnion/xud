@@ -38,17 +38,18 @@ class AddrInfo {
   // Calculate in which "tried" bucket this entry belongs
   public GetTriedBucket = (key: number): number => {
     let hash1 = createHash("sha256").update(key.toString()).update(this.node.lastAddressText).digest('hex');
-    let hash2 = createHash("sha256").update(key.toString()).update((parseInt(hash1) % AddrMan.TRIED_BUCKETS_PER_SOURCE_GROUP).toString()).digest('hex');
-    let tried_bucket = parseInt(hash2) % AddrMan.TRIED_BUCKET_COUNT;
+    let hash2 = createHash("sha256").update(key.toString()).update((parseInt(hash1, 16) % AddrMan.TRIED_BUCKETS_PER_SOURCE_GROUP).toString()).digest('hex');
+    let tried_bucket = Number(BigInt('0x' + hash2) % BigInt(AddrMan.TRIED_BUCKET_COUNT));
     return tried_bucket;
     
   }
   // Calculate in which "new" bucket this entry belongs, given a certain source (ignoring asmap concerns)
   public GetNewBucket = (key: number, src?: string): number => {
     let source = src ? src : "none";
+    
     let hash1 = createHash("sha256").update(key.toString()).update(source).digest('hex');
-    let hash2 = createHash("sha256").update(key.toString()).update((parseInt(hash1) % AddrMan.NEW_BUCKETS_PER_SOURCE_GROUP).toString()).digest('hex');
-    let new_bucket = parseInt(hash2) % AddrMan.NEW_BUCKET_COUNT;
+    let hash2 = createHash("sha256").update(key.toString()).update((parseInt(hash1, 16) % AddrMan.NEW_BUCKETS_PER_SOURCE_GROUP).toString()).digest('hex');
+    let new_bucket = Number(BigInt('0x' + hash2) % BigInt(AddrMan.NEW_BUCKET_COUNT));
     return new_bucket;
 
   }
@@ -60,7 +61,8 @@ class AddrInfo {
       url = `${parsed['host']}:${parsed['port']}`;
     }
     let hash = createHash("sha256").update(key.toString()).update(fNew ? 'N' : 'K').update(nBucket.toString()).update(url).digest('hex');
-    return parseInt(hash) % AddrMan.BUCKET_SIZE;
+    let pos = Number(BigInt('0x' + hash) % BigInt(AddrMan.BUCKET_SIZE));
+    return pos;
   }
 
   // Determine whether the statistics about this entry are bad enough so that it can just be deleted
@@ -119,17 +121,17 @@ class AddrMan {
   // secret key to randomize bucket select with
   private nKey: number;
   // total number of buckets for tried addresses
-  private static readonly TRIED_BUCKET_COUNT_LOG2 = 8;
+  private static readonly TRIED_BUCKET_COUNT_LOG2 = 2; //8;
   // total number of buckets for new addresses
-  private static readonly NEW_BUCKET_COUNT_LOG2 = 10;
+  private static readonly NEW_BUCKET_COUNT_LOG2 = 2; //10;
   // maximum allowed number of entries in buckets for new and tried addresses
-  private static readonly BUCKET_SIZE_LOG2 = 6;
+  private static readonly BUCKET_SIZE_LOG2 = 2; //6;
   // over how many buckets entries with tried addresses from a single group  (/16 for IPv4) are spread
-  public static readonly TRIED_BUCKETS_PER_SOURCE_GROUP = 8;
+  public static readonly TRIED_BUCKETS_PER_SOURCE_GROUP = 2;//8;
   // over how many buckets entries with new addresses originating from a single group are spread
-  public static readonly NEW_BUCKETS_PER_SOURCE_GROUP = 64;
+  public static readonly NEW_BUCKETS_PER_SOURCE_GROUP = 2;//64
   // in how many buckets for entries with new addresses a single address may occur
-  private static readonly NEW_BUCKETS_PER_ADDRESS = 8;
+  private static readonly NEW_BUCKETS_PER_ADDRESS = 2; //8
   // how old addresses can maximally be
   public static readonly HORIZON_DAYS = 30;
   // after how many failed attempts we give up on a new node
@@ -156,14 +158,14 @@ class AddrMan {
   // list of "tried" buckets
   public vvTried: number[][] = new Array(AddrMan.TRIED_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
   // list of "new" buckets
-  public vvNew: number[][]; // = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
+  public vvNew: number[][] = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1)); // = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
 
   // constructor: logger, key, other vars?`
   constructor({ key }: {
     key: number,
   }) {
     this.nKey = key;
-    this.vvNew = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
+    //this.vvNew = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
   }
   
   // Find an entry by url. Returns last known instance of NodeInstance n
@@ -182,7 +184,6 @@ class AddrMan {
         if (v.node.lastAddressText != "null") {
           url = `${v.node.lastAddressText}`;
         } else{
-          //let {h, p} = JSON.parse(v.node.addressesText)[0];
           let parsed = JSON.parse(v.node['addressesText'])[0];
           url = `${parsed['host']}:${parsed['port']}`;
         }
@@ -195,7 +196,7 @@ class AddrMan {
       }
     }
     console.log("did not find node in addrMap");
-    return [-1, undefined];
+    return [-2, undefined];
   }
   
   public GetNodeByPubKey = (pubkey: string): NodeInstance | undefined => {
@@ -298,11 +299,11 @@ class AddrMan {
 
   // Delete an entry. It must not be in tried, and have refcount 0
   public Delete = (nId: number): void => {
-    assert(this.addrMap.has(nId));
+    //assert(this.addrMap.has(nId));
     let entry = this.addrMap.get(nId);
     if (entry) { 
       assert(!entry.fInTried);
-      assert(entry.nRefCount === 0);
+      assert(entry.nRefCount == 0);
 
       this.SwapRandom(entry.nRandomPos, this.vRandom.length - 1);
       this.vRandom.pop();
@@ -352,8 +353,6 @@ class AddrMan {
     let nUBucket = -1;
     for (let n = 0; n < AddrMan.NEW_BUCKET_COUNT; n++) {
       let nB = (n + nRnd) % AddrMan.NEW_BUCKET_COUNT;
-      console.log(nB);
-      console.log(this.vvNew);
       let nBpos = entry.GetBucketPosition(this.nKey, true, nB);
       if (this.vvNew[nB][nBpos] == nId) {
         nUBucket = nB;
@@ -385,6 +384,9 @@ class AddrMan {
     console.log("AM adding node: ", addr);
     let fNew = false;
     let [nId, entry] = this.Find(addr); 
+    //if (nId == -2) { // no prior entry
+    //  nId = new Date().getTime(); // replaces c++ null pointer garbage
+    //}
     let host = "";
     console.log("AM nId of node being added: ", nId);
 
@@ -399,7 +401,9 @@ class AddrMan {
       nTimePenalty = 0;
     }
 
-    if (entry) {
+
+    if (entry != undefined) {
+      console.log("updating existing entry");
       const time = new Date().getTime() / 1000;
       const lastConnected = addr.lastAddress.lastConnected;
       if (lastConnected) {
@@ -431,17 +435,22 @@ class AddrMan {
         }
       } 
     } else {
+      console.log("AM creating new entry");
       entry = this.Create(addr, sourceIP);
       entry.nTime = Math.max(0, entry.nTime - nTimePenalty);
       entry.nRefCount = 0;
       this.nNew++;
       fNew = true;
+      nId = this.nIdCount;
     }
 
     let nUBucket = entry.GetNewBucket(this.nKey, sourceIP);
     let nUBucketPos = entry.GetBucketPosition(this.nKey, true, nUBucket);
-    if (this.vvNew[nUBucket][nUBucketPos] !== nId) {
-      let fInsert = (this.vvNew[nUBucket][nUBucketPos] == -1);
+    console.log("y is ", nUBucket, "x is ", nUBucketPos);
+    
+    if (this.vvNew[nUBucket][nUBucketPos] !== nId) { // only true if something else is there
+      let fInsert = (this.vvNew[nUBucket][nUBucketPos] == -1); // true if slot is empty
+      // will insert (overwrite) if the existing entry is -1
       if (!fInsert) {
         assert(this.addrMap.has(this.vvNew[nUBucket][nUBucketPos]) == true);
         let entryExisting = this.addrMap.get(this.vvNew[nUBucket][nUBucketPos]);
@@ -451,17 +460,19 @@ class AddrMan {
         }
       }
       if (fInsert) {
+        console.log("AM overwriting existing entry...");
         this.ClearNew(nUBucket, nUBucketPos);
         entry.nRefCount++;
         this.addrMap.set(nId, entry);
         this.vvNew[nUBucket][nUBucketPos] = nId;
       } else {
+        console.log("AM not overwriting...");
         if (entry.nRefCount == 0) {
           this.Delete(nId);
         }
       }
     }
-    console.log("AM vvNew is now: ", this.vvNew);
+    console.log("AM vvNew inserted bucket is now: ", this.vvNew[nUBucket]);
     console.log("AM addrMap is now: ", this.addrMap);
     return fNew;
   }
@@ -518,7 +529,8 @@ class AddrMan {
         fChanceFactor *= 1.2;
       }
     } else {
-       let fChanceFactor = 1.0;
+      let fChanceFactor = 1.0;
+      console.log("AM vvNew is ", this.vvNew);
       while (true) {
         let nKBucket = this.getRandomInt(AddrMan.NEW_BUCKET_COUNT);
         let nKBucketPos = this.getRandomInt(AddrMan.BUCKET_SIZE);
@@ -526,10 +538,11 @@ class AddrMan {
           nKBucket = (nKBucket + this.getRandomInt(AddrMan.NEW_BUCKET_COUNT)) % AddrMan.NEW_BUCKET_COUNT;
           nKBucketPos = (nKBucketPos + this.getRandomInt(AddrMan.BUCKET_SIZE)) % AddrMan.BUCKET_SIZE;
         }
-        let nId = this.vvNew[nKBucket][nKBucket];
-        assert(this.addrMap.has(nId) == true);
+        let nId = this.vvNew[nKBucket][nKBucketPos];
+        console.log("AM selected nId is: ", nId);
+        
         let info = this.addrMap.get(nId);
-        if (info && this.getRandomInt(1 << 30) < fChanceFactor * info.GetChance() * (1 << 30)) {
+        if (info != undefined && this.getRandomInt(1 << 30) < fChanceFactor * info.GetChance() * (1 << 30)) {
           return info.node;
         }
         fChanceFactor *= 1.2;

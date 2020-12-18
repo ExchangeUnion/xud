@@ -180,14 +180,23 @@ class Pool extends EventEmitter {
   /** 
    * attempt to have 8 outbound nodes
    */
-  private populateOutbound = async (): Promise<void> => { 
-    while (this.nodes.outbound.size < Math.min(this.nodes.addrManager.addrMap.size - this.nodes.count, 8)) {
+  private populateOutbound = async (): Promise<void> => {
+    console.log("populating outbound nodes...");
+    console.log("outbound.size is", this.nodes.outbound.size, "\naddrMap.size is", this.nodes.addrManager.nNew + this.nodes.addrManager.nTried, "\nnodes.count is", this.nodes.count);
+    console.log("current outbound nodes: ", this.nodes.outbound);
+    while (this.nodes.outbound.size < Math.min(this.nodes.addrManager.nNew + this.nodes.addrManager.nTried, 8)) {
+      console.log("selecting");
       let node = this.nodes.addrManager.Select(false);
       if (!node) { // no nodes in addrMan
+        console.log("no nodes in addrMan");
         break;
       }
-      await this.tryConnectNode(node, true); // will fail if already connected
+      if (!this.nodes.outbound.has(node.nodePubKey)) {
+        console.log("connecting to ", node);
+        await this.tryConnectNode(node, true); // will fail if already connected
+      }
     }
+    console.log("done populating outbound. outbound.size is", this.nodes.outbound.size);
   };
 
   /**
@@ -212,9 +221,10 @@ class Pool extends EventEmitter {
 
     this.loadingNodesPromise = this.nodes.load();
     this.loadingNodesPromise.then(async () => {
-      if (this.nodes.count > 0 && !this.disconnecting) {
+      if (!this.disconnecting) {
         this.logger.info('Connecting to at most 8 known peers');
         await this.populateOutbound();
+        
         //while (this.nodes.outboundCount < 8) {
         //  let node = this.addrManager.Select().node; // TODO make addrman simply return a node?
         //  await this.tryConnectNode(node, true);
@@ -227,7 +237,9 @@ class Pool extends EventEmitter {
       this.loadingNodesPromise = undefined;
     });
 
+    console.log("P verifying reachability");
     this.verifyReachability();
+    console.log("P done verifying reachability");
     this.connected = true;
   };
 
@@ -689,7 +701,7 @@ class Pool extends EventEmitter {
       }, peer.address.host );
     } else {
       // the node is known, update its listening addresses in db
-      await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.address); //peer.inbound ? undefined : peer.address);
+      //await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.address); //peer.inbound ? undefined : peer.address);//TODO uncomment
     }
   };
 
