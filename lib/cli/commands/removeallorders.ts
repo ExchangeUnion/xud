@@ -22,11 +22,6 @@ const formatOutput = (response: RemoveAllOrdersResponse.AsObject) => {
       console.log(`Order with id ${id} has a hold for a pending swap and will be removed afterwards`),
     );
   }
-  if (response.erroredOrderIdsMap.length) {
-    response.erroredOrderIdsMap.forEach(([id, error]) =>
-      console.log(`Order with id ${id} couldn't be removed, due to: ${error}`),
-    );
-  }
 };
 
 export const handler = async (argv: Arguments<any>) => {

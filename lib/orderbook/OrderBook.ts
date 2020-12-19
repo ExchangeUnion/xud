@@ -1,7 +1,6 @@
 import assert from 'assert';
 import { EventEmitter } from 'events';
 import uuidv1 from 'uuid/v1';
-import { UnitConverter } from '../utils/UnitConverter';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
 import { CurrencyCreationAttributes, CurrencyInstance, OrderCreationAttributes, PairInstance } from '../db/types';
@@ -12,6 +11,7 @@ import Pool from '../p2p/Pool';
 import Swaps from '../swaps/Swaps';
 import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 import { pubKeyToAlias } from '../utils/aliasUtils';
+import { UnitConverter } from '../utils/UnitConverter';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import OrderBookRepository from './OrderBookRepository';
@@ -92,6 +92,7 @@ class OrderBook extends EventEmitter {
   private strict: boolean;
   private pool: Pool;
   private swaps: Swaps;
+  private unitConverter: UnitConverter;
 
   /** Max time for placeOrder iterations (due to swaps failures retries). */
   private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 60000; // 1 min
@@ -113,6 +114,7 @@ class OrderBook extends EventEmitter {
     thresholds,
     pool,
     swaps,
+    unitConverter,
     nosanityswaps,
     nobalancechecks,
     nomatching = false,
@@ -123,6 +125,7 @@ class OrderBook extends EventEmitter {
     thresholds: OrderBookThresholds;
     pool: Pool;
     swaps: Swaps;
+    unitConverter: UnitConverter;
     nosanityswaps: boolean;
     nobalancechecks: boolean;
     nomatching?: boolean;
@@ -133,6 +136,7 @@ class OrderBook extends EventEmitter {
     this.logger = logger;
     this.pool = pool;
     this.swaps = swaps;
+    this.unitConverter = unitConverter;
     this.nomatching = nomatching;
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
@@ -147,7 +151,7 @@ class OrderBook extends EventEmitter {
         outboundCurrency,
         inboundAmount,
         outboundAmount,
-      } = UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      } = this.unitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
     };
@@ -160,7 +164,7 @@ class OrderBook extends EventEmitter {
         outboundCurrency,
         inboundAmount,
         outboundAmount,
-      } = UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      } = this.unitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
     });
@@ -371,10 +375,9 @@ class OrderBook extends EventEmitter {
     if (currency.swapClient === SwapClientType.Connext && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
-    const currencyInstance = await this.repository.addCurrency({
-      ...currency,
-      decimalPlaces: currency.decimalPlaces || 8,
-    });
+    const decimalPlaces = currency.decimalPlaces || 8;
+    const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces });
+    this.unitConverter.setDecimalPlacesPerCurrency(currency.id, decimalPlaces);
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
     await this.swaps.swapClientManager.add(currencyInstance);
   };
@@ -946,7 +949,6 @@ class OrderBook extends EventEmitter {
   public removeOwnOrders = () => {
     const removedOrderLocalIds = [];
     const onHoldOrderLocalIds = [];
-    const erroredOrdersByLocalId = new Map<string, string>();
 
     for (const localId of this.localIdMap.keys()) {
       try {
@@ -956,12 +958,10 @@ class OrderBook extends EventEmitter {
         } else {
           onHoldOrderLocalIds.push(localId);
         }
-      } catch (ex) {
-        erroredOrdersByLocalId.set(localId, ex.message);
-      }
+      } catch (_) {}
     }
 
-    return { removedOrderLocalIds, onHoldOrderLocalIds, erroredOrdersByLocalId };
+    return { removedOrderLocalIds, onHoldOrderLocalIds };
   };
 
   /**

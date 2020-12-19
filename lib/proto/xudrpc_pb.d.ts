@@ -1647,10 +1647,6 @@ export class RemoveAllOrdersResponse extends jspb.Message {
     addOnHoldOrderIds(value: string, index?: number): string;
 
 
-    getErroredOrderIdsMap(): jspb.Map<string, string>;
-    clearErroredOrderIdsMap(): void;
-
-
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): RemoveAllOrdersResponse.AsObject;
     static toObject(includeInstance: boolean, msg: RemoveAllOrdersResponse): RemoveAllOrdersResponse.AsObject;
@@ -1665,8 +1661,6 @@ export namespace RemoveAllOrdersResponse {
     export type AsObject = {
         removedOrderIdsList: Array<string>,
         onHoldOrderIdsList: Array<string>,
-
-        erroredOrderIdsMap: Array<[string, string]>,
     }
 }
 

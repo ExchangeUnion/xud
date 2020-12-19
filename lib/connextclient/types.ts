@@ -213,7 +213,7 @@ export type TransfersByRoutingIdResponse = ConnextTransfer[];
 
 export type ExpectedIncomingTransfer = {
   rHash: string;
-  units: number;
+  units: bigint;
   expiry: number;
   tokenAddress: string;
   routingId: string;
@@ -316,7 +316,7 @@ export type TransferReceivedEvent = {
   tokenAddress: string;
   rHash: string;
   expiry: number;
-  units: number;
+  units: bigint;
   routingId: string;
 };
 

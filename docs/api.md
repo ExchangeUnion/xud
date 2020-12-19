@@ -62,7 +62,6 @@
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
     - [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest)
     - [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse)
-    - [RemoveAllOrdersResponse.ErroredOrderIdsEntry](#xudrpc.RemoveAllOrdersResponse.ErroredOrderIdsEntry)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
     - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
@@ -102,9 +101,11 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
+  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -1017,23 +1018,6 @@
 | ----- | ---- | ----- | ----------- |
 | removed_order_ids | [string](#string) | repeated | The local order ids that were successfully removed. |
 | on_hold_order_ids | [string](#string) | repeated | The local order ids that were on hold and failed to be removed. |
-| errored_order_ids | [RemoveAllOrdersResponse.ErroredOrderIdsEntry](#xudrpc.RemoveAllOrdersResponse.ErroredOrderIdsEntry) | repeated | A map of local order ids to errors caught while removing the order |
-
-
-
-
-
-
-<a name="xudrpc.RemoveAllOrdersResponse.ErroredOrderIdsEntry"></a>
-
-### RemoveAllOrdersResponse.ErroredOrderIdsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
