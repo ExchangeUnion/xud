@@ -786,13 +786,15 @@ class ConnextClient extends SwapClient {
   public getInfo = async (): Promise<ConnextInfo> => {
     let address: string | undefined;
     let version: string | undefined;
-    let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
+    let status: string;
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
-    } else {
+    } else if (this.isConnected()) {
       status = 'Ready';
       version = 'TODO: Not exposed, yet';
       address = this.channelAddress || 'Waiting for channel';
+    } else {
+      status = ClientStatus[this.status];
     }
 
     return { status, address, version };
