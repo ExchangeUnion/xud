@@ -951,12 +951,14 @@ class OrderBook extends EventEmitter {
     const onHoldOrderLocalIds = [];
 
     for (const localId of this.localIdMap.keys()) {
-      const { onHoldQuantity } = this.removeOwnOrderByLocalId(localId, true);
-      if (onHoldQuantity === 0) {
-        removedOrderLocalIds.push(localId);
-      } else {
-        onHoldOrderLocalIds.push(localId);
-      }
+      try {
+        const { onHoldQuantity } = this.removeOwnOrderByLocalId(localId, true);
+        if (onHoldQuantity === 0) {
+          removedOrderLocalIds.push(localId);
+        } else {
+          onHoldOrderLocalIds.push(localId);
+        }
+      } catch (_) {}
     }
 
     return { removedOrderLocalIds, onHoldOrderLocalIds };
