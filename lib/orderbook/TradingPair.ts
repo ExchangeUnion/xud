@@ -4,7 +4,7 @@ import FastPriorityQueue from 'fastpriorityqueue';
 import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
 import errors from './errors';
-import { isOwnOrder, MatchingResult, Order, OrderMatch, OrderPortion, OwnOrder, PeerOrder } from './types';
+import { isOwnOrder, MatchingResult, Order, OrderMatch, OwnOrder, PeerOrder } from './types';
 
 /** A map between orders and their order ids. */
 type OrderMap<T extends Order> = Map<string, T>;
@@ -25,15 +25,11 @@ type OrderSidesQueues = {
 };
 
 interface TradingPair {
-  /** Adds a listener to be called when all or part of a remote order was removed due to not meeting dust minimum. */
-  on(event: 'peerOrder.dust', listener: (order: OrderPortion) => void): this;
-  /** Adds a listener to be called when all or part of a local order was removed due to not meeting dust minimum. */
-  on(event: 'ownOrder.dust', listener: (order: OrderPortion) => void): this;
+  /** Adds a listener to be called when a local order was fully removed. */
+  on(event: 'ownOrder.fullyRemoved', listener: (order: OwnOrder) => void): this;
 
-  /** Notifies listeners that a remote order was removed due to not meeting dust minimum. */
-  emit(event: 'peerOrder.dust', order: OrderPortion): boolean;
-  /** Notifies listeners that a local order was removed due to not meeting dust minimum. */
-  emit(event: 'ownOrder.dust', order: OrderPortion): boolean;
+  /** Notifies listeners that a local order was fully removed. */
+  emit(event: 'ownOrder.fullyRemoved', order: OwnOrder): boolean;
 }
 
 /**
@@ -206,11 +202,7 @@ class TradingPair extends EventEmitter {
    * quantity then the entire order is removed
    * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
-  public removePeerOrder = (
-    orderId: string,
-    peerPubKey?: string,
-    quantityToRemove?: number,
-  ): { order: PeerOrder; fullyRemoved: boolean } => {
+  public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): PeerOrder => {
     let peerOrdersMaps: OrderSidesMaps<PeerOrder> | undefined;
 
     if (peerPubKey) {
@@ -237,7 +229,7 @@ class TradingPair extends EventEmitter {
    * quantity then the entire order is removed
    * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
-  public removeOwnOrder = (orderId: string, quantityToRemove?: number): { order: OwnOrder; fullyRemoved: boolean } => {
+  public removeOwnOrder = (orderId: string, quantityToRemove?: number): OwnOrder => {
     return this.removeOrder(orderId, this.ownOrders, quantityToRemove);
   };
 
@@ -251,7 +243,7 @@ class TradingPair extends EventEmitter {
     orderId: string,
     maps: OrderSidesMaps<Order>,
     quantityToRemove?: number,
-  ): { order: T; fullyRemoved: boolean } => {
+  ): T => {
     assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
     const order = maps.buyMap.get(orderId) || maps.sellMap.get(orderId);
     if (!order) {
@@ -276,14 +268,16 @@ class TradingPair extends EventEmitter {
         }
         order.quantity -= quantityToRemove;
         this.logger.trace(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
-        return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false };
+        return { ...order, quantity: quantityToRemove } as T;
       }
     }
 
     // otherwise, remove the order entirely
     if (isOwnOrder(order)) {
       assert(order.hold === 0, 'cannot remove an order with a hold');
+      this.emit('ownOrder.fullyRemoved', order);
     }
+
     const startingQuantity = order.quantity;
     order.quantity = 0;
     const map = order.isBuy ? maps.buyMap : maps.sellMap;
@@ -295,10 +289,7 @@ class TradingPair extends EventEmitter {
     }
 
     this.logger.trace(`order removed: ${orderId}`);
-    return {
-      order: { ...order, quantity: startingQuantity } as T,
-      fullyRemoved: true,
-    };
+    return { ...order, quantity: startingQuantity } as T;
   };
 
   private getOrderMap = (order: Order): OrderMap<Order> | undefined => {
@@ -479,7 +470,10 @@ class TradingPair extends EventEmitter {
           assert(queue.poll() === makerOrder);
           const map = this.getOrderMap(makerOrder)!;
           map.delete(makerOrder.id);
-          this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
+          this.logger.debug(`fully removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
+          if (isOwnOrder(makerOrder)) {
+            this.emit('ownOrder.fullyRemoved', makerOrder);
+          }
         } else if (makerAvailableQuantityFullyMatched) {
           // only an own order can be fully matched for available quantity, but not fully matched in the overall
           assert(isOwnOrder(makerOrder));
@@ -497,12 +491,9 @@ class TradingPair extends EventEmitter {
             makerLeftoverAvailableQuantity * makerOrder.price < TradingPair.QUANTITY_DUST_LIMIT
           ) {
             if (isOwnOrder(makerOrder)) {
-              this.emit('ownOrder.dust', {
-                ...makerOrder,
-                quantity: makerLeftoverAvailableQuantity,
-              });
+              this.removeOwnOrder(makerOrder.id);
             } else {
-              this.emit('peerOrder.dust', makerOrder);
+              this.removePeerOrder(makerOrder.id, makerOrder.peerPubKey);
             }
           }
         }
