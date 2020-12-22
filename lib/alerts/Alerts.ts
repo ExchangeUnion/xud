@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
-import { Alert, BalanceAlert } from './types';
-import SwapClientManager from '../swaps/SwapClientManager';
-import Logger from '../Logger';
-import { AlertType, ChannelSide } from '../constants/enums';
 import { satsToCoinsStr } from '../cli/utils';
+import { AlertType, ChannelSide } from '../constants/enums';
+import Logger from '../Logger';
+import SwapClientManager from '../swaps/SwapClientManager';
+import { Alert, BalanceAlertEvent } from './types';
 
 interface Alerts {
   on(event: 'alert', listener: (alert: Alert) => void): this;
@@ -35,20 +35,25 @@ class Alerts extends EventEmitter {
     swapClientManager.connextClient?.on('lowTradingBalance', this.onLowTradingBalance);
   }
 
-  private onLowTradingBalance = (balanceAlert: BalanceAlert) => {
+  private onLowTradingBalance = (balanceAlertEvent: BalanceAlertEvent) => {
     // TODO don't use JSON.stringify instead find a way to define unique ids per alert and keep in the map to avoid memory issues
-    const stringRepresentation = JSON.stringify(balanceAlert);
+    const stringRepresentation = JSON.stringify(balanceAlertEvent);
     this.logger.trace(`received low trading balance alert ${stringRepresentation}`);
     if (this.alerts.get(stringRepresentation) === undefined || this.checkAlertThreshold(stringRepresentation)) {
       this.logger.trace(`triggering low balance alert ${stringRepresentation}`);
 
-      balanceAlert.message = `${ChannelSide[balanceAlert.side || 0]} trading balance (${satsToCoinsStr(
-        balanceAlert.sideBalance || 0,
-      )} ${balanceAlert.currency}) is lower than 10% of trading capacity (${satsToCoinsStr(
-        balanceAlert.totalBalance || 0,
-      )} ${balanceAlert.currency})`;
-      balanceAlert.type = AlertType.LowTradingBalance;
-      balanceAlert.date = Date.now();
+      const message = `${ChannelSide[balanceAlertEvent.side || 0]} trading balance (${satsToCoinsStr(
+        balanceAlertEvent.sideBalance || 0,
+      )} ${balanceAlertEvent.currency}) is lower than 10% of trading capacity (${satsToCoinsStr(
+        balanceAlertEvent.totalBalance || 0,
+      )} ${balanceAlertEvent.currency})`;
+
+      const balanceAlert = {
+        ...balanceAlertEvent,
+        message,
+        type: AlertType.LowTradingBalance,
+        date: Date.now(),
+      };
 
       this.alerts.set(stringRepresentation, balanceAlert.date);
       this.emit('alert', balanceAlert);

@@ -2,6 +2,7 @@ import assert from 'assert';
 import crypto from 'crypto';
 import { promises as fs, watch } from 'fs';
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
+import { BalanceAlertEvent } from 'lib/alerts/types';
 import path from 'path';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import Logger from '../Logger';
@@ -27,7 +28,6 @@ import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
-import { Alert } from '../alerts/types';
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
@@ -35,7 +35,7 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
-  on(event: 'lowTradingBalance', listener: (alert: Alert) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlertEvent) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
 
@@ -45,7 +45,7 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
-  emit(event: 'lowTradingBalance', alert: Alert): boolean;
+  emit(event: 'lowTradingBalance', alert: BalanceAlertEvent): boolean;
 }
 
 const GRPC_CLIENT_OPTIONS = {
@@ -257,7 +257,6 @@ class LndClient extends SwapClient {
           totalBalance,
           alertThreshold,
           this.currency,
-          this.emit.bind(this),
         );
       })
       .catch(async (err) => {

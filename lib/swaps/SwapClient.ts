@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { BalanceAlertEvent } from 'lib/alerts/types';
 import { ChannelSide, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
@@ -71,8 +72,10 @@ export type WithdrawArguments = {
 
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlertEvent) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
+  emit(event: 'lowTradingBalance', alert: BalanceAlertEvent): boolean;
   emit(event: 'initialized'): boolean;
 }
 
@@ -234,10 +237,9 @@ abstract class SwapClient extends EventEmitter {
     totalBalance: number,
     alertThreshold: number,
     currency: string,
-    emit: Function,
   ) => {
     if (localBalance < alertThreshold) {
-      emit('lowTradingBalance', {
+      this.emit('lowTradingBalance', {
         totalBalance,
         currency,
         side: ChannelSide.Local,
@@ -247,7 +249,7 @@ abstract class SwapClient extends EventEmitter {
     }
 
     if (remoteBalance < alertThreshold) {
-      emit('lowTradingBalance', {
+      this.emit('lowTradingBalance', {
         totalBalance,
         currency,
         side: ChannelSide.Remote,
