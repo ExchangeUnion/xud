@@ -356,15 +356,9 @@ class OrderBook extends EventEmitter {
   private addTradingPair = (pairId: string) => {
     const tp = new TradingPair(this.logger, pairId, this.nomatching);
     this.tradingPairs.set(pairId, tp);
-    tp.on('peerOrder.dust', (order) => {
-      this.removePeerOrder(order.id, order.pairId);
-    });
-    tp.on('ownOrder.dust', (order) => {
-      this.removeOwnOrder({
-        orderId: order.id,
-        pairId: order.pairId,
-        quantityToRemove: order.quantity,
-      });
+    tp.on('ownOrder.fullyRemoved', (order) => {
+      // we no longer need to track the local id for own orders that have been fully removed from the order book
+      this.localIdMap.delete(order.localId);
     });
   };
 
@@ -707,7 +701,7 @@ class OrderBook extends EventEmitter {
 
             try {
               // we remove orders from the order book when they fail a swap so that we don't immediately retry them
-              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey).order;
+              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey);
 
               // we want to try matching with this order again at a later time so we add
               // the failed quantity back to the order and preserve the order to add it
@@ -1091,16 +1085,13 @@ class OrderBook extends EventEmitter {
   }) => {
     const tp = this.getTradingPair(pairId);
     try {
-      const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
-      this.emit('ownOrder.removed', removeResult.order);
-      if (removeResult.fullyRemoved) {
-        this.localIdMap.delete(removeResult.order.localId);
-      }
+      const removedOrder = tp.removeOwnOrder(orderId, quantityToRemove);
+      this.emit('ownOrder.removed', removedOrder);
 
       if (!noBroadcast) {
-        this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
+        this.pool.broadcastOrderInvalidation(removedOrder, takerPubKey);
       }
-      return removeResult.order;
+      return removedOrder;
     } catch (err) {
       if (quantityToRemove !== undefined) {
         this.logger.error(`error while removing ${quantityToRemove} of order (${orderId})`, err);
@@ -1120,7 +1111,7 @@ class OrderBook extends EventEmitter {
     pairId: string,
     peerPubKey?: string,
     quantityToRemove?: number,
-  ): { order: PeerOrder; fullyRemoved: boolean } => {
+  ): PeerOrder => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   };
@@ -1294,7 +1285,7 @@ class OrderBook extends EventEmitter {
   private handleOrderInvalidation = (oi: OrderInvalidation, peerPubKey: string) => {
     try {
       const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
-      this.emit('peerOrder.invalidation', removeResult.order);
+      this.emit('peerOrder.invalidation', removeResult);
     } catch (err) {
       this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${pubKeyToAlias(peerPubKey)})`, err);
       // TODO: Penalize peer
