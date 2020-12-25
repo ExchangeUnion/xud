@@ -189,16 +189,17 @@ class NodeList extends EventEmitter {
    */
   public load = async (): Promise<void> => {
     const nodes = await this.repository.getNodes();
-    console.log("NL initializing these nodes:" , nodes);
+    //console.log("NL initializing these nodes:" , nodes);
     const reputationLoadPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
-      console.log("NL adding loaded node");
+      console.log("NL ", node);
+      //console.log("NL adding loaded node");
       this.addNode(node, "none");
       //this.outbound.set(node.nodePubKey, node);
       const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
         node.reputationScore = 0;
         events.forEach(({ event }) => {
-          console.log("NL updating reputation score of loaded node");
+          //console.log("NL updating reputation score of loaded node");
           NodeList.updateReputationScore(node, event);
         });
       });
@@ -304,6 +305,7 @@ class NodeList extends EventEmitter {
     const node = this.get(nodePubKey); 
 
     if (node) {
+      console.log("NL found node we are trying to ban");
       const promises: PromiseLike<any>[] = [];
 
       NodeList.updateReputationScore(node, event);
@@ -329,6 +331,7 @@ class NodeList extends EventEmitter {
     return false;
   };
 
+  // Remove an address from node record stored in DB
   public removeAddress = async (nodePubKey: string, address: Address) => {
     const node = this.get(nodePubKey);
     if (node) {
@@ -350,14 +353,16 @@ class NodeList extends EventEmitter {
 
   private setBanStatus = (node: NodeInstance, status: boolean) => {
     node.banned = status;
+    console.log("NL setting ban status");
+    console.log("NL currently connected to: ", this.outbound, this.inbound, this.customOutbound);
     return node.save();
   };
 
   private addNode = (node: NodeInstance, sourceIP: string) => {
     const { nodePubKey } = node;
-    console.log("NL adding node: ", node);
+    //console.log("NL adding node: ", node);
     const alias = pubKeyToAlias(nodePubKey);
-    if (this.aliasToPubKeyMap.has(alias)) {
+    if (this.aliasToPubKeyMap.has(alias) && this.aliasToPubKeyMap.get(alias) != nodePubKey) {
       this.aliasToPubKeyMap.set(alias, 'CONFLICT');
     } else {
       this.aliasToPubKeyMap.set(alias, nodePubKey);
