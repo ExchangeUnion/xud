@@ -21,8 +21,8 @@ import { XudError } from '../types';
 import { UnitConverter } from '../utils/UnitConverter';
 import { parseResponseBody } from '../utils/utils';
 import errors, { errorCodes } from './errors';
+import { EthProvider, getEthprovider } from './ethprovider';
 import {
-  ConnextBalanceResponse,
   ConnextBlockNumberResponse,
   ConnextChannelBalanceResponse,
   ConnextChannelDetails,
@@ -39,7 +39,6 @@ import {
   EthproviderGasPriceResponse,
   ExpectedIncomingTransfer,
   GetBlockByNumberResponse,
-  OnchainTransferResponse,
   ProvidePreimageEvent,
   TransferReceivedEvent,
 } from './types';
@@ -146,6 +145,7 @@ class ConnextClient extends SwapClient {
   public publicIdentifier: string | undefined;
   /** On-chain deposit address */
   public signerAddress: string | undefined;
+  private ethProvider: EthProvider | undefined;
   /** The set of hashes for outgoing transfers. */
   private outgoingTransferHashes = new Set<string>();
   private port: number;
@@ -162,7 +162,7 @@ class ConnextClient extends SwapClient {
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
-  private _reconcileDepositSubscriber: Subscription | undefined;
+  private _reconcileDepositSubscriptions: Subscription[] = [];
 
   /** Channel multisig address */
   private channelAddress: string | undefined;
@@ -212,6 +212,7 @@ class ConnextClient extends SwapClient {
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
+    this.ethProvider = getEthprovider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network], this.seed);
   };
 
   public initConnextClient = async (seedMnemonic: string) => {
@@ -387,41 +388,48 @@ class ConnextClient extends SwapClient {
   };
 
   private reconcileDeposit = () => {
-    if (this._reconcileDepositSubscriber) {
-      this._reconcileDepositSubscriber.unsubscribe();
-    }
-    const ethBalance$ = interval(30000).pipe(
-      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!))),
-      // only emit new ETH balance events when the balance changes
-      distinctUntilChanged(),
-    );
-    this._reconcileDepositSubscriber = ethBalance$
-      // when ETH balance changes
-      .pipe(
-        mergeMap(() => {
-          if (this.status === ClientStatus.ConnectionVerified) {
-            return defer(() => {
-              // create new commitment transaction
-              return from(
-                this.sendRequest('/deposit', 'POST', {
-                  channelAddress: this.channelAddress,
-                  publicIdentifier: this.publicIdentifier,
-                  assetId: '0x0000000000000000000000000000000000000000', // TODO: multi currency support
-                }),
-              );
-            });
-          }
-          return throwError('stopping deposit calls because client is no longer connected');
-        }),
-      )
-      .subscribe({
+    this._reconcileDepositSubscriptions.forEach((subscription) => subscription.unsubscribe());
+    const getBalance$ = (assetId: string, pollInterval: number) => {
+      return interval(pollInterval).pipe(
+        mergeMap(() => from(this.getBalanceForAddress(assetId, this.channelAddress))),
+        // only emit new balance events when the balance changes
+        distinctUntilChanged(),
+      );
+    };
+    const reconcileForAsset = (assetId: string, balance$: ReturnType<typeof getBalance$>) => {
+      return (
+        balance$
+          // when balance changes
+          .pipe(
+            mergeMap(() => {
+              if (this.status === ClientStatus.ConnectionVerified) {
+                // create new commitment transaction
+                return from(
+                  this.sendRequest('/deposit', 'POST', {
+                    channelAddress: this.channelAddress,
+                    publicIdentifier: this.publicIdentifier,
+                    assetId,
+                  }),
+                );
+              }
+              return throwError('stopping deposit calls because client is no longer connected');
+            }),
+          )
+      );
+    };
+    this.tokenAddresses.forEach((assetId) => {
+      const subscription = reconcileForAsset(assetId, getBalance$(assetId, 30000)).subscribe({
         next: () => {
-          this.logger.trace('deposit successfully reconciled');
+          this.logger.trace(`deposit successfully reconciled for ${this.getCurrencyByTokenaddress(assetId)}`);
         },
         error: (e) => {
-          this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
+          this.logger.trace(
+            `stopped ${this.getCurrencyByTokenaddress(assetId)} deposit calls because: ${JSON.stringify(e)}`,
+          );
         },
       });
+      this._reconcileDepositSubscriptions.push(subscription);
+    });
   };
 
   public sendSmallestAmount = async () => {
@@ -774,13 +782,22 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
-  private getBalanceForAddress = async (assetId: string) => {
-    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
-      method: 'eth_getBalance',
-      params: [assetId, 'latest'],
-    });
-    const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
-    return parseInt(getBalanceResponse.result, 16);
+  /**
+   * Returns the on-chain balance for a given assetId and address.
+   * Address defaults to signer address.
+   */
+  private getBalanceForAddress = async (assetId: string, address?: string) => {
+    assert(this.ethProvider, 'Cannot get balance without ethProvider');
+    if (assetId === this.tokenAddresses.get('ETH')) {
+      const ethBalance$ = address ? this.ethProvider.getEthBalanceByAddress(address) : this.ethProvider.getEthBalance();
+      return BigInt(await ethBalance$.toPromise());
+    } else {
+      const contract = this.ethProvider.getContract(assetId);
+      const erc20balance$ = address
+        ? this.ethProvider.getERC20BalanceByAddress(address, contract)
+        : this.ethProvider.getERC20Balance(contract);
+      return BigInt(await erc20balance$.toPromise());
+    }
   };
 
   public getInfo = async (): Promise<ConnextInfo> => {
@@ -912,7 +929,7 @@ class ConnextClient extends SwapClient {
       const tokenAddress = this.getTokenAddress(currency);
       getBalancePromise = Promise.all([
         this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET'),
-        this.getBalanceForAddress(this.signerAddress!),
+        this.getBalanceForAddress(tokenAddress),
       ])
         .then(async ([channelDetailsRes, onChainBalance]) => {
           const channelDetails = await parseResponseBody<ConnextChannelDetails>(channelDetailsRes);
@@ -1015,6 +1032,8 @@ class ConnextClient extends SwapClient {
 
   // Withdraw on-chain funds
   public withdraw = async ({ all, currency, amount, destination, fee }: WithdrawArguments): Promise<string> => {
+    assert(this.ethProvider, 'cannot send transaction without ethProvider');
+
     if (fee) {
       // TODO: allow overwriting gas price
       throw Error('setting fee for Ethereum withdrawals is not supported yet');
@@ -1043,20 +1062,15 @@ class ConnextClient extends SwapClient {
       throw new Error('either all must be true or amount must be non-zero');
     }
 
-    const res = await this.sendRequest('/onchain-transfer', 'POST', {
-      assetId: this.getTokenAddress(currency),
-      amount: unitsStr,
-      recipient: destination,
-    });
-    const { txhash } = await parseResponseBody<OnchainTransferResponse>(res);
-    return txhash;
+    const sendTransaction$ = this.ethProvider.onChainTransfer(this.getTokenAddress(currency), destination, unitsStr);
+    const transaction = await sendTransaction$.toPromise();
+    this.logger.info(`on-chain transfer sent, transaction hash: ${transaction.hash}`);
+    return transaction.hash;
   };
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
-    if (this._reconcileDepositSubscriber) {
-      this._reconcileDepositSubscriber.unsubscribe();
-    }
+    this._reconcileDepositSubscriptions.forEach((subscription) => subscription.unsubscribe());
     this.setStatus(ClientStatus.Disconnected);
 
     for (const req of this.pendingRequests) {
