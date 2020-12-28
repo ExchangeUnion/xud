@@ -57,6 +57,7 @@
     - [OrdersCount](#xudrpc.OrdersCount)
     - [Peer](#xudrpc.Peer)
     - [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry)
+    - [Peer.LndUris](#xudrpc.Peer.LndUris)
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
@@ -101,11 +102,9 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
-  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -919,6 +918,8 @@
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [uint32](#uint32) |  | The time in seconds that we have been connected to this peer. |
 | alias | [string](#string) |  | The alias for this peer&#39;s public key |
+| lnd_uris | [Peer.LndUris](#xudrpc.Peer.LndUris) | repeated |  |
+| connext_identifier | [string](#string) |  | The connext identifier for this peer |
 
 
 
@@ -935,6 +936,22 @@
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.Peer.LndUris"></a>
+
+### Peer.LndUris
+A map of ticker symbols to lnd uris for this peer
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  |  |
+| uri | [string](#string) | repeated |  |
 
 
 
