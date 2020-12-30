@@ -1,4 +1,4 @@
-import grpc, { status } from 'grpc';
+import { status, ServiceError, Metadata } from '@grpc/grpc-js';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
@@ -13,7 +13,7 @@ import { errorCodes as connextErrorCodes } from '../connextclient/errors';
  */
 const getGrpcError = (err: any) => {
   // if we recognize this error, use a proper gRPC ServiceError with a descriptive and appropriate code
-  let code: grpc.status | undefined;
+  let code: status | undefined;
   switch (err.code) {
     case serviceErrorCodes.INVALID_ARGUMENT:
     case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
@@ -85,11 +85,14 @@ const getGrpcError = (err: any) => {
       break;
   }
 
+  const message = err.message ?? (typeof err === 'string' ? err : '');
   // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
-  const grpcError: grpc.ServiceError = {
+  const grpcError: ServiceError = {
+    message,
     code,
-    message: err.message ?? (typeof err === 'string' ? err : ''),
+    details: message,
     name: err.name ?? 'UnknownError',
+    metadata: new Metadata(),
   };
 
   return grpcError;

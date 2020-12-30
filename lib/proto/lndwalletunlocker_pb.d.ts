@@ -2,6 +2,7 @@
 // file: lndwalletunlocker.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as jspb from "google-protobuf";
 import * as lndrpc_pb from "./lndrpc_pb";
@@ -10,12 +11,12 @@ export class GenSeedRequest extends jspb.Message {
     getAezeedPassphrase(): Uint8Array | string;
     getAezeedPassphrase_asU8(): Uint8Array;
     getAezeedPassphrase_asB64(): string;
-    setAezeedPassphrase(value: Uint8Array | string): void;
+    setAezeedPassphrase(value: Uint8Array | string): GenSeedRequest;
 
     getSeedEntropy(): Uint8Array | string;
     getSeedEntropy_asU8(): Uint8Array;
     getSeedEntropy_asB64(): string;
-    setSeedEntropy(value: Uint8Array | string): void;
+    setSeedEntropy(value: Uint8Array | string): GenSeedRequest;
 
 
     serializeBinary(): Uint8Array;
@@ -38,13 +39,13 @@ export namespace GenSeedRequest {
 export class GenSeedResponse extends jspb.Message { 
     clearCipherSeedMnemonicList(): void;
     getCipherSeedMnemonicList(): Array<string>;
-    setCipherSeedMnemonicList(value: Array<string>): void;
+    setCipherSeedMnemonicList(value: Array<string>): GenSeedResponse;
     addCipherSeedMnemonic(value: string, index?: number): string;
 
     getEncipheredSeed(): Uint8Array | string;
     getEncipheredSeed_asU8(): Uint8Array;
     getEncipheredSeed_asB64(): string;
-    setEncipheredSeed(value: Uint8Array | string): void;
+    setEncipheredSeed(value: Uint8Array | string): GenSeedResponse;
 
 
     serializeBinary(): Uint8Array;
@@ -68,26 +69,26 @@ export class InitWalletRequest extends jspb.Message {
     getWalletPassword(): Uint8Array | string;
     getWalletPassword_asU8(): Uint8Array;
     getWalletPassword_asB64(): string;
-    setWalletPassword(value: Uint8Array | string): void;
+    setWalletPassword(value: Uint8Array | string): InitWalletRequest;
 
     clearCipherSeedMnemonicList(): void;
     getCipherSeedMnemonicList(): Array<string>;
-    setCipherSeedMnemonicList(value: Array<string>): void;
+    setCipherSeedMnemonicList(value: Array<string>): InitWalletRequest;
     addCipherSeedMnemonic(value: string, index?: number): string;
 
     getAezeedPassphrase(): Uint8Array | string;
     getAezeedPassphrase_asU8(): Uint8Array;
     getAezeedPassphrase_asB64(): string;
-    setAezeedPassphrase(value: Uint8Array | string): void;
+    setAezeedPassphrase(value: Uint8Array | string): InitWalletRequest;
 
     getRecoveryWindow(): number;
-    setRecoveryWindow(value: number): void;
+    setRecoveryWindow(value: number): InitWalletRequest;
 
 
     hasChannelBackups(): boolean;
     clearChannelBackups(): void;
     getChannelBackups(): lndrpc_pb.ChanBackupSnapshot | undefined;
-    setChannelBackups(value?: lndrpc_pb.ChanBackupSnapshot): void;
+    setChannelBackups(value?: lndrpc_pb.ChanBackupSnapshot): InitWalletRequest;
 
 
     serializeBinary(): Uint8Array;
@@ -131,16 +132,16 @@ export class UnlockWalletRequest extends jspb.Message {
     getWalletPassword(): Uint8Array | string;
     getWalletPassword_asU8(): Uint8Array;
     getWalletPassword_asB64(): string;
-    setWalletPassword(value: Uint8Array | string): void;
+    setWalletPassword(value: Uint8Array | string): UnlockWalletRequest;
 
     getRecoveryWindow(): number;
-    setRecoveryWindow(value: number): void;
+    setRecoveryWindow(value: number): UnlockWalletRequest;
 
 
     hasChannelBackups(): boolean;
     clearChannelBackups(): void;
     getChannelBackups(): lndrpc_pb.ChanBackupSnapshot | undefined;
-    setChannelBackups(value?: lndrpc_pb.ChanBackupSnapshot): void;
+    setChannelBackups(value?: lndrpc_pb.ChanBackupSnapshot): UnlockWalletRequest;
 
 
     serializeBinary(): Uint8Array;
@@ -182,12 +183,12 @@ export class ChangePasswordRequest extends jspb.Message {
     getCurrentPassword(): Uint8Array | string;
     getCurrentPassword_asU8(): Uint8Array;
     getCurrentPassword_asB64(): string;
-    setCurrentPassword(value: Uint8Array | string): void;
+    setCurrentPassword(value: Uint8Array | string): ChangePasswordRequest;
 
     getNewPassword(): Uint8Array | string;
     getNewPassword_asU8(): Uint8Array;
     getNewPassword_asB64(): string;
-    setNewPassword(value: Uint8Array | string): void;
+    setNewPassword(value: Uint8Array | string): ChangePasswordRequest;
 
 
     serializeBinary(): Uint8Array;

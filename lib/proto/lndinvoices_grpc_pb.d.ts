@@ -2,8 +2,10 @@
 // file: lndinvoices.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
-import * as grpc from "grpc";
+import * as grpc from "@grpc/grpc-js";
+import {handleClientStreamingCall} from "@grpc/grpc-js/build/src/server-call";
 import * as lndinvoices_pb from "./lndinvoices_pb";
 import * as annotations_pb from "./annotations_pb";
 import * as lndrpc_pb from "./lndrpc_pb";
@@ -16,36 +18,36 @@ interface IInvoicesService extends grpc.ServiceDefinition<grpc.UntypedServiceImp
 }
 
 interface IInvoicesService_ISubscribeSingleInvoice extends grpc.MethodDefinition<lndinvoices_pb.SubscribeSingleInvoiceRequest, lndrpc_pb.Invoice> {
-    path: string; // "/invoicesrpc.Invoices/SubscribeSingleInvoice"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
+    path: "/invoicesrpc.Invoices/SubscribeSingleInvoice";
+    requestStream: false;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndinvoices_pb.SubscribeSingleInvoiceRequest>;
     requestDeserialize: grpc.deserialize<lndinvoices_pb.SubscribeSingleInvoiceRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.Invoice>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.Invoice>;
 }
 interface IInvoicesService_ICancelInvoice extends grpc.MethodDefinition<lndinvoices_pb.CancelInvoiceMsg, lndinvoices_pb.CancelInvoiceResp> {
-    path: string; // "/invoicesrpc.Invoices/CancelInvoice"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/invoicesrpc.Invoices/CancelInvoice";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndinvoices_pb.CancelInvoiceMsg>;
     requestDeserialize: grpc.deserialize<lndinvoices_pb.CancelInvoiceMsg>;
     responseSerialize: grpc.serialize<lndinvoices_pb.CancelInvoiceResp>;
     responseDeserialize: grpc.deserialize<lndinvoices_pb.CancelInvoiceResp>;
 }
 interface IInvoicesService_IAddHoldInvoice extends grpc.MethodDefinition<lndinvoices_pb.AddHoldInvoiceRequest, lndinvoices_pb.AddHoldInvoiceResp> {
-    path: string; // "/invoicesrpc.Invoices/AddHoldInvoice"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/invoicesrpc.Invoices/AddHoldInvoice";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndinvoices_pb.AddHoldInvoiceRequest>;
     requestDeserialize: grpc.deserialize<lndinvoices_pb.AddHoldInvoiceRequest>;
     responseSerialize: grpc.serialize<lndinvoices_pb.AddHoldInvoiceResp>;
     responseDeserialize: grpc.deserialize<lndinvoices_pb.AddHoldInvoiceResp>;
 }
 interface IInvoicesService_ISettleInvoice extends grpc.MethodDefinition<lndinvoices_pb.SettleInvoiceMsg, lndinvoices_pb.SettleInvoiceResp> {
-    path: string; // "/invoicesrpc.Invoices/SettleInvoice"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/invoicesrpc.Invoices/SettleInvoice";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndinvoices_pb.SettleInvoiceMsg>;
     requestDeserialize: grpc.deserialize<lndinvoices_pb.SettleInvoiceMsg>;
     responseSerialize: grpc.serialize<lndinvoices_pb.SettleInvoiceResp>;
@@ -54,7 +56,7 @@ interface IInvoicesService_ISettleInvoice extends grpc.MethodDefinition<lndinvoi
 
 export const InvoicesService: IInvoicesService;
 
-export interface IInvoicesServer {
+export interface IInvoicesServer extends grpc.UntypedServiceImplementation {
     subscribeSingleInvoice: grpc.handleServerStreamingCall<lndinvoices_pb.SubscribeSingleInvoiceRequest, lndrpc_pb.Invoice>;
     cancelInvoice: grpc.handleUnaryCall<lndinvoices_pb.CancelInvoiceMsg, lndinvoices_pb.CancelInvoiceResp>;
     addHoldInvoice: grpc.handleUnaryCall<lndinvoices_pb.AddHoldInvoiceRequest, lndinvoices_pb.AddHoldInvoiceResp>;
@@ -76,7 +78,7 @@ export interface IInvoicesClient {
 }
 
 export class InvoicesClient extends grpc.Client implements IInvoicesClient {
-    constructor(address: string, credentials: grpc.ChannelCredentials, options?: object);
+    constructor(address: string, credentials: grpc.ChannelCredentials, options?: Partial<grpc.ClientOptions>);
     public subscribeSingleInvoice(request: lndinvoices_pb.SubscribeSingleInvoiceRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Invoice>;
     public subscribeSingleInvoice(request: lndinvoices_pb.SubscribeSingleInvoiceRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Invoice>;
     public cancelInvoice(request: lndinvoices_pb.CancelInvoiceMsg, callback: (error: grpc.ServiceError | null, response: lndinvoices_pb.CancelInvoiceResp) => void): grpc.ClientUnaryCall;

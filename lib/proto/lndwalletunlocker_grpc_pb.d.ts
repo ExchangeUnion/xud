@@ -2,8 +2,10 @@
 // file: lndwalletunlocker.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
-import * as grpc from "grpc";
+import * as grpc from "@grpc/grpc-js";
+import {handleClientStreamingCall} from "@grpc/grpc-js/build/src/server-call";
 import * as lndwalletunlocker_pb from "./lndwalletunlocker_pb";
 import * as lndrpc_pb from "./lndrpc_pb";
 
@@ -15,36 +17,36 @@ interface IWalletUnlockerService extends grpc.ServiceDefinition<grpc.UntypedServ
 }
 
 interface IWalletUnlockerService_IGenSeed extends grpc.MethodDefinition<lndwalletunlocker_pb.GenSeedRequest, lndwalletunlocker_pb.GenSeedResponse> {
-    path: string; // "/lnrpc.WalletUnlocker/GenSeed"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/lnrpc.WalletUnlocker/GenSeed";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndwalletunlocker_pb.GenSeedRequest>;
     requestDeserialize: grpc.deserialize<lndwalletunlocker_pb.GenSeedRequest>;
     responseSerialize: grpc.serialize<lndwalletunlocker_pb.GenSeedResponse>;
     responseDeserialize: grpc.deserialize<lndwalletunlocker_pb.GenSeedResponse>;
 }
 interface IWalletUnlockerService_IInitWallet extends grpc.MethodDefinition<lndwalletunlocker_pb.InitWalletRequest, lndwalletunlocker_pb.InitWalletResponse> {
-    path: string; // "/lnrpc.WalletUnlocker/InitWallet"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/lnrpc.WalletUnlocker/InitWallet";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndwalletunlocker_pb.InitWalletRequest>;
     requestDeserialize: grpc.deserialize<lndwalletunlocker_pb.InitWalletRequest>;
     responseSerialize: grpc.serialize<lndwalletunlocker_pb.InitWalletResponse>;
     responseDeserialize: grpc.deserialize<lndwalletunlocker_pb.InitWalletResponse>;
 }
 interface IWalletUnlockerService_IUnlockWallet extends grpc.MethodDefinition<lndwalletunlocker_pb.UnlockWalletRequest, lndwalletunlocker_pb.UnlockWalletResponse> {
-    path: string; // "/lnrpc.WalletUnlocker/UnlockWallet"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/lnrpc.WalletUnlocker/UnlockWallet";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndwalletunlocker_pb.UnlockWalletRequest>;
     requestDeserialize: grpc.deserialize<lndwalletunlocker_pb.UnlockWalletRequest>;
     responseSerialize: grpc.serialize<lndwalletunlocker_pb.UnlockWalletResponse>;
     responseDeserialize: grpc.deserialize<lndwalletunlocker_pb.UnlockWalletResponse>;
 }
 interface IWalletUnlockerService_IChangePassword extends grpc.MethodDefinition<lndwalletunlocker_pb.ChangePasswordRequest, lndwalletunlocker_pb.ChangePasswordResponse> {
-    path: string; // "/lnrpc.WalletUnlocker/ChangePassword"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/lnrpc.WalletUnlocker/ChangePassword";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndwalletunlocker_pb.ChangePasswordRequest>;
     requestDeserialize: grpc.deserialize<lndwalletunlocker_pb.ChangePasswordRequest>;
     responseSerialize: grpc.serialize<lndwalletunlocker_pb.ChangePasswordResponse>;
@@ -53,7 +55,7 @@ interface IWalletUnlockerService_IChangePassword extends grpc.MethodDefinition<l
 
 export const WalletUnlockerService: IWalletUnlockerService;
 
-export interface IWalletUnlockerServer {
+export interface IWalletUnlockerServer extends grpc.UntypedServiceImplementation {
     genSeed: grpc.handleUnaryCall<lndwalletunlocker_pb.GenSeedRequest, lndwalletunlocker_pb.GenSeedResponse>;
     initWallet: grpc.handleUnaryCall<lndwalletunlocker_pb.InitWalletRequest, lndwalletunlocker_pb.InitWalletResponse>;
     unlockWallet: grpc.handleUnaryCall<lndwalletunlocker_pb.UnlockWalletRequest, lndwalletunlocker_pb.UnlockWalletResponse>;
@@ -76,7 +78,7 @@ export interface IWalletUnlockerClient {
 }
 
 export class WalletUnlockerClient extends grpc.Client implements IWalletUnlockerClient {
-    constructor(address: string, credentials: grpc.ChannelCredentials, options?: object);
+    constructor(address: string, credentials: grpc.ChannelCredentials, options?: Partial<grpc.ClientOptions>);
     public genSeed(request: lndwalletunlocker_pb.GenSeedRequest, callback: (error: grpc.ServiceError | null, response: lndwalletunlocker_pb.GenSeedResponse) => void): grpc.ClientUnaryCall;
     public genSeed(request: lndwalletunlocker_pb.GenSeedRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndwalletunlocker_pb.GenSeedResponse) => void): grpc.ClientUnaryCall;
     public genSeed(request: lndwalletunlocker_pb.GenSeedRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndwalletunlocker_pb.GenSeedResponse) => void): grpc.ClientUnaryCall;

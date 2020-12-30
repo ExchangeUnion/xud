@@ -1,4 +1,5 @@
 import { Arguments, Argv } from 'yargs';
+import { XudClient } from 'lib/proto/xudrpc_grpc_pb';
 import {
   Order,
   OrderSide,
@@ -87,7 +88,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
     request.setReplaceOrderId(argv.replace_order_id);
   }
 
-  const client = await loadXudClient(argv);
+  const client = ((await loadXudClient(argv)) as unknown) as XudClient;
   if (argv.sync) {
     client.placeOrderSync(request, callback(argv, formatPlaceOrderOutput));
   } else {

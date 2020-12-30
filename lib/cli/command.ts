@@ -1,9 +1,14 @@
+import * as grpc from '@grpc/grpc-js';
 import fs from 'fs';
-import grpc, { status } from 'grpc';
 import path from 'path';
 import { Arguments } from 'yargs';
 import Config from '../Config';
-import { XudClient, XudInitClient } from '../proto/xudrpc_grpc_pb';
+import * as xudGrpc from '../proto/xudrpc_grpc_pb';
+
+// @ts-ignore
+const XudClient = grpc.makeClientConstructor(xudGrpc['xudrpc.Xud'], 'XudService');
+// @ts-ignore
+const XudInitClient = grpc.makeClientConstructor(xudGrpc['xudrpc.XudInit'], 'XudInitService');
 
 /**
  * Attempts to load the xud configuration file to dynamically determine the
@@ -55,24 +60,24 @@ const getTlsCert = (certPath: string) => {
  * A generic function to instantiate an XU client.
  * @param argv the command line arguments
  */
-export const loadXudClient = async (argv: Arguments<any>) => {
+export const loadXudClient = async (argv: Arguments<any>): Promise<xudGrpc.XudClient> => {
   await loadXudConfig(argv);
 
   const certPath = argv.tlscertpath || path.join(argv.xudir, 'tls.cert');
   const cert = getTlsCert(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
-  return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
+  return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials) as any;
 };
 
-export const loadXudInitClient = async (argv: Arguments<any>) => {
+export const loadXudInitClient = async (argv: Arguments<any>): Promise<xudGrpc.XudInitClient> => {
   await loadXudConfig(argv);
 
   const certPath = argv.tlscertpath || path.join(argv.xudir, 'tls.cert');
   const cert = getTlsCert(certPath);
-  const credentials = grpc.credentials.createSsl(cert);
+  const grpcCredentials = grpc.credentials.createSsl(cert);
 
-  return new XudInitClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
+  return new XudInitClient(`${argv.rpchost}:${argv.rpcport}`, grpcCredentials) as any;
 };
 
 interface GrpcResponse {
@@ -83,23 +88,23 @@ export const callback = (argv: Arguments, formatOutput?: Function, displayJson?:
   return (error: grpc.ServiceError | null, response: GrpcResponse) => {
     if (error) {
       process.exitCode = 1;
-      if (error.code === status.UNAVAILABLE && error.message.includes('xud is starting')) {
+      if (error.code === grpc.status.UNAVAILABLE && error.message.includes('xud is starting')) {
         console.error('xud is starting... try again in a few seconds');
       } else if (error.details === 'failed to connect to all addresses') {
         console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
-      } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud is locked')) {
+      } else if (error.code === grpc.status.UNIMPLEMENTED && error.message.includes('xud is locked')) {
         console.error("xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again");
       } else if (
-        error.code === status.UNIMPLEMENTED &&
+        error.code === grpc.status.UNIMPLEMENTED &&
         error.message.includes('xud node cannot be created because it already exists')
       ) {
         console.error("an xud node already exists, try unlocking it with 'xucli unlock'");
       } else if (
-        error.code === status.UNIMPLEMENTED &&
+        error.code === grpc.status.UNIMPLEMENTED &&
         error.message.includes('xud node cannot be unlocked because it does not exist')
       ) {
         console.error("no xud node exists to unlock, try creating one with 'xucli create' or 'xucli restore'");
-      } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud init service is disabled')) {
+      } else if (error.code === grpc.status.UNIMPLEMENTED && error.message.includes('xud init service is disabled')) {
         console.error("xud is running and unlocked, try checking its status with 'xucli getinfo'");
       } else {
         console.error(`${error.name}: ${error.message}`);

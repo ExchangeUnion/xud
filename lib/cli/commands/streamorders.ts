@@ -1,6 +1,6 @@
-import { ServiceError, status } from 'grpc';
+import { ServiceError, status } from '@grpc/grpc-js';
 import { Arguments, Argv } from 'yargs';
-import { XudClient } from '../../proto/xudrpc_grpc_pb';
+import { XudClient } from 'lib/proto/xudrpc_grpc_pb';
 import * as xudrpc from '../../proto/xudrpc_pb';
 import { setTimeoutPromise } from '../../utils/utils';
 import { loadXudClient } from '../command';
@@ -26,7 +26,7 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
   if (!client) {
     client = await loadXudClient(argv);
   }
-  client.waitForReady(Date.now() + 3000, (error: Error | null) => {
+  client.waitForReady(Date.now() + 3000, (error?: Error) => {
     if (error) {
       if (error.message === 'Failed to connect before the deadline') {
         console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);

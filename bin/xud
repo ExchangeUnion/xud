@@ -188,16 +188,6 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'r',
     },
-    'webproxy.disable': {
-      describe: 'Disable web proxy server',
-      type: 'boolean',
-      default: undefined,
-    },
-    'webproxy.port': {
-      describe: 'Port for web proxy server',
-      type: 'number',
-      alias: 'w',
-    },
   })
   .coerce('lnd', (arg) => {
     delete arg['[currency]'];
