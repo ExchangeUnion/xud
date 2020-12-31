@@ -521,6 +521,7 @@ class Peer extends EventEmitter {
       this.logger.debug(this.getStatus());
       return Promise.resolve(undefined);
     }
+    console.log("Peer initialising connection");
 
     return new Promise<undefined>((resolve, reject) => {
       const startTime = Date.now();
@@ -528,7 +529,7 @@ class Peer extends EventEmitter {
       let retries = 0;
       this.inbound = false;
       this.connectionRetriesRevoked = false;
-
+      console.log("Peer initialising connection (promise)");
       const connectViaProxy = () => {
         this.socket = net.connect(torport, 'localhost');
 

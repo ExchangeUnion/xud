@@ -192,7 +192,7 @@ class NodeList extends EventEmitter {
     //console.log("NL initializing these nodes:" , nodes);
     const reputationLoadPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
-      console.log("NL ", node);
+      //console.log("NL loading node", node);
       //console.log("NL adding loaded node");
       this.addNode(node, "none");
       //this.outbound.set(node.nodePubKey, node);
@@ -252,7 +252,7 @@ class NodeList extends EventEmitter {
     addresses: Address[] = [],
     lastAddress?: Address,*/
   ): Promise<boolean> => {
-    console.log("failing to update addresses...");
+    console.log("NL failing to update addresses...");
     /* TODO update correctly 
     const node = this.nodes.get(nodePubKey);
     if (node) {

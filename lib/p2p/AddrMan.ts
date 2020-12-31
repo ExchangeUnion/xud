@@ -474,26 +474,28 @@ class AddrMan {
       }
     }
     //console.log("AM vvNew inserted bucket is now: ", this.vvNew[nUBucket]);
-    console.log("AM addrMap is now: ", this.addrMap);
+    //console.log("AM addrMap is now: ", this.addrMap);
     return fNew;
   }
   // Mark and entry as attempted to connect
   public Attempt = (addr: NodeInstance): void => {
-    console.log("AM attempt fxn")
+    console.log("AM attempt fxn");
     let [nId, info] = this.Find(addr);
 
     if (!(nId && info)) {
+      console.log("AM attempt fxn Find() failed");
       return;
     }
     //if (info) {
       //if (info.node.lastAddress.host !== addr.lastAddress.host) {
       //  return;
       //}
-    info.nLastTry = new Date().getTime() / 1000;;
+    info.nLastTry = new Date().getTime() / 1000;
     if (info.nLastAttempt < this.nLastGood) {
       info.nLastAttempt = info.nLastTry;
       info.nAttempts++;
     }
+    console.log("AM attempt fxn updated metadata successfully");
     this.addrMap.set(nId, info);
     //}
   }
