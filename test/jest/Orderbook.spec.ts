@@ -11,6 +11,7 @@ import Pool from '../../lib/p2p/Pool';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Swaps from '../../lib/swaps/Swaps';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
+import { getUnitConverter } from '../utils';
 
 jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
@@ -50,7 +51,7 @@ jest.mock('../../lib/db/DB', () => {
     };
   });
 });
-const advertisedPairs = ['LTC/BTC', 'WETH/BTC'];
+const advertisedPairs = ['LTC/BTC', 'ETH/BTC'];
 const mockActivatePair = jest.fn();
 const mockActivateCurrency = jest.fn();
 const mockGetIdentifier = jest.fn(() => 'pubkeyoraddress');
@@ -162,11 +163,11 @@ describe('OrderBook', () => {
       nodeKey: new mockedNodeKey(),
     });
     pool.broadcastOrder = jest.fn();
-    unitConverter = new UnitConverter();
-    unitConverter.init();
+    unitConverter = getUnitConverter();
     swapClientManager = new SwapClientManager(config, loggers, unitConverter, db.models);
     swaps = new Swaps({
       pool,
+      unitConverter,
       swapClientManager,
       logger: loggers.swaps,
       models: db.models,
@@ -179,6 +180,7 @@ describe('OrderBook', () => {
     orderbook = new Orderbook({
       pool,
       swaps,
+      unitConverter,
       thresholds: config.orderthresholds,
       logger: loggers.orderbook,
       models: db.models,

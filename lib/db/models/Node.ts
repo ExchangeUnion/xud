@@ -34,6 +34,7 @@ export default function Node(sequelize: Sequelize) {
       },
     },
     banned: { type: DataTypes.BOOLEAN, allowNull: true },
+    consecutiveConnFailures: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   };
 
   const indexes: IndexesOptions[] = [

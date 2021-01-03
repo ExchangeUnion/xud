@@ -45,7 +45,6 @@ class Xud extends EventEmitter {
   private swaps!: Swaps;
   private shuttingDown = false;
   private swapClientManager?: SwapClientManager;
-  private unitConverter?: UnitConverter;
   private simnetChannels$?: Subscription;
   private alerts!: Alerts;
 
@@ -120,8 +119,8 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
-      this.unitConverter = new UnitConverter();
-      this.unitConverter.init();
+      const currencies = await this.db.models.Currency.findAll();
+      const unitConverter = new UnitConverter(currencies);
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
       const nodeKeyExists = await fs
@@ -129,7 +128,7 @@ class Xud extends EventEmitter {
         .then(() => true)
         .catch(() => false);
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter, this.db.models);
+      this.swapClientManager = new SwapClientManager(this.config, loggers, unitConverter, this.db.models);
       await this.swapClientManager.init();
 
       let nodeKey: NodeKey | undefined;
@@ -184,6 +183,7 @@ class Xud extends EventEmitter {
       const initPromises: Promise<any>[] = [];
 
       this.swaps = new Swaps({
+        unitConverter,
         logger: loggers.swaps,
         models: this.db.models,
         pool: this.pool,
@@ -193,6 +193,7 @@ class Xud extends EventEmitter {
       initPromises.push(this.swaps.init());
 
       this.orderBook = new OrderBook({
+        unitConverter,
         logger: loggers.orderbook,
         models: this.db.models,
         thresholds: this.config.orderthresholds,

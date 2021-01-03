@@ -109,6 +109,18 @@ describe('TradingPair.match', () => {
     expect(remainingOrder).to.be.undefined;
   });
 
+  it('should emit fully removed event for fully matched own maker order', (done) => {
+    const ownOrder = createOwnOrder(5, 5000, false);
+    tp.on('ownOrder.fullyRemoved', (order) => {
+      expect(order.id).to.equal(ownOrder.id);
+      expect(order.localId).to.equal(ownOrder.localId);
+      done();
+    });
+    tp.addOwnOrder(ownOrder);
+    const { remainingOrder } = tp.match(createOwnOrder(5, 5000, true));
+    expect(remainingOrder).to.be.undefined;
+  });
+
   it('should match with own order if equivalent peer order exists', () => {
     const peerOrder = createPeerOrder(5, 5000, false);
     const ownOrder = createOwnOrder(5, 5000, false);
@@ -141,15 +153,12 @@ describe('TradingPair.match', () => {
     expect(peekResult!.quantity).to.equal(1000);
   });
 
-  it('should mark split maker order as dust', (done) => {
-    tp.on('peerOrder.dust', (orderPortion) => {
-      expect(orderPortion.quantity).to.equal(1);
-      done();
-    });
-
-    tp.addPeerOrder(createPeerOrder(5, 5000, false));
+  it('should mark split maker order as dust', () => {
+    const peerOrder = createPeerOrder(5, 5000, false);
+    tp.addPeerOrder(peerOrder);
     const { matches, remainingOrder } = tp.match(createOwnOrder(5, 4999, true));
     expect(remainingOrder).to.be.undefined;
+    expect(tp.peersOrders.get(peerOrder.peerPubKey)!.sellMap.size).to.equal(0);
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(4999);
     });
@@ -256,10 +265,10 @@ describe('TradingPair.removePeerOrders', () => {
     const order = createPeerOrder(5, quantity, false);
     tp.addPeerOrder(order);
 
-    let removedOrder = tp.removePeerOrder(order.id, order.peerPubKey, quantityToRemove).order;
+    let removedOrder = tp.removePeerOrder(order.id, order.peerPubKey, quantityToRemove);
     expect(removedOrder.quantity).to.be.equal(quantityToRemove);
 
-    removedOrder = tp.removePeerOrder(order.id, order.peerPubKey).order;
+    removedOrder = tp.removePeerOrder(order.id, order.peerPubKey);
     expect(removedOrder.quantity).to.be.equal(quantity - quantityToRemove);
   });
 
@@ -305,8 +314,8 @@ describe('TradingPair queues and maps integrity', () => {
     tp.addPeerOrder(peerOrder);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
-    const removeResult = tp.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 30000);
-    expect(removeResult.order.quantity).to.equal(30000);
+    const removedOrder = tp.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 30000);
+    expect(removedOrder.quantity).to.equal(30000);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);

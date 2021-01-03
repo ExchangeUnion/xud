@@ -37,11 +37,11 @@ interface SwapClientManager {
   on(event: 'connextUpdate', listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void): this;
   on(
     event: 'htlcAccepted',
-    listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void,
+    listener: (swapClient: SwapClient, rHash: string, units: bigint, currency: string) => void,
   ): this;
   emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
   emit(event: 'connextUpdate', tokenAddresses: Map<string, string>, pubKey?: string): boolean;
-  emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
+  emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, units: bigint, currency: string): boolean;
 }
 
 class SwapClientManager extends EventEmitter {
@@ -212,7 +212,7 @@ class SwapClientManager extends EventEmitter {
       inboundCurrency,
       outboundAmount,
       inboundAmount,
-    } = UnitConverter.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
+    } = this.unitConverter.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
 
     // check if clients exists
     const outboundSwapClient = this.get(outboundCurrency);

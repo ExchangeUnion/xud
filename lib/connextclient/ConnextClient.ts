@@ -22,8 +22,8 @@ import { XudError } from '../types';
 import { UnitConverter } from '../utils/UnitConverter';
 import { parseResponseBody } from '../utils/utils';
 import errors, { errorCodes } from './errors';
+import { EthProvider, getEthprovider } from './ethprovider';
 import {
-  ConnextBalanceResponse,
   ConnextBlockNumberResponse,
   ConnextChannelBalanceResponse,
   ConnextChannelDetails,
@@ -40,7 +40,6 @@ import {
   EthproviderGasPriceResponse,
   ExpectedIncomingTransfer,
   GetBlockByNumberResponse,
-  OnchainTransferResponse,
   ProvidePreimageEvent,
   TransferReceivedEvent,
 } from './types';
@@ -48,12 +47,12 @@ import {
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
   on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
-  on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, units: bigint, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
   on(event: 'lowTradingBalance', listener: (alert: BalanceAlertEvent) => void): this;
   once(event: 'initialized', listener: () => void): this;
-  emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
+  emit(event: 'htlcAccepted', rHash: string, units: bigint, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
@@ -67,7 +66,7 @@ const getRouterNodeIdentifier = (network: string): string => {
     case 'regtest':
     case 'simnet':
       // public key of our simnet router node
-      return 'vector5nFoanppRq7kkU9aARjJwZsdm64969rFde7yQhrXQZ7uWs4jLt';
+      return 'vector5yw6vEx4VJPWMC4Vf48WSfY4bzgfJxAt4EGGFGT1o1mmQnRz35';
     case 'testnet':
       // public key of our testnet router node
       return 'vector5ZGTZ1izRvvM73c5Rt1cMK34SdPVGLccMdc72v2B2HBmcTXRiD';
@@ -149,6 +148,7 @@ class ConnextClient extends SwapClient {
   public publicIdentifier: string | undefined;
   /** On-chain deposit address */
   public signerAddress: string | undefined;
+  private ethProvider: EthProvider | undefined;
   /** The set of hashes for outgoing transfers. */
   private outgoingTransferHashes = new Set<string>();
   private port: number;
@@ -158,14 +158,14 @@ class ConnextClient extends SwapClient {
   private unitConverter: UnitConverter;
   private network: string;
   private seed: string | undefined;
-  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = '172800';
+  private readonly CHANNEL_ON_CHAIN_DISPUTE_TIMEOUT = (60 * 60 * 24 * 14).toString(); // 14 days
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextChannelBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
-  private _reconcileDepositSubscriber: Subscription | undefined;
+  private _reconcileDepositSubscriptions: Subscription[] = [];
 
   /** Channel multisig address */
   private channelAddress: string | undefined;
@@ -215,6 +215,7 @@ class ConnextClient extends SwapClient {
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
+    this.ethProvider = getEthprovider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network], this.seed);
   };
 
   public initConnextClient = async (seedMnemonic: string) => {
@@ -252,7 +253,7 @@ class ConnextClient extends SwapClient {
    * if one doesn't exist, starts a new request for the specified amount. Then
    * calls channelBalance to refresh the inbound capacity for the currency.
    */
-  private requestCollateralInBackground = (currency: string, units: number) => {
+  private requestCollateralInBackground = (currency: string, units: bigint) => {
     // first check whether we already have a pending collateral request for this currency
     // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
     const requestCollateralPromise =
@@ -260,7 +261,7 @@ class ConnextClient extends SwapClient {
       this.sendRequest('/request-collateral', 'POST', {
         channelAddress: this.channelAddress,
         assetId: this.tokenAddresses.get(currency),
-        amount: units.toLocaleString('fullwide', { useGrouping: false }),
+        amount: units.toString(),
         publicIdentifier: this.publicIdentifier,
       })
         .then(() => {
@@ -399,41 +400,48 @@ class ConnextClient extends SwapClient {
   };
 
   private reconcileDeposit = () => {
-    if (this._reconcileDepositSubscriber) {
-      this._reconcileDepositSubscriber.unsubscribe();
-    }
-    const ethBalance$ = interval(30000).pipe(
-      mergeMap(() => from(this.getBalanceForAddress(this.channelAddress!))),
-      // only emit new ETH balance events when the balance changes
-      distinctUntilChanged(),
-    );
-    this._reconcileDepositSubscriber = ethBalance$
-      // when ETH balance changes
-      .pipe(
-        mergeMap(() => {
-          if (this.status === ClientStatus.ConnectionVerified) {
-            return defer(() => {
-              // create new commitment transaction
-              return from(
-                this.sendRequest('/deposit', 'POST', {
-                  channelAddress: this.channelAddress,
-                  publicIdentifier: this.publicIdentifier,
-                  assetId: '0x0000000000000000000000000000000000000000', // TODO: multi currency support
-                }),
-              );
-            });
-          }
-          return throwError('stopping deposit calls because client is no longer connected');
-        }),
-      )
-      .subscribe({
+    this._reconcileDepositSubscriptions.forEach((subscription) => subscription.unsubscribe());
+    const getBalance$ = (assetId: string, pollInterval: number) => {
+      return interval(pollInterval).pipe(
+        mergeMap(() => from(this.getBalanceForAddress(assetId, this.channelAddress))),
+        // only emit new balance events when the balance changes
+        distinctUntilChanged(),
+      );
+    };
+    const reconcileForAsset = (assetId: string, balance$: ReturnType<typeof getBalance$>) => {
+      return (
+        balance$
+          // when balance changes
+          .pipe(
+            mergeMap(() => {
+              if (this.status === ClientStatus.ConnectionVerified) {
+                // create new commitment transaction
+                return from(
+                  this.sendRequest('/deposit', 'POST', {
+                    channelAddress: this.channelAddress,
+                    publicIdentifier: this.publicIdentifier,
+                    assetId,
+                  }),
+                );
+              }
+              return throwError('stopping deposit calls because client is no longer connected');
+            }),
+          )
+      );
+    };
+    this.tokenAddresses.forEach((assetId) => {
+      const subscription = reconcileForAsset(assetId, getBalance$(assetId, 30000)).subscribe({
         next: () => {
-          this.logger.trace('deposit successfully reconciled');
+          this.logger.trace(`deposit successfully reconciled for ${this.getCurrencyByTokenaddress(assetId)}`);
         },
         error: (e) => {
-          this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
+          this.logger.trace(
+            `stopped ${this.getCurrencyByTokenaddress(assetId)} deposit calls because: ${JSON.stringify(e)}`,
+          );
         },
       });
+      this._reconcileDepositSubscriptions.push(subscription);
+    });
   };
 
   public sendSmallestAmount = async () => {
@@ -464,7 +472,7 @@ class ConnextClient extends SwapClient {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
+        amount = deal.takerUnits.toString();
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const expiry = await this.getExpiry(this.finalLock);
         const executeTransfer = this.executeHashLockTransfer({
@@ -489,7 +497,7 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
+        amount = deal.makerUnits.toString();
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         secret = deal.rPreimage!;
         assert(deal.makerCltvDelta, 'cannot send transfer without deal.makerCltvDelta');
@@ -530,7 +538,7 @@ class ConnextClient extends SwapClient {
     currency: expectedCurrency,
   }: {
     rHash: string;
-    units: number;
+    units: bigint;
     expiry?: number;
     currency?: string;
   }) => {
@@ -786,25 +794,36 @@ class ConnextClient extends SwapClient {
     return gweiGasPrice;
   };
 
-  private getBalanceForAddress = async (assetId: string) => {
-    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
-      method: 'eth_getBalance',
-      params: [assetId, 'latest'],
-    });
-    const getBalanceResponse = await parseResponseBody<ConnextBalanceResponse>(res);
-    return parseInt(getBalanceResponse.result, 16);
+  /**
+   * Returns the on-chain balance for a given assetId and address.
+   * Address defaults to signer address.
+   */
+  private getBalanceForAddress = async (assetId: string, address?: string) => {
+    assert(this.ethProvider, 'Cannot get balance without ethProvider');
+    if (assetId === this.tokenAddresses.get('ETH')) {
+      const ethBalance$ = address ? this.ethProvider.getEthBalanceByAddress(address) : this.ethProvider.getEthBalance();
+      return BigInt(await ethBalance$.toPromise());
+    } else {
+      const contract = this.ethProvider.getContract(assetId);
+      const erc20balance$ = address
+        ? this.ethProvider.getERC20BalanceByAddress(address, contract)
+        : this.ethProvider.getERC20Balance(contract);
+      return BigInt(await erc20balance$.toPromise());
+    }
   };
 
   public getInfo = async (): Promise<ConnextInfo> => {
     let address: string | undefined;
     let version: string | undefined;
-    let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
+    let status: string;
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
-    } else {
+    } else if (this.isConnected()) {
       status = 'Ready';
       version = 'TODO: Not exposed, yet';
       address = this.channelAddress || 'Waiting for channel';
+    } else {
+      status = ClientStatus[this.status];
     }
 
     return { status, address, version };
@@ -853,12 +872,12 @@ class ConnextClient extends SwapClient {
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(freeBalanceOffChain),
+      units: BigInt(freeBalanceOffChain),
     });
 
     const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(nodeFreeBalanceOffChain),
+      units: BigInt(nodeFreeBalanceOffChain),
     });
 
     this.outboundAmounts.set(currency, freeBalanceAmount);
@@ -902,7 +921,7 @@ class ConnextClient extends SwapClient {
 
     const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(freeBalanceOnChain),
+      units: BigInt(freeBalanceOnChain),
     });
 
     return {
@@ -922,7 +941,7 @@ class ConnextClient extends SwapClient {
       const tokenAddress = this.getTokenAddress(currency);
       getBalancePromise = Promise.all([
         this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET'),
-        this.getBalanceForAddress(this.signerAddress!),
+        this.getBalanceForAddress(tokenAddress),
       ])
         .then(async ([channelDetailsRes, onChainBalance]) => {
           const channelDetails = await parseResponseBody<ConnextChannelDetails>(channelDetailsRes);
@@ -997,7 +1016,7 @@ class ConnextClient extends SwapClient {
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       publicIdentifier: this.publicIdentifier,
       channelAddress: this.channelAddress,
-      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
+      amount: amount.toString(),
       assetId: this.tokenAddresses.get(currency),
       recipient: destination,
       fee: gasPriceGwei,
@@ -1024,19 +1043,15 @@ class ConnextClient extends SwapClient {
   };
 
   // Withdraw on-chain funds
-  public withdraw = async ({
-    all,
-    currency,
-    amount: argAmount,
-    destination,
-    fee,
-  }: WithdrawArguments): Promise<string> => {
+  public withdraw = async ({ all, currency, amount, destination, fee }: WithdrawArguments): Promise<string> => {
+    assert(this.ethProvider, 'cannot send transaction without ethProvider');
+
     if (fee) {
       // TODO: allow overwriting gas price
       throw Error('setting fee for Ethereum withdrawals is not supported yet');
     }
 
-    let units = '';
+    let unitsStr: string;
 
     const { freeBalanceOnChain } = await this.getBalance(currency);
 
@@ -1045,32 +1060,29 @@ class ConnextClient extends SwapClient {
         // TODO: query Ether balance, subtract gas price times 21000 (gas usage of transferring Ether), and set that as amount
         throw new Error('withdrawing all ETH is not supported yet');
       }
-      units = freeBalanceOnChain;
-    } else if (argAmount) {
-      const argUnits = this.unitConverter.amountToUnits({
+      unitsStr = freeBalanceOnChain;
+    } else if (amount) {
+      const units = this.unitConverter.amountToUnits({
         currency,
-        amount: argAmount,
+        amount,
       });
-      if (Number(freeBalanceOnChain) < argUnits) {
+      if (Number(freeBalanceOnChain) < units) {
         throw errors.INSUFFICIENT_BALANCE;
       }
-      units = argUnits.toString();
+      unitsStr = units.toString();
+    } else {
+      throw new Error('either all must be true or amount must be non-zero');
     }
 
-    const res = await this.sendRequest('/onchain-transfer', 'POST', {
-      assetId: this.getTokenAddress(currency),
-      amount: units,
-      recipient: destination,
-    });
-    const { txhash } = await parseResponseBody<OnchainTransferResponse>(res);
-    return txhash;
+    const sendTransaction$ = this.ethProvider.onChainTransfer(this.getTokenAddress(currency), destination, unitsStr);
+    const transaction = await sendTransaction$.toPromise();
+    this.logger.info(`on-chain transfer sent, transaction hash: ${transaction.hash}`);
+    return transaction.hash;
   };
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
-    if (this._reconcileDepositSubscriber) {
-      this._reconcileDepositSubscriber.unsubscribe();
-    }
+    this._reconcileDepositSubscriptions.forEach((subscription) => subscription.unsubscribe());
     this.setStatus(ClientStatus.Disconnected);
 
     for (const req of this.pendingRequests) {

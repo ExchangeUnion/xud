@@ -1,7 +1,6 @@
 import assert from 'assert';
 import { EventEmitter } from 'events';
 import uuidv1 from 'uuid/v1';
-import { UnitConverter } from '../utils/UnitConverter';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
 import { CurrencyCreationAttributes, CurrencyInstance, OrderCreationAttributes, PairInstance } from '../db/types';
@@ -12,6 +11,7 @@ import Pool from '../p2p/Pool';
 import Swaps from '../swaps/Swaps';
 import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 import { pubKeyToAlias } from '../utils/aliasUtils';
+import { UnitConverter } from '../utils/UnitConverter';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import OrderBookRepository from './OrderBookRepository';
@@ -92,6 +92,7 @@ class OrderBook extends EventEmitter {
   private strict: boolean;
   private pool: Pool;
   private swaps: Swaps;
+  private unitConverter: UnitConverter;
 
   /** Max time for placeOrder iterations (due to swaps failures retries). */
   private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 60000; // 1 min
@@ -113,6 +114,7 @@ class OrderBook extends EventEmitter {
     thresholds,
     pool,
     swaps,
+    unitConverter,
     nosanityswaps,
     nobalancechecks,
     nomatching = false,
@@ -123,6 +125,7 @@ class OrderBook extends EventEmitter {
     thresholds: OrderBookThresholds;
     pool: Pool;
     swaps: Swaps;
+    unitConverter: UnitConverter;
     nosanityswaps: boolean;
     nobalancechecks: boolean;
     nomatching?: boolean;
@@ -133,6 +136,7 @@ class OrderBook extends EventEmitter {
     this.logger = logger;
     this.pool = pool;
     this.swaps = swaps;
+    this.unitConverter = unitConverter;
     this.nomatching = nomatching;
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
@@ -147,7 +151,7 @@ class OrderBook extends EventEmitter {
         outboundCurrency,
         inboundAmount,
         outboundAmount,
-      } = UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      } = this.unitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
     };
@@ -160,7 +164,7 @@ class OrderBook extends EventEmitter {
         outboundCurrency,
         inboundAmount,
         outboundAmount,
-      } = UnitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      } = this.unitConverter.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
       this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
     });
@@ -352,15 +356,9 @@ class OrderBook extends EventEmitter {
   private addTradingPair = (pairId: string) => {
     const tp = new TradingPair(this.logger, pairId, this.nomatching);
     this.tradingPairs.set(pairId, tp);
-    tp.on('peerOrder.dust', (order) => {
-      this.removePeerOrder(order.id, order.pairId);
-    });
-    tp.on('ownOrder.dust', (order) => {
-      this.removeOwnOrder({
-        orderId: order.id,
-        pairId: order.pairId,
-        quantityToRemove: order.quantity,
-      });
+    tp.on('ownOrder.fullyRemoved', (order) => {
+      // we no longer need to track the local id for own orders that have been fully removed from the order book
+      this.localIdMap.delete(order.localId);
     });
   };
 
@@ -371,10 +369,9 @@ class OrderBook extends EventEmitter {
     if (currency.swapClient === SwapClientType.Connext && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
-    const currencyInstance = await this.repository.addCurrency({
-      ...currency,
-      decimalPlaces: currency.decimalPlaces || 8,
-    });
+    const decimalPlaces = currency.decimalPlaces || 8;
+    const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces });
+    this.unitConverter.setDecimalPlacesPerCurrency(currency.id, decimalPlaces);
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
     await this.swaps.swapClientManager.add(currencyInstance);
   };
@@ -704,7 +701,7 @@ class OrderBook extends EventEmitter {
 
             try {
               // we remove orders from the order book when they fail a swap so that we don't immediately retry them
-              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey).order;
+              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey);
 
               // we want to try matching with this order again at a later time so we add
               // the failed quantity back to the order and preserve the order to add it
@@ -948,12 +945,14 @@ class OrderBook extends EventEmitter {
     const onHoldOrderLocalIds = [];
 
     for (const localId of this.localIdMap.keys()) {
-      const { onHoldQuantity } = this.removeOwnOrderByLocalId(localId, true);
-      if (onHoldQuantity === 0) {
-        removedOrderLocalIds.push(localId);
-      } else {
-        onHoldOrderLocalIds.push(localId);
-      }
+      try {
+        const { onHoldQuantity } = this.removeOwnOrderByLocalId(localId, true);
+        if (onHoldQuantity === 0) {
+          removedOrderLocalIds.push(localId);
+        } else {
+          onHoldOrderLocalIds.push(localId);
+        }
+      } catch (_) {}
     }
 
     return { removedOrderLocalIds, onHoldOrderLocalIds };
@@ -1086,16 +1085,13 @@ class OrderBook extends EventEmitter {
   }) => {
     const tp = this.getTradingPair(pairId);
     try {
-      const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
-      this.emit('ownOrder.removed', removeResult.order);
-      if (removeResult.fullyRemoved) {
-        this.localIdMap.delete(removeResult.order.localId);
-      }
+      const removedOrder = tp.removeOwnOrder(orderId, quantityToRemove);
+      this.emit('ownOrder.removed', removedOrder);
 
       if (!noBroadcast) {
-        this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
+        this.pool.broadcastOrderInvalidation(removedOrder, takerPubKey);
       }
-      return removeResult.order;
+      return removedOrder;
     } catch (err) {
       if (quantityToRemove !== undefined) {
         this.logger.error(`error while removing ${quantityToRemove} of order (${orderId})`, err);
@@ -1115,7 +1111,7 @@ class OrderBook extends EventEmitter {
     pairId: string,
     peerPubKey?: string,
     quantityToRemove?: number,
-  ): { order: PeerOrder; fullyRemoved: boolean } => {
+  ): PeerOrder => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   };
@@ -1289,7 +1285,7 @@ class OrderBook extends EventEmitter {
   private handleOrderInvalidation = (oi: OrderInvalidation, peerPubKey: string) => {
     try {
       const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
-      this.emit('peerOrder.invalidation', removeResult.order);
+      this.emit('peerOrder.invalidation', removeResult);
     } catch (err) {
       this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${pubKeyToAlias(peerPubKey)})`, err);
       // TODO: Penalize peer

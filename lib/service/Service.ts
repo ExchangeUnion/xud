@@ -444,7 +444,7 @@ class Service extends EventEmitter {
     const { orderId, pairId, peerPubKey } = args;
     const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
 
-    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
+    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity);
     const taker = this.orderBook.stampOwnOrder({
       pairId,
       localId: '',

@@ -948,6 +948,21 @@
       ],
       "default": "BOTH"
     },
+    "PeerLndUris": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "A map of ticker symbols to lnd uris for this peer"
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -1670,6 +1685,16 @@
         "alias": {
           "type": "string",
           "title": "The alias for this peer's public key"
+        },
+        "lnd_uris": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeerLndUris"
+          }
+        },
+        "connext_identifier": {
+          "type": "string",
+          "title": "The connext identifier for this peer"
         }
       }
     },

@@ -121,15 +121,6 @@ export type ConnextChannelBalanceResponse = {
   freeBalanceOnChain: string;
 };
 
-/**
- * The response for ethprovider eth_getBalance call.
- */
-export type ConnextBalanceResponse = {
-  id: number;
-  jsonrpc: string;
-  result: string;
-};
-
 export type GetBlockByNumberResponse = {
   result: {
     difficulty: string;
@@ -213,7 +204,7 @@ export type TransfersByRoutingIdResponse = ConnextTransfer[];
 
 export type ExpectedIncomingTransfer = {
   rHash: string;
-  units: number;
+  units: bigint;
   expiry: number;
   tokenAddress: string;
   routingId: string;
@@ -316,10 +307,6 @@ export type TransferReceivedEvent = {
   tokenAddress: string;
   rHash: string;
   expiry: number;
-  units: number;
+  units: bigint;
   routingId: string;
-};
-
-export type OnchainTransferResponse = {
-  txhash: string;
 };
