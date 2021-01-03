@@ -282,17 +282,17 @@ describe('LndClient', () => {
 
   describe('checkLowBalance', () => {
     test('emits lowTradingBalance on local balance is less than alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 10;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(1);
-      expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
+      expect(lnd['emit']).toHaveBeenCalledTimes(1);
+      expect(lnd['emit']).toHaveBeenCalledWith('lowTradingBalance', {
         totalBalance,
         currency,
         side: ChannelSide.Local,
@@ -301,17 +301,17 @@ describe('LndClient', () => {
       });
     });
     test('emits lowBalance on local balance is less than alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 10;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(1);
-      expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
+      expect(lnd['emit']).toHaveBeenCalledTimes(1);
+      expect(lnd['emit']).toHaveBeenCalledWith('lowTradingBalance', {
         totalBalance,
         currency,
         side: ChannelSide.Local,
@@ -320,41 +320,41 @@ describe('LndClient', () => {
       });
     });
     test('dont emit on local balance equals alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 12;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(0);
+      expect(lnd['emit']).toHaveBeenCalledTimes(0);
     });
     test('dont emit on local balance is higher than alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 12.5;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 110;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(0);
+      expect(lnd['emit']).toHaveBeenCalledTimes(0);
     });
     test('emits on remote balance is less than alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 110;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 10;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(1);
-      expect(emit).toHaveBeenCalledWith('lowTradingBalance', {
+      expect(lnd['emit']).toHaveBeenCalledTimes(1);
+      expect(lnd['emit']).toHaveBeenCalledWith('lowTradingBalance', {
         totalBalance,
         currency,
         side: ChannelSide.Remote,
@@ -363,28 +363,28 @@ describe('LndClient', () => {
       });
     });
     test('dont emit on remote balance equals alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 110;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 12;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(0);
+      expect(lnd['emit']).toHaveBeenCalledTimes(0);
     });
     test('dont emit on remote balance is higher than alert threshold of total balance ', async () => {
-      const emit = jest.fn().mockImplementation();
+      lnd['emit'] = jest.fn().mockImplementation();
       const totalBalance = 120;
       const localBalance = 110;
       const alertThreshold = totalBalance * 0.1;
       const remoteBalance = 12.5;
 
       const currency = 'BTC';
-      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency, emit);
+      lnd['checkLowBalance'](remoteBalance, localBalance, totalBalance, alertThreshold, currency);
 
-      expect(emit).toHaveBeenCalledTimes(0);
+      expect(lnd['emit']).toHaveBeenCalledTimes(0);
     });
   });
 });
