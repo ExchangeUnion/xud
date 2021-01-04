@@ -3,7 +3,6 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/shared"
 	"net"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ExchangeUnion/xud-simulation/shared"
 
 	// "github.com/ExchangeUnion/xud-simulation/connexttest"
 

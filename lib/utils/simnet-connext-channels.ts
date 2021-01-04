@@ -1,4 +1,4 @@
-import grpc from 'grpc';
+import { ServiceError } from '@grpc/grpc-js';
 import http from 'http';
 import { defer, from, Observable, of, throwError } from 'rxjs';
 import { catchError, concat, concatAll, delay, mergeMap, retryWhen, share, take, mapTo } from 'rxjs/operators';
@@ -23,7 +23,7 @@ type ChannelConfig = {
 };
 
 const processResponse = (resolve: Function, reject: Function) => {
-  return (error: grpc.ServiceError | null, response: any) => {
+  return (error: ServiceError | null, response: any) => {
     if (error) {
       reject(error);
     } else {

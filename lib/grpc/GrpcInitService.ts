@@ -1,9 +1,11 @@
-import grpc, { status } from 'grpc';
-import InitService from '../service/InitService';
+/* tslint:disable no-null-keyword */
+import * as grpc from '@grpc/grpc-js';
 import * as xudrpc from '../proto/xudrpc_pb';
+import InitService from '../service/InitService';
 import getGrpcError from './getGrpcError';
 
-class GrpcInitService {
+class GrpcInitService implements grpc.UntypedServiceImplementation {
+  [name: string]: any;
   private disabled = false;
   private initService?: InitService;
 
@@ -28,8 +30,8 @@ class GrpcInitService {
   ): initService is InitService => {
     if (!initService) {
       const err = this.disabled
-        ? { code: status.UNIMPLEMENTED, message: 'xud init service is disabled', name: 'DisabledError' }
-        : { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' };
+        ? { code: grpc.status.UNIMPLEMENTED, message: 'xud init service is disabled', name: 'DisabledError' }
+        : { code: grpc.status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' };
       callback(err, null);
       return false;
     }

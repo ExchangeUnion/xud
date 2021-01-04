@@ -2,8 +2,10 @@
 // file: lndrouter.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
-import * as grpc from "grpc";
+import * as grpc from "@grpc/grpc-js";
+import {handleClientStreamingCall} from "@grpc/grpc-js/build/src/server-call";
 import * as lndrouter_pb from "./lndrouter_pb";
 import * as lndrpc_pb from "./lndrpc_pb";
 
@@ -24,117 +26,117 @@ interface IRouterService extends grpc.ServiceDefinition<grpc.UntypedServiceImple
 }
 
 interface IRouterService_ISendPaymentV2 extends grpc.MethodDefinition<lndrouter_pb.SendPaymentRequest, lndrpc_pb.Payment> {
-    path: string; // "/routerrpc.Router/SendPaymentV2"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
+    path: "/routerrpc.Router/SendPaymentV2";
+    requestStream: false;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndrouter_pb.SendPaymentRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.SendPaymentRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.Payment>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.Payment>;
 }
 interface IRouterService_ITrackPaymentV2 extends grpc.MethodDefinition<lndrouter_pb.TrackPaymentRequest, lndrpc_pb.Payment> {
-    path: string; // "/routerrpc.Router/TrackPaymentV2"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
+    path: "/routerrpc.Router/TrackPaymentV2";
+    requestStream: false;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndrouter_pb.TrackPaymentRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.TrackPaymentRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.Payment>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.Payment>;
 }
 interface IRouterService_IEstimateRouteFee extends grpc.MethodDefinition<lndrouter_pb.RouteFeeRequest, lndrouter_pb.RouteFeeResponse> {
-    path: string; // "/routerrpc.Router/EstimateRouteFee"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/EstimateRouteFee";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.RouteFeeRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.RouteFeeRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.RouteFeeResponse>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.RouteFeeResponse>;
 }
 interface IRouterService_ISendToRoute extends grpc.MethodDefinition<lndrouter_pb.SendToRouteRequest, lndrouter_pb.SendToRouteResponse> {
-    path: string; // "/routerrpc.Router/SendToRoute"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/SendToRoute";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.SendToRouteRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.SendToRouteRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.SendToRouteResponse>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.SendToRouteResponse>;
 }
 interface IRouterService_ISendToRouteV2 extends grpc.MethodDefinition<lndrouter_pb.SendToRouteRequest, lndrpc_pb.HTLCAttempt> {
-    path: string; // "/routerrpc.Router/SendToRouteV2"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/SendToRouteV2";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.SendToRouteRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.SendToRouteRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.HTLCAttempt>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.HTLCAttempt>;
 }
 interface IRouterService_IResetMissionControl extends grpc.MethodDefinition<lndrouter_pb.ResetMissionControlRequest, lndrouter_pb.ResetMissionControlResponse> {
-    path: string; // "/routerrpc.Router/ResetMissionControl"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/ResetMissionControl";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.ResetMissionControlRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.ResetMissionControlRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.ResetMissionControlResponse>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.ResetMissionControlResponse>;
 }
 interface IRouterService_IQueryMissionControl extends grpc.MethodDefinition<lndrouter_pb.QueryMissionControlRequest, lndrouter_pb.QueryMissionControlResponse> {
-    path: string; // "/routerrpc.Router/QueryMissionControl"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/QueryMissionControl";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.QueryMissionControlRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.QueryMissionControlRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.QueryMissionControlResponse>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.QueryMissionControlResponse>;
 }
 interface IRouterService_IQueryProbability extends grpc.MethodDefinition<lndrouter_pb.QueryProbabilityRequest, lndrouter_pb.QueryProbabilityResponse> {
-    path: string; // "/routerrpc.Router/QueryProbability"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/QueryProbability";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.QueryProbabilityRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.QueryProbabilityRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.QueryProbabilityResponse>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.QueryProbabilityResponse>;
 }
 interface IRouterService_IBuildRoute extends grpc.MethodDefinition<lndrouter_pb.BuildRouteRequest, lndrouter_pb.BuildRouteResponse> {
-    path: string; // "/routerrpc.Router/BuildRoute"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
+    path: "/routerrpc.Router/BuildRoute";
+    requestStream: false;
+    responseStream: false;
     requestSerialize: grpc.serialize<lndrouter_pb.BuildRouteRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.BuildRouteRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.BuildRouteResponse>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.BuildRouteResponse>;
 }
 interface IRouterService_ISubscribeHtlcEvents extends grpc.MethodDefinition<lndrouter_pb.SubscribeHtlcEventsRequest, lndrouter_pb.HtlcEvent> {
-    path: string; // "/routerrpc.Router/SubscribeHtlcEvents"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
+    path: "/routerrpc.Router/SubscribeHtlcEvents";
+    requestStream: false;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndrouter_pb.SubscribeHtlcEventsRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.SubscribeHtlcEventsRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.HtlcEvent>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.HtlcEvent>;
 }
 interface IRouterService_ISendPayment extends grpc.MethodDefinition<lndrouter_pb.SendPaymentRequest, lndrouter_pb.PaymentStatus> {
-    path: string; // "/routerrpc.Router/SendPayment"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
+    path: "/routerrpc.Router/SendPayment";
+    requestStream: false;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndrouter_pb.SendPaymentRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.SendPaymentRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.PaymentStatus>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.PaymentStatus>;
 }
 interface IRouterService_ITrackPayment extends grpc.MethodDefinition<lndrouter_pb.TrackPaymentRequest, lndrouter_pb.PaymentStatus> {
-    path: string; // "/routerrpc.Router/TrackPayment"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
+    path: "/routerrpc.Router/TrackPayment";
+    requestStream: false;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndrouter_pb.TrackPaymentRequest>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.TrackPaymentRequest>;
     responseSerialize: grpc.serialize<lndrouter_pb.PaymentStatus>;
     responseDeserialize: grpc.deserialize<lndrouter_pb.PaymentStatus>;
 }
 interface IRouterService_IHtlcInterceptor extends grpc.MethodDefinition<lndrouter_pb.ForwardHtlcInterceptResponse, lndrouter_pb.ForwardHtlcInterceptRequest> {
-    path: string; // "/routerrpc.Router/HtlcInterceptor"
-    requestStream: boolean; // true
-    responseStream: boolean; // true
+    path: "/routerrpc.Router/HtlcInterceptor";
+    requestStream: true;
+    responseStream: true;
     requestSerialize: grpc.serialize<lndrouter_pb.ForwardHtlcInterceptResponse>;
     requestDeserialize: grpc.deserialize<lndrouter_pb.ForwardHtlcInterceptResponse>;
     responseSerialize: grpc.serialize<lndrouter_pb.ForwardHtlcInterceptRequest>;
@@ -143,7 +145,7 @@ interface IRouterService_IHtlcInterceptor extends grpc.MethodDefinition<lndroute
 
 export const RouterService: IRouterService;
 
-export interface IRouterServer {
+export interface IRouterServer extends grpc.UntypedServiceImplementation {
     sendPaymentV2: grpc.handleServerStreamingCall<lndrouter_pb.SendPaymentRequest, lndrpc_pb.Payment>;
     trackPaymentV2: grpc.handleServerStreamingCall<lndrouter_pb.TrackPaymentRequest, lndrpc_pb.Payment>;
     estimateRouteFee: grpc.handleUnaryCall<lndrouter_pb.RouteFeeRequest, lndrouter_pb.RouteFeeResponse>;
@@ -197,7 +199,7 @@ export interface IRouterClient {
 }
 
 export class RouterClient extends grpc.Client implements IRouterClient {
-    constructor(address: string, credentials: grpc.ChannelCredentials, options?: object);
+    constructor(address: string, credentials: grpc.ChannelCredentials, options?: Partial<grpc.ClientOptions>);
     public sendPaymentV2(request: lndrouter_pb.SendPaymentRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Payment>;
     public sendPaymentV2(request: lndrouter_pb.SendPaymentRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Payment>;
     public trackPaymentV2(request: lndrouter_pb.TrackPaymentRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Payment>;

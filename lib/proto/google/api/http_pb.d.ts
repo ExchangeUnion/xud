@@ -2,13 +2,14 @@
 // file: google/api/http.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as jspb from "google-protobuf";
 
 export class Http extends jspb.Message { 
     clearRulesList(): void;
     getRulesList(): Array<HttpRule>;
-    setRulesList(value: Array<HttpRule>): void;
+    setRulesList(value: Array<HttpRule>): Http;
     addRules(value?: HttpRule, index?: number): HttpRule;
 
 
@@ -30,50 +31,50 @@ export namespace Http {
 
 export class HttpRule extends jspb.Message { 
     getSelector(): string;
-    setSelector(value: string): void;
+    setSelector(value: string): HttpRule;
 
 
     hasGet(): boolean;
     clearGet(): void;
     getGet(): string;
-    setGet(value: string): void;
+    setGet(value: string): HttpRule;
 
 
     hasPut(): boolean;
     clearPut(): void;
     getPut(): string;
-    setPut(value: string): void;
+    setPut(value: string): HttpRule;
 
 
     hasPost(): boolean;
     clearPost(): void;
     getPost(): string;
-    setPost(value: string): void;
+    setPost(value: string): HttpRule;
 
 
     hasDelete(): boolean;
     clearDelete(): void;
     getDelete(): string;
-    setDelete(value: string): void;
+    setDelete(value: string): HttpRule;
 
 
     hasPatch(): boolean;
     clearPatch(): void;
     getPatch(): string;
-    setPatch(value: string): void;
+    setPatch(value: string): HttpRule;
 
 
     hasCustom(): boolean;
     clearCustom(): void;
     getCustom(): CustomHttpPattern | undefined;
-    setCustom(value?: CustomHttpPattern): void;
+    setCustom(value?: CustomHttpPattern): HttpRule;
 
     getBody(): string;
-    setBody(value: string): void;
+    setBody(value: string): HttpRule;
 
     clearAdditionalBindingsList(): void;
     getAdditionalBindingsList(): Array<HttpRule>;
-    setAdditionalBindingsList(value: Array<HttpRule>): void;
+    setAdditionalBindingsList(value: Array<HttpRule>): HttpRule;
     addAdditionalBindings(value?: HttpRule, index?: number): HttpRule;
 
 
@@ -123,10 +124,10 @@ export namespace HttpRule {
 
 export class CustomHttpPattern extends jspb.Message { 
     getKind(): string;
-    setKind(value: string): void;
+    setKind(value: string): CustomHttpPattern;
 
     getPath(): string;
-    setPath(value: string): void;
+    setPath(value: string): CustomHttpPattern;
 
 
     serializeBinary(): Uint8Array;

@@ -2,15 +2,16 @@
 // file: xudp2p.proto
 
 /* tslint:disable */
+/* eslint-disable */
 
 import * as jspb from "google-protobuf";
 
 export class Address extends jspb.Message { 
     getHost(): string;
-    setHost(value: string): void;
+    setHost(value: string): Address;
 
     getPort(): number;
-    setPort(value: number): void;
+    setPort(value: number): Address;
 
 
     serializeBinary(): Uint8Array;
@@ -32,22 +33,22 @@ export namespace Address {
 
 export class Order extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): Order;
 
     getPairId(): string;
-    setPairId(value: string): void;
+    setPairId(value: string): Order;
 
     getPrice(): number;
-    setPrice(value: number): void;
+    setPrice(value: number): Order;
 
     getQuantity(): number;
-    setQuantity(value: number): void;
+    setQuantity(value: number): Order;
 
     getIsBuy(): boolean;
-    setIsBuy(value: boolean): void;
+    setIsBuy(value: boolean): Order;
 
     getReplaceOrderId(): string;
-    setReplaceOrderId(value: string): void;
+    setReplaceOrderId(value: string): Order;
 
 
     serializeBinary(): Uint8Array;
@@ -73,11 +74,11 @@ export namespace Order {
 
 export class Node extends jspb.Message { 
     getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    setNodePubKey(value: string): Node;
 
     clearAddressesList(): void;
     getAddressesList(): Array<Address>;
-    setAddressesList(value: Array<Address>): void;
+    setAddressesList(value: Array<Address>): Node;
     addAddresses(value?: Address, index?: number): Address;
 
 
@@ -101,7 +102,7 @@ export namespace Node {
 export class LndUris extends jspb.Message { 
     clearLndUriList(): void;
     getLndUriList(): Array<string>;
-    setLndUriList(value: Array<string>): void;
+    setLndUriList(value: Array<string>): LndUris;
     addLndUri(value: string, index?: number): string;
 
 
@@ -124,12 +125,12 @@ export namespace LndUris {
 export class NodeState extends jspb.Message { 
     clearAddressesList(): void;
     getAddressesList(): Array<Address>;
-    setAddressesList(value: Array<Address>): void;
+    setAddressesList(value: Array<Address>): NodeState;
     addAddresses(value?: Address, index?: number): Address;
 
     clearPairsList(): void;
     getPairsList(): Array<string>;
-    setPairsList(value: Array<string>): void;
+    setPairsList(value: Array<string>): NodeState;
     addPairs(value: string, index?: number): string;
 
 
@@ -145,7 +146,7 @@ export class NodeState extends jspb.Message {
     clearLndUrisMap(): void;
 
     getConnextIdentifier(): string;
-    setConnextIdentifier(value: string): void;
+    setConnextIdentifier(value: string): NodeState;
 
 
     serializeBinary(): Uint8Array;
@@ -174,7 +175,7 @@ export namespace NodeState {
 
 export class PingPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): PingPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -195,10 +196,10 @@ export namespace PingPacket {
 
 export class PongPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): PongPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): PongPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -220,13 +221,13 @@ export namespace PongPacket {
 
 export class OrderPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): OrderPacket;
 
 
     hasOrder(): boolean;
     clearOrder(): void;
     getOrder(): Order | undefined;
-    setOrder(value?: Order): void;
+    setOrder(value?: Order): OrderPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -248,16 +249,16 @@ export namespace OrderPacket {
 
 export class OrderInvalidationPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): OrderInvalidationPacket;
 
     getOrderId(): string;
-    setOrderId(value: string): void;
+    setOrderId(value: string): OrderInvalidationPacket;
 
     getPairId(): string;
-    setPairId(value: string): void;
+    setPairId(value: string): OrderInvalidationPacket;
 
     getQuantity(): number;
-    setQuantity(value: number): void;
+    setQuantity(value: number): OrderInvalidationPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -281,11 +282,11 @@ export namespace OrderInvalidationPacket {
 
 export class GetOrdersPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): GetOrdersPacket;
 
     clearPairIdsList(): void;
     getPairIdsList(): Array<string>;
-    setPairIdsList(value: Array<string>): void;
+    setPairIdsList(value: Array<string>): GetOrdersPacket;
     addPairIds(value: string, index?: number): string;
 
 
@@ -308,14 +309,14 @@ export namespace GetOrdersPacket {
 
 export class OrdersPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): OrdersPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): OrdersPacket;
 
     clearOrdersList(): void;
     getOrdersList(): Array<Order>;
-    setOrdersList(value: Array<Order>): void;
+    setOrdersList(value: Array<Order>): OrdersPacket;
     addOrders(value?: Order, index?: number): Order;
 
 
@@ -339,13 +340,13 @@ export namespace OrdersPacket {
 
 export class NodeStateUpdatePacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): NodeStateUpdatePacket;
 
 
     hasNodeState(): boolean;
     clearNodeState(): void;
     getNodeState(): NodeState | undefined;
-    setNodeState(value?: NodeState): void;
+    setNodeState(value?: NodeState): NodeStateUpdatePacket;
 
 
     serializeBinary(): Uint8Array;
@@ -367,28 +368,28 @@ export namespace NodeStateUpdatePacket {
 
 export class SessionInitPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SessionInitPacket;
 
     getSign(): string;
-    setSign(value: string): void;
+    setSign(value: string): SessionInitPacket;
 
     getPeerPubKey(): string;
-    setPeerPubKey(value: string): void;
+    setPeerPubKey(value: string): SessionInitPacket;
 
     getEphemeralPubKey(): string;
-    setEphemeralPubKey(value: string): void;
+    setEphemeralPubKey(value: string): SessionInitPacket;
 
 
     hasNodeState(): boolean;
     clearNodeState(): void;
     getNodeState(): NodeState | undefined;
-    setNodeState(value?: NodeState): void;
+    setNodeState(value?: NodeState): SessionInitPacket;
 
     getVersion(): string;
-    setVersion(value: string): void;
+    setVersion(value: string): SessionInitPacket;
 
     getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    setNodePubKey(value: string): SessionInitPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -415,13 +416,13 @@ export namespace SessionInitPacket {
 
 export class SessionAckPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SessionAckPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): SessionAckPacket;
 
     getEphemeralPubKey(): string;
-    setEphemeralPubKey(value: string): void;
+    setEphemeralPubKey(value: string): SessionAckPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -444,13 +445,13 @@ export namespace SessionAckPacket {
 
 export class DisconnectingPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): DisconnectingPacket;
 
     getReason(): number;
-    setReason(value: number): void;
+    setReason(value: number): DisconnectingPacket;
 
     getPayload(): string;
-    setPayload(value: string): void;
+    setPayload(value: string): DisconnectingPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -473,7 +474,7 @@ export namespace DisconnectingPacket {
 
 export class GetNodesPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): GetNodesPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -494,14 +495,14 @@ export namespace GetNodesPacket {
 
 export class NodesPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): NodesPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): NodesPacket;
 
     clearNodesList(): void;
     getNodesList(): Array<Node>;
-    setNodesList(value: Array<Node>): void;
+    setNodesList(value: Array<Node>): NodesPacket;
     addNodes(value?: Node, index?: number): Node;
 
 
@@ -525,13 +526,13 @@ export namespace NodesPacket {
 
 export class SanitySwapInitPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SanitySwapInitPacket;
 
     getCurrency(): string;
-    setCurrency(value: string): void;
+    setCurrency(value: string): SanitySwapInitPacket;
 
     getRHash(): string;
-    setRHash(value: string): void;
+    setRHash(value: string): SanitySwapInitPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -554,10 +555,10 @@ export namespace SanitySwapInitPacket {
 
 export class SanitySwapAckPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SanitySwapAckPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): SanitySwapAckPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -579,22 +580,22 @@ export namespace SanitySwapAckPacket {
 
 export class SwapRequestPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SwapRequestPacket;
 
     getProposedQuantity(): number;
-    setProposedQuantity(value: number): void;
+    setProposedQuantity(value: number): SwapRequestPacket;
 
     getPairId(): string;
-    setPairId(value: string): void;
+    setPairId(value: string): SwapRequestPacket;
 
     getOrderId(): string;
-    setOrderId(value: string): void;
+    setOrderId(value: string): SwapRequestPacket;
 
     getRHash(): string;
-    setRHash(value: string): void;
+    setRHash(value: string): SwapRequestPacket;
 
     getTakerCltvDelta(): number;
-    setTakerCltvDelta(value: number): void;
+    setTakerCltvDelta(value: number): SwapRequestPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -620,19 +621,19 @@ export namespace SwapRequestPacket {
 
 export class SwapAcceptedPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SwapAcceptedPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): SwapAcceptedPacket;
 
     getRHash(): string;
-    setRHash(value: string): void;
+    setRHash(value: string): SwapAcceptedPacket;
 
     getQuantity(): number;
-    setQuantity(value: number): void;
+    setQuantity(value: number): SwapAcceptedPacket;
 
     getMakerCltvDelta(): number;
-    setMakerCltvDelta(value: number): void;
+    setMakerCltvDelta(value: number): SwapAcceptedPacket;
 
 
     serializeBinary(): Uint8Array;
@@ -657,19 +658,19 @@ export namespace SwapAcceptedPacket {
 
 export class SwapFailedPacket extends jspb.Message { 
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): SwapFailedPacket;
 
     getReqId(): string;
-    setReqId(value: string): void;
+    setReqId(value: string): SwapFailedPacket;
 
     getRHash(): string;
-    setRHash(value: string): void;
+    setRHash(value: string): SwapFailedPacket;
 
     getErrorMessage(): string;
-    setErrorMessage(value: string): void;
+    setErrorMessage(value: string): SwapFailedPacket;
 
     getFailureReason(): number;
-    setFailureReason(value: number): void;
+    setFailureReason(value: number): SwapFailedPacket;
 
 
     serializeBinary(): Uint8Array;
