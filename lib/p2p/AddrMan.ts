@@ -165,32 +165,32 @@ class AddrMan {
     key: number,
   }) {
     this.nKey = key;
-    //this.vvNew = new Array(AddrMan.NEW_BUCKET_COUNT).fill(-1).map(() => new Array(AddrMan.BUCKET_SIZE).fill(-1));
   }
 
 
   // Find an entry by url. Returns last known instance of NodeInstance n
   public Find = (n: NodeInstance): [number, AddrInfo | undefined] => {
     if (this.addrMap.size >= 1) {
-      let toFind = n.lastAddressText; 
-      if (toFind == null) {
+      //let toFind = n.nodePubKey; 
+      /*if (toFind == null) {
         //console.log("AM", n.addressesText, JSON.parse(n.addressesText));
         let parsed = JSON.parse(n['addressesText'])[0];
         toFind =`${parsed['host']}:${parsed['port']}`;
-      }
+      }*/
+      //console.log("AM finding ", toFind);
 
-      let url = "";
+      //let url = "";
       //console.log("AM searching for node in addrMap");
       for (let [k, v] of this.addrMap) {
-        if (v.node.lastAddressText != "null") {
+        /*if (v.node.lastAddressText != "null") {
           url = `${v.node.lastAddressText}`;
         } else{
           let parsed = JSON.parse(v.node['addressesText'])[0];
           url = `${parsed['host']}:${parsed['port']}`;
-        }
+        }*/
 
-        if (url == toFind) {
-          //console.log("found node in addrMap");
+        if (v.node.nodePubKey == n.nodePubKey) {
+          console.log("AM found node in addrMap");
           return [k,v];
         }
         
@@ -403,11 +403,15 @@ class AddrMan {
     }
 
 
+
     if (entry != undefined) {
-      //console.log("updating existing entry");
+      console.log("updating existing entry");
+
       const time = new Date().getTime() / 1000;
-      const lastConnected = addr.lastAddress.lastConnected;
-      if (lastConnected) {
+
+      // check most recent connection time
+      if (addr.lastAddress != undefined && addr.lastAddress.lastConnected != undefined) {
+        const lastConnected = addr.lastAddress.lastConnected;
         let fCurrentlyOnline = (time - lastConnected < 24 * 60 * 60);
         let nUpdateInterval = (fCurrentlyOnline ? 60 * 60 : 24 * 60 * 60);
         if (!entry.nTime || entry.nTime < lastConnected - nUpdateInterval - nTimePenalty) {
@@ -415,28 +419,28 @@ class AddrMan {
         }
 
         // do not update if no new information is present
-        if (!lastConnected || lastConnected <= entry.nTime) { // if bugs arise here then ensure that Address timestamps are getting updated accurately
+        if (lastConnected <= entry.nTime) { // if bugs arise here then ensure that Address timestamps are getting updated accurately
           return false;
         }
-        // do not update if the entry was already in the "tried" table
-        if (entry.fInTried) {
-          return false;
-        }
-        // do not update if the max reference count is reached
-        if (entry.nRefCount == AddrMan.NEW_BUCKETS_PER_ADDRESS) {
-          return false;
-        }
-        // stochastic test: previous nRefCount == N: 2^N times harder to increase it
-        let nFactor = 1;
-        for (let n = 0; n < entry.nRefCount; n++) {
-          nFactor *= 2;
-        }
-        if (nFactor > 1 && (this.getRandomInt(nFactor) !== 0)) {
-          return false;
-        }
-      } 
+      }
+      // do not update if the entry was already in the "tried" table
+      if (entry.fInTried) {
+        return false;
+      }
+      // do not update if the max reference count is reached
+      if (entry.nRefCount == AddrMan.NEW_BUCKETS_PER_ADDRESS) {
+        return false;
+      }
+      // stochastic test: previous nRefCount == N: 2^N times harder to increase it
+      let nFactor = 1;
+      for (let n = 0; n < entry.nRefCount; n++) {
+        nFactor *= 2;
+      }
+      if (nFactor > 1 && (this.getRandomInt(nFactor) !== 0)) {
+        return false;
+      }
     } else {
-      //console.log("AM creating new entry");
+      console.log("AM creating new entry");
       entry = this.Create(addr, sourceIP);
       entry.nTime = Math.max(0, entry.nTime - nTimePenalty);
       entry.nRefCount = 0;
@@ -477,7 +481,7 @@ class AddrMan {
     //console.log("AM addrMap is now: ", this.addrMap);
     return fNew;
   }
-  // Mark and entry as attempted to connect
+  // Update metadata:  attempted to connect but all addresses were bad
   public Attempt = (addr: NodeInstance): void => {
     console.log("AM attempt fxn");
     let [nId, info] = this.Find(addr);
@@ -496,7 +500,7 @@ class AddrMan {
       info.nAttempts++;
     }
     console.log("AM attempt fxn updated metadata successfully");
-    this.addrMap.set(nId, info);
+    this.addrMap.set(nId, info); // unneccessary b/c info is reference?
     //}
   }
 

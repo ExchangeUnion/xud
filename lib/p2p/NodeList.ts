@@ -192,7 +192,8 @@ class NodeList extends EventEmitter {
     //console.log("NL initializing these nodes:" , nodes);
     const reputationLoadPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
-      //console.log("NL loading node", node);
+    
+      console.log("NL loading node", node);
       //console.log("NL adding loaded node");
       this.addNode(node, "none");
       //this.outbound.set(node.nodePubKey, node);
@@ -248,13 +249,12 @@ class NodeList extends EventEmitter {
    * @return true if the specified node exists and was updated, false otherwise
    */
   public updateAddresses = async (
-    /*nodePubKey: string,
+    nodePubKey: string,
     addresses: Address[] = [],
-    lastAddress?: Address,*/
+    lastAddress?: Address,
   ): Promise<boolean> => {
-    console.log("NL failing to update addresses...");
-    /* TODO update correctly 
-    const node = this.nodes.get(nodePubKey);
+    console.log("NL updating addresses...");
+    const node = this.get(nodePubKey);
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
       node.addresses = addresses.map((newAddress) => {
@@ -274,7 +274,7 @@ class NodeList extends EventEmitter {
       await node.save();
       return true;
     }
-     */
+     
     return false;
   };
 
