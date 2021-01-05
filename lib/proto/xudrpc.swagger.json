@@ -1085,6 +1085,11 @@
         "side": {
           "$ref": "#/definitions/BalanceAlertSide"
         },
+        "bound": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The bound of the low balance in percentage."
+        },
         "percent": {
           "type": "integer",
           "format": "int64",

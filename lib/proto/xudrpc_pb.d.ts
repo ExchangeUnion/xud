@@ -165,6 +165,9 @@ export class BalanceAlert extends jspb.Message {
     getSide(): BalanceAlert.Side;
     setSide(value: BalanceAlert.Side): BalanceAlert;
 
+    getBound(): number;
+    setBound(value: number): BalanceAlert;
+
     getPercent(): number;
     setPercent(value: number): BalanceAlert;
 
@@ -189,6 +192,7 @@ export namespace BalanceAlert {
     export type AsObject = {
         totalBalance: number,
         side: BalanceAlert.Side,
+        bound: number,
         percent: number,
         sideBalance: number,
         currency: string,
