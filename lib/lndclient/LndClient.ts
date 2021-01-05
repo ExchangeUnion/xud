@@ -22,7 +22,7 @@ import SwapClient, {
   ClientStatus,
   PaymentState,
   SwapClientInfo,
-  WithdrawArguments
+  WithdrawArguments,
 } from '../swaps/SwapClient';
 import { CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
 import { deriveChild } from '../utils/seedutil';
