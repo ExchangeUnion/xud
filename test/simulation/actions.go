@@ -372,7 +372,18 @@ func (a *actions) placeOrderAndSwap(srcNode, destNode *xudtest.HarnessNode,
 	a.assert.NotNil(eTaker.swap)
 
 	// Verify that the swap event on the taker side is equal to PlaceOrder response swap.
-	a.assert.Equal(eTaker.swap, res.SwapSuccesses[0])
+	a.assert.Equal(eTaker.swap.OrderId, res.SwapSuccesses[0].OrderId)
+	a.assert.Equal(eTaker.swap.LocalId, res.SwapSuccesses[0].LocalId)
+	a.assert.Equal(eTaker.swap.PairId, res.SwapSuccesses[0].PairId)
+	a.assert.Equal(eTaker.swap.Quantity, res.SwapSuccesses[0].Quantity)
+	a.assert.Equal(eTaker.swap.RHash, res.SwapSuccesses[0].RHash)
+	a.assert.Equal(eTaker.swap.AmountReceived, res.SwapSuccesses[0].AmountReceived)
+	a.assert.Equal(eTaker.swap.PeerPubKey, res.SwapSuccesses[0].PeerPubKey)
+	a.assert.Equal(eTaker.swap.Role, res.SwapSuccesses[0].Role)
+	a.assert.Equal(eTaker.swap.CurrencyReceived, res.SwapSuccesses[0].CurrencyReceived)
+	a.assert.Equal(eTaker.swap.CurrencySent, res.SwapSuccesses[0].CurrencySent)
+	a.assert.Equal(eTaker.swap.RPreimage, res.SwapSuccesses[0].RPreimage)
+	a.assert.Equal(eTaker.swap.Price, res.SwapSuccesses[0].Price)
 
 	// Verify the swap events info.
 	a.assert.Equal(eMaker.swap.OrderId, eTaker.swap.OrderId)

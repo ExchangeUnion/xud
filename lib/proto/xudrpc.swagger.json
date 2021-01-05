@@ -1085,10 +1085,10 @@
         "side": {
           "$ref": "#/definitions/BalanceAlertSide"
         },
-        "bound": {
+        "percent": {
           "type": "integer",
           "format": "int64",
-          "description": "The bound of the low balance in percentage."
+          "description": "The percent of the total trading balance."
         },
         "side_balance": {
           "type": "string",
@@ -1097,7 +1097,7 @@
         },
         "currency": {
           "type": "string",
-          "description": "The currency of the alert."
+          "description": "The currency of the channel this alert is for."
         }
       }
     },

@@ -205,9 +205,9 @@
 | ----- | ---- | ----- | ----------- |
 | total_balance | [uint64](#uint64) |  | The total balance. |
 | side | [BalanceAlert.Side](#xudrpc.BalanceAlert.Side) |  |  |
-| bound | [uint32](#uint32) |  | The bound of the low balance in percentage. |
+| percent | [uint32](#uint32) |  | The percent of the total trading balance. |
 | side_balance | [uint64](#uint64) |  | The current side balance. |
-| currency | [string](#string) |  | The currency of the alert. |
+| currency | [string](#string) |  | The currency of the channel this alert is for. |
 
 
 

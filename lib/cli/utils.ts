@@ -1,9 +1,9 @@
+import { ServiceError, status } from '@grpc/grpc-js';
 import colors from 'colors/safe';
 import { accessSync, watch } from 'fs';
 import os from 'os';
 import path from 'path';
 import { Arguments } from 'yargs';
-import { ServiceError, status } from 'grpc';
 import { XudClient } from '../proto/xudrpc_grpc_pb';
 import { setTimeoutPromise } from '../utils/utils';
 
@@ -112,7 +112,7 @@ export const waitForClient = (
   successCallback: Function,
   printError?: boolean,
 ) => {
-  client.waitForReady(Date.now() + 3000, (error: Error | null) => {
+  client.waitForReady(Date.now() + 3000, (error?: Error) => {
     if (error) {
       if (error.message === 'Failed to connect before the deadline') {
         console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);

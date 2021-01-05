@@ -8,7 +8,6 @@ import Config from './Config';
 import { SwapClientType, XuNetwork } from './constants/enums';
 import DB from './db/DB';
 import GrpcServer from './grpc/GrpcServer';
-import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import HttpServer from './http/HttpServer';
 import Logger from './Logger';
 import NodeKey from './nodekey/NodeKey';
@@ -41,7 +40,6 @@ class Xud extends EventEmitter {
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
   private httpServer?: HttpServer;
-  private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
   private shuttingDown = false;
   private swapClientManager?: SwapClientManager;
@@ -104,16 +102,6 @@ class Xud extends EventEmitter {
           path.join(this.config.xudir, 'tls.cert'),
           path.join(this.config.xudir, 'tls.key'),
         );
-
-        if (!this.config.webproxy.disable) {
-          this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
-          await this.grpcAPIProxy.listen(
-            this.config.webproxy.port,
-            this.config.rpc.port,
-            this.config.rpc.host,
-            path.join(this.config.xudir, 'tls.cert'),
-          );
-        }
       }
 
       this.db = new DB(loggers.db, this.config.dbpath);
@@ -302,9 +290,6 @@ class Xud extends EventEmitter {
     }
     if (this.rpcServer) {
       closePromises.push(this.rpcServer.close());
-    }
-    if (this.grpcAPIProxy) {
-      closePromises.push(this.grpcAPIProxy.close());
     }
     if (this.swaps) {
       this.swaps.close();

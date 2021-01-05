@@ -1,5 +1,5 @@
+import { XudClient } from 'lib/proto/xudrpc_grpc_pb';
 import { Arguments, Argv } from 'yargs';
-import { XudClient } from '../../proto/xudrpc_grpc_pb';
 import * as xudrpc from '../../proto/xudrpc_pb';
 import { loadXudClient } from '../command';
 import { onStreamError, waitForClient } from '../utils';

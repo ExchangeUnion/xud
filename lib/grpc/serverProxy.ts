@@ -23,7 +23,7 @@
 
 // code taken from https://github.com/echo-health/node-grpc-interceptors with some adjustments
 
-import grpc from 'grpc';
+import { status, Server } from '@grpc/grpc-js';
 
 const getType = (method: any) => {
   if (method.requestStream === false && method.responseStream === false) {
@@ -86,11 +86,11 @@ const handler = {
           };
           const newCallback = (callback: any) => {
             return (...args: any) => {
-              ctx.status = { code: grpc.status.OK };
+              ctx.status = { code: status.OK };
               const err = args[0];
               if (err) {
                 ctx.status = {
-                  code: grpc.status.UNKNOWN,
+                  code: status.UNKNOWN,
                   details: err,
                 };
               }
@@ -122,17 +122,25 @@ const handler = {
   },
 };
 
-export default (server: any) => {
-  server.interceptors = [];
-  server.use = (fn: any) => {
-    server.interceptors.push(fn);
+export function serverProxy(server: Server): ServerProxy {
+  const serverProxy = server as ServerProxy;
+  serverProxy.interceptors = [];
+  serverProxy.use = (fn: any) => {
+    serverProxy.interceptors.push(fn);
   };
-  server.intercept = function* intercept() {
+  serverProxy.intercept = function* intercept() {
     let i = 0;
-    while (i < server.interceptors.length) {
-      yield server.interceptors[i];
+    while (i < serverProxy.interceptors.length) {
+      yield serverProxy.interceptors[i];
       i += 1;
     }
   };
-  return new Proxy(server, handler);
+  const x = new Proxy(serverProxy, handler);
+  return x;
+}
+
+export type ServerProxy = Server & {
+  use: Function;
+  intercept: Function;
+  interceptors: Function[];
 };

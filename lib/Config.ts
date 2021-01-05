@@ -58,7 +58,6 @@ class Config {
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public connext: ConnextClientConfig;
   public orderthresholds: OrderBookThresholds;
-  public webproxy: { port: number; disable: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -132,10 +131,6 @@ class Config {
     this.http = {
       host: 'localhost',
       port: this.getDefaultHttpPort(),
-    };
-    this.webproxy = {
-      disable: true,
-      port: 8080,
     };
     // TODO: add dynamic max/min price limits
     this.orderthresholds = { minQuantity: 0 }; // 0 = disabled

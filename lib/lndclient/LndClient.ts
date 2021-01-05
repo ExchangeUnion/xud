@@ -1,19 +1,20 @@
+import * as grpc from '@grpc/grpc-js';
+import { ServiceClient } from '@grpc/grpc-js/build/src/make-client';
 import assert from 'assert';
 import crypto from 'crypto';
 import { promises as fs, watch } from 'fs';
-import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import { BalanceAlertEvent } from 'lib/alerts/types';
 import path from 'path';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import Logger from '../Logger';
-import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
+import * as lndinvoicesGrpc from '../proto/lndinvoices_grpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
-import { RouterClient } from '../proto/lndrouter_grpc_pb';
+import * as lndrouterGrpc from '../proto/lndrouter_grpc_pb';
 import * as lndrouter from '../proto/lndrouter_pb';
-import { LightningClient } from '../proto/lndrpc_grpc_pb';
+import * as lndGrpc from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { WalletUnlockerClient } from '../proto/lndwalletunlocker_grpc_pb';
-import * as lndwalletunlocker from '../proto/lndwalletunlocker_pb';
+import * as lndwalletGrpc from '../proto/lndwalletunlocker_grpc_pb';
+import * as lndwallet from '../proto/lndwalletunlocker_pb';
 import { BASE_MAX_CLIENT_WAIT_TIME, MAX_FEE_RATIO, MAX_PAYMENT_TIME } from '../swaps/consts';
 import swapErrors from '../swaps/errors';
 import SwapClient, {
@@ -21,13 +22,22 @@ import SwapClient, {
   ClientStatus,
   PaymentState,
   SwapClientInfo,
-  WithdrawArguments,
+  WithdrawArguments
 } from '../swaps/SwapClient';
 import { CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
 import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
+
+// @ts-ignore
+const LightningClient = grpc.makeClientConstructor(lndGrpc['lnrpc.Lightning'], 'LightningService');
+// @ts-ignore
+const WalletUnlockerClient = grpc.makeClientConstructor(lndwalletGrpc['lnrpc.WalletUnlocker'], 'WalletUnlockerService');
+// @ts-ignore
+const InvoicesClient = grpc.makeClientConstructor(lndinvoicesGrpc['invoicesrpc.Invoices'], 'InvoicesService');
+// @ts-ignore
+const RouterClient = grpc.makeClientConstructor(lndrouterGrpc['routerrpc.Router'], 'RouterService');
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
@@ -60,25 +70,25 @@ class LndClient extends SwapClient {
   public config: LndClientConfig;
   public currency: string;
   public walletPassword?: string;
-  private lightning?: LightningClient;
-  private walletUnlocker?: WalletUnlockerClient;
+  private lightning?: ServiceClient;
+  private walletUnlocker?: ServiceClient;
   /** The maximum time to wait for a client to be ready for making grpc calls, can be used for exponential backoff. */
   private maxClientWaitTime = BASE_MAX_CLIENT_WAIT_TIME;
-  private invoices?: InvoicesClient;
-  private router?: RouterClient;
+  private invoices?: ServiceClient;
+  private router?: ServiceClient;
   /** The path to the lnd admin macaroon, will be undefined if `nomacaroons` is enabled */
   private macaroonpath?: string;
   private meta = new grpc.Metadata();
   private uri!: string;
-  private credentials!: ChannelCredentials;
+  private credentials!: grpc.ChannelCredentials;
   /** The identity pub key for this lnd instance. */
   private identityPubKey?: string;
   /** List of client's public listening uris that are advertised to the network */
   private urisList?: string[];
   /** The identifier for the chain this lnd instance is using in the format [chain]-[network] like "bitcoin-testnet" */
   private chainIdentifier?: string;
-  private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
-  private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
+  private channelBackupSubscription?: grpc.ClientReadableStream<lndrpc.ChanBackupSnapshot>;
+  private invoiceSubscriptions = new Map<string, grpc.ClientReadableStream<lndrpc.Invoice>>();
   private initRetryTimeout?: NodeJS.Timeout;
   private totalOutboundAmount = 0;
   private totalInboundAmount = 0;
@@ -264,7 +274,10 @@ class LndClient extends SwapClient {
       });
   };
 
-  private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
+  private unaryCall = <T, U>(
+    methodName: Exclude<keyof lndGrpc.LightningClient, ClientMethods>,
+    params: T,
+  ): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.hasNoInvoiceSupport()) {
         reject(errors.NO_HOLD_INVOICE_SUPPORT);
@@ -303,7 +316,7 @@ class LndClient extends SwapClient {
   };
 
   private unaryInvoiceCall = <T, U>(
-    methodName: Exclude<keyof InvoicesClient, ClientMethods>,
+    methodName: Exclude<keyof lndinvoicesGrpc.InvoicesClient, ClientMethods>,
     params: T,
   ): Promise<U> => {
     return new Promise((resolve, reject) => {
@@ -332,7 +345,7 @@ class LndClient extends SwapClient {
   };
 
   private unaryWalletUnlockerCall = <T, U>(
-    methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>,
+    methodName: Exclude<keyof lndwalletGrpc.WalletUnlockerClient, ClientMethods>,
     params: T,
   ): Promise<U> => {
     return new Promise((resolve, reject) => {
@@ -686,7 +699,7 @@ class LndClient extends SwapClient {
       call.on('end', () => {
         call.removeAllListeners();
       });
-      call.on('error', (err) => {
+      call.on('error', (err: any) => {
         call.removeAllListeners();
         this.logger.error('error event from sendPaymentV2', err);
 
@@ -1003,9 +1016,9 @@ class LndClient extends SwapClient {
     seedMnemonic: string[],
     restore = false,
     backup?: Uint8Array,
-  ): Promise<lndwalletunlocker.InitWalletResponse.AsObject> => {
+  ): Promise<lndwallet.InitWalletResponse.AsObject> => {
     this.walletPassword = walletPassword;
-    const request = new lndwalletunlocker.InitWalletRequest();
+    const request = new lndwallet.InitWalletRequest();
 
     // from the master seed/mnemonic we derive a child mnemonic for this specific client
     const childMnemonic = await deriveChild(seedMnemonic, this.label);
@@ -1023,8 +1036,8 @@ class LndClient extends SwapClient {
       request.setChannelBackups(snapshot);
     }
     const initWalletResponse = await this.unaryWalletUnlockerCall<
-      lndwalletunlocker.InitWalletRequest,
-      lndwalletunlocker.InitWalletResponse
+      lndwallet.InitWalletRequest,
+      lndwallet.InitWalletResponse
     >('initWallet', request);
     if (this.initWalletResolve) {
       this.initWalletResolve(true);
@@ -1037,9 +1050,9 @@ class LndClient extends SwapClient {
 
   public unlockWallet = async (walletPassword: string): Promise<void> => {
     this.walletPassword = walletPassword;
-    const request = new lndwalletunlocker.UnlockWalletRequest();
+    const request = new lndwallet.UnlockWalletRequest();
     request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
-    await this.unaryWalletUnlockerCall<lndwalletunlocker.UnlockWalletRequest, lndwalletunlocker.UnlockWalletResponse>(
+    await this.unaryWalletUnlockerCall<lndwallet.UnlockWalletRequest, lndwallet.UnlockWalletResponse>(
       'unlockWallet',
       request,
     );
@@ -1081,13 +1094,13 @@ class LndClient extends SwapClient {
 
   public changePassword = async (oldPassword: string, newPassword: string) => {
     this.walletPassword = newPassword;
-    const request = new lndwalletunlocker.ChangePasswordRequest();
+    const request = new lndwallet.ChangePasswordRequest();
     request.setCurrentPassword(Uint8Array.from(Buffer.from(oldPassword, 'utf8')));
     request.setNewPassword(Uint8Array.from(Buffer.from(newPassword, 'utf8')));
-    await this.unaryWalletUnlockerCall<
-      lndwalletunlocker.ChangePasswordResponse,
-      lndwalletunlocker.ChangePasswordRequest
-    >('changePassword', request);
+    await this.unaryWalletUnlockerCall<lndwallet.ChangePasswordResponse, lndwallet.ChangePasswordRequest>(
+      'changePassword',
+      request,
+    );
 
     // the macaroons change every time lnd changes its password, so we must remove the old one and reload the new one
     this.meta.remove('macaroon');
@@ -1125,7 +1138,9 @@ class LndClient extends SwapClient {
 
     const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
     if (invoiceSubscription) {
-      invoiceSubscription.cancel();
+      // setImmediate is necessary when canceling grpc-js subscriptions due to known bug
+      // https://github.com/grpc/grpc-node/issues/1652#issuecomment-749237943
+      setImmediate(() => invoiceSubscription.cancel());
     }
   };
 
@@ -1147,7 +1162,7 @@ class LndClient extends SwapClient {
           throw err;
         }
       }
-      invoiceSubscription.cancel();
+      setImmediate(() => invoiceSubscription.cancel());
     }
   };
 
