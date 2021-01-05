@@ -518,7 +518,7 @@ type BalanceAlert struct {
 	Bound uint32 `protobuf:"varint,3,opt,name=bound,proto3" json:"bound,omitempty"`
 	// The percent of the total trading balance.
 	Percent uint32 `protobuf:"varint,4,opt,name=percent,proto3" json:"percent,omitempty"`
-	// The current side balance.
+	// The balance in satoshis on this side of the channel
 	SideBalance uint64 `protobuf:"varint,5,opt,name=side_balance,proto3" json:"side_balance,omitempty"`
 	// The currency of the channel this alert is for.
 	Currency             string   `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`

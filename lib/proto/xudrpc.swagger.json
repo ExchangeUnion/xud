@@ -1098,7 +1098,7 @@
         "side_balance": {
           "type": "string",
           "format": "uint64",
-          "description": "The current side balance."
+          "title": "The balance in satoshis on this side of the channel"
         },
         "currency": {
           "type": "string",

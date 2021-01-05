@@ -207,7 +207,7 @@
 | side | [BalanceAlert.Side](#xudrpc.BalanceAlert.Side) |  |  |
 | bound | [uint32](#uint32) |  | The bound of the low balance in percentage. |
 | percent | [uint32](#uint32) |  | The percent of the total trading balance. |
-| side_balance | [uint64](#uint64) |  | The current side balance. |
+| side_balance | [uint64](#uint64) |  | The balance in satoshis on this side of the channel |
 | currency | [string](#string) |  | The currency of the channel this alert is for. |
 
 

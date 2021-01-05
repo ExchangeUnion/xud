@@ -452,7 +452,7 @@ message BalanceAlert {
   uint32 bound = 3 [json_name = "bound"];
   // The percent of the total trading balance.
   uint32 percent = 4 [json_name = "percent"];
-  // The current side balance.
+  // The balance in satoshis on this side of the channel
   uint64 side_balance = 5 [json_name = "side_balance"];
   // The currency of the channel this alert is for.
   string currency = 6 [json_name = "currency"];
