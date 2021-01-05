@@ -15,11 +15,28 @@ import addressUtils from '../../lib/utils/addressUtils';
 chai.use(chaiAsPromised);
 
 describe('P2P Pool Tests', async () => {
-  let db: DB;
-  let pool: Pool;
-  let nodeKeyOne: NodeKey;
   const loggers = Logger.createLoggers(Level.Warn);
   const sandbox = sinon.createSandbox();
+
+  const nodeKeyOne = await NodeKey['generate']();
+  const nodeKeyTwo = await NodeKey['generate']();
+
+  const config = new Config();
+  config.p2p.listen = false;
+  config.p2p.discover = false;
+  const db = new DB(loggers.db);
+  await db.init();
+
+  const pool = new Pool({
+    config: config.p2p,
+    xuNetwork: XuNetwork.SimNet,
+    logger: loggers.p2p,
+    models: db.models,
+    nodeKey: nodeKeyTwo,
+    version: '1.0.0',
+  });
+
+  await pool.init();
 
   const createPeer = (nodePubKey: string, addresses: Address[]) => {
     const peer = sandbox.createStubInstance(Peer) as any;
@@ -35,36 +52,14 @@ describe('P2P Pool Tests', async () => {
     peer.completeOpen = () => {};
     peer.socket = {};
     peer.sendPacket = () => {};
-    peer.close = async () => {
+    peer.close = () => {
       peer.sentDisconnectionReason = DisconnectionReason.NotAcceptingConnections;
-      await pool['handlePeerClose'](peer);
+      pool['handlePeerClose'](peer);
     };
     pool['bindPeer'](peer);
 
     return peer;
   };
-
-  before(async () => {
-    nodeKeyOne = await NodeKey['generate']();
-    const nodeKeyTwo = await NodeKey['generate']();
-
-    const config = new Config();
-    config.p2p.listen = false;
-    config.p2p.discover = false;
-    db = new DB(loggers.db);
-    await db.init();
-
-    pool = new Pool({
-      config: config.p2p,
-      xuNetwork: XuNetwork.SimNet,
-      logger: loggers.p2p,
-      models: db.models,
-      nodeKey: nodeKeyTwo,
-      version: '1.0.0',
-    });
-
-    await pool.init();
-  });
 
   it('should open a connection with a peer', async () => {
     const addresses = [{ host: '123.123.123.123', port: 8885 }];
@@ -74,8 +69,8 @@ describe('P2P Pool Tests', async () => {
     await Promise.all([openPromise, new Promise((resolve) => pool.on('peer.active', resolve))]);
   });
 
-  it('should close a peer', async () => {
-    await pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+  it('should close a peer', () => {
+    pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
     expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.false;
     expect(pool['peers'].size).to.equal(0);
   });
@@ -100,7 +95,7 @@ describe('P2P Pool Tests', async () => {
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
 
-    await pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+    pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
   });
 
   describe('reconnect logic', () => {
@@ -136,8 +131,8 @@ describe('P2P Pool Tests', async () => {
   });
 
   after(async () => {
-    await db.close();
     await pool.disconnect();
+    await db.close();
 
     sandbox.restore();
   });

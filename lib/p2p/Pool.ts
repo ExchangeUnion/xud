@@ -202,9 +202,10 @@ class Pool extends EventEmitter {
 
     this.bindNodeList();
 
-    this.loadingNodesPromise = this.nodes.load();
-    this.loadingNodesPromise
+    this.loadingNodesPromise = this.nodes
+      .load()
       .then(async () => {
+        // check to make sure we're not already in the process of disconnecting
         if (this.disconnecting) {
           this.loadingNodesPromise = undefined;
           return;
@@ -220,6 +221,12 @@ class Pool extends EventEmitter {
             await this.connectNodes(secondary, true, true);
             this.logger.info('Completed start-up connections to secondary known peers');
           }, Pool.SECONDARY_PEERS_DELAY);
+        }
+
+        // check again to make sure we're not in the process of disconnecting
+        if (this.disconnecting) {
+          this.loadingNodesPromise = undefined;
+          return;
         }
 
         if (primary.length > 0) {
@@ -326,17 +333,17 @@ class Pool extends EventEmitter {
     if (this.loadingNodesPromise) {
       await this.loadingNodesPromise;
     }
-    await Promise.all([
-      this.unlisten(),
-      this.closePendingConnections(DisconnectionReason.Shutdown),
-      this.closePeers(DisconnectionReason.Shutdown),
-    ]);
+    await this.unlisten();
+
+    this.closePendingConnections(DisconnectionReason.Shutdown);
+    this.closePeers(DisconnectionReason.Shutdown);
+
     this.connected = false;
     this.disconnecting = false;
   };
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', async (nodePubKey: string, events: ReputationEvent[]) => {
+    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEvent[]) => {
       const banReasonText =
         events[0] !== ReputationEvent.ManualBan && ReputationEvent[events[0]]
           ? `due to ${ReputationEvent[events[0]]}`
@@ -345,7 +352,7 @@ class Pool extends EventEmitter {
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        await peer.close(DisconnectionReason.Banned, JSON.stringify(events));
+        peer.close(DisconnectionReason.Banned, JSON.stringify(events));
       }
     });
   };
@@ -367,7 +374,7 @@ class Pool extends EventEmitter {
         });
         this.pendingOutboundPeers.delete(this.nodePubKey);
 
-        await peer.close();
+        peer.close();
         assert.fail();
       } catch (err) {
         if (
@@ -599,7 +606,7 @@ class Pool extends EventEmitter {
         torport: this.config.torport,
       });
 
-      await this.validatePeer(peer);
+      this.validatePeer(peer);
 
       await peer.completeOpen(this.nodeState, this.nodeKey, this.version, sessionInit);
     } catch (err) {
@@ -629,7 +636,7 @@ class Pool extends EventEmitter {
     // the already established connection is closed.
     if (this.peers.has(peerPubKey)) {
       if (this.nodePubKey > peerPubKey) {
-        await peer.close(DisconnectionReason.AlreadyConnected);
+        peer.close(DisconnectionReason.AlreadyConnected);
         throw errors.NODE_ALREADY_CONNECTED(peerPubKey, peer.address);
       } else {
         const stillConnected = await new Promise<boolean>((resolve) => {
@@ -640,7 +647,7 @@ class Pool extends EventEmitter {
           });
         });
         if (stillConnected) {
-          await peer.close(DisconnectionReason.AlreadyConnected);
+          peer.close(DisconnectionReason.AlreadyConnected);
           throw errors.NODE_ALREADY_CONNECTED(peerPubKey, peer.address);
         }
       }
@@ -697,10 +704,10 @@ class Pool extends EventEmitter {
     }
   };
 
-  public closePeer = async (nodePubKey: string, reason?: DisconnectionReason, reasonPayload?: string) => {
+  public closePeer = (nodePubKey: string, reason?: DisconnectionReason, reasonPayload?: string) => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
-      await peer.close(reason, reasonPayload);
+      peer.close(reason, reasonPayload);
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)} (${peer.alias})`);
     } else {
       throw errors.NOT_CONNECTED(nodePubKey);
@@ -964,42 +971,42 @@ class Pool extends EventEmitter {
   };
 
   /** Validates a peer. If a check fails, closes the peer and throws a p2p error. */
-  private validatePeer = async (peer: Peer): Promise<void> => {
+  private validatePeer = (peer: Peer) => {
     assert(peer.nodePubKey);
     const peerPubKey = peer.nodePubKey;
 
     if (peerPubKey === this.nodePubKey) {
-      await peer.close(DisconnectionReason.ConnectedToSelf);
+      peer.close(DisconnectionReason.ConnectedToSelf);
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
     // Check if version is semantic, and higher than minCompatibleVersion.
     if (!semver.valid(peer.version)) {
-      await peer.close(DisconnectionReason.MalformedVersion);
+      peer.close(DisconnectionReason.MalformedVersion);
       throw errors.MALFORMED_VERSION(addressUtils.toString(peer.address), peer.version);
     }
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
     if (semver.compare(peer.version, this.minCompatibleVersion) === -1) {
-      await peer.close(DisconnectionReason.IncompatibleProtocolVersion);
+      peer.close(DisconnectionReason.IncompatibleProtocolVersion);
       throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(peer.address), this.minCompatibleVersion, peer.version);
     }
 
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
-      await peer.close(DisconnectionReason.NotAcceptingConnections);
+      peer.close(DisconnectionReason.NotAcceptingConnections);
       throw errors.POOL_CLOSED;
     }
 
     if (this.nodes.isBanned(peerPubKey)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
-      await peer.close(DisconnectionReason.Banned);
+      peer.close(DisconnectionReason.Banned);
       throw errors.NODE_IS_BANNED(peerPubKey);
     }
 
     if (this.peers.has(peerPubKey)) {
       // TODO: Penalize peers that attempt to create duplicate connections to us more than once.
       // The first time might be due to connection retries.
-      await peer.close(DisconnectionReason.AlreadyConnected);
+      peer.close(DisconnectionReason.AlreadyConnected);
       throw errors.NODE_ALREADY_CONNECTED(peerPubKey, peer.address);
     }
 
@@ -1069,7 +1076,10 @@ class Pool extends EventEmitter {
     });
 
     peer.on('connFailure', async () => {
-      await this.nodes.incrementConsecutiveConnFailures(peer.expectedNodePubKey!);
+      if (this.connected && !this.disconnecting) {
+        // don't penalize nodes for connection failures due to us closing the pool
+        await this.nodes.incrementConsecutiveConnFailures(peer.expectedNodePubKey!);
+      }
     });
 
     peer.on('connect', async () => {
@@ -1117,22 +1127,18 @@ class Pool extends EventEmitter {
   };
 
   private closePeers = (reason?: DisconnectionReason) => {
-    const closePromises = [];
     for (const peer of this.peers.values()) {
-      closePromises.push(peer.close(reason));
+      peer.close(reason);
     }
-    return Promise.all(closePromises);
   };
 
   private closePendingConnections = (reason?: DisconnectionReason) => {
-    const closePromises = [];
     for (const peer of this.pendingOutboundPeers.values()) {
-      closePromises.push(peer.close(reason));
+      peer.close(reason);
     }
     for (const peer of this.pendingInboundPeers) {
-      closePromises.push(peer.close(reason));
+      peer.close(reason);
     }
-    return Promise.all(closePromises);
   };
 
   /**

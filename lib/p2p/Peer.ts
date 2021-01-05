@@ -334,7 +334,7 @@ class Peer extends EventEmitter {
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = async (reason?: DisconnectionReason, reasonPayload?: string): Promise<void> => {
+  public close = (reason?: DisconnectionReason, reasonPayload?: string) => {
     if (this.status === PeerStatus.Closed) {
       return;
     }
@@ -343,17 +343,33 @@ class Peer extends EventEmitter {
     this.revokeConnectionRetries();
 
     if (this.socket) {
-      if (!this.socket.destroyed) {
-        if (reason !== undefined) {
-          this.logger.debug(`Peer ${this.label}: closing socket. reason: ${DisconnectionReason[reason]}`);
-          this.sentDisconnectionReason = reason;
-          await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
-        }
-
+      if (this.socket.destroyed) {
+        // the socket has already been destroyed, it cannot be used to send further packets
+        // and does not need further destruction. it can simply be deleted from memory
+        delete this.socket;
+      } else if (this.socket.connecting || reason === undefined) {
+        // either we are still connecting (socket.connect has been called but not finished) the socket and
+        // thus we cannot transmit packets to the peer yet, or we have not specified a disconnection reason
+        // either way, we don't need to send a disconnecting packet and can destroy the socket right away
         this.socket.destroy();
         this.socket.removeAllListeners();
+        delete this.socket;
+      } else {
+        // try to send the peer a disconnecting reason packet before destroying the socket
+        this.logger.debug(`Peer ${this.label}: closing socket. reason: ${DisconnectionReason[reason]}`);
+        this.sentDisconnectionReason = reason;
+
+        // we send the disconnection packet as a "best effort" and don't wait for the data to be written to the socket
+        // in case the socket is dead or stalled, we don't want the delay to hold up the flow of closing this peer
+        this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }))
+          .finally(() => {
+            // destroy the socket after sending the disconnecting packet (if any)
+            this.socket?.destroy();
+            this.socket?.removeAllListeners();
+            delete this.socket;
+          })
+          .catch(this.logger.error);
       }
-      delete this.socket;
     }
 
     if (this.retryConnectionTimer) {
@@ -389,7 +405,7 @@ class Peer extends EventEmitter {
         DisconnectionReason[this.recvDisconnectionReason]
       }`;
     } else {
-      rejectionMsg = `Peer ${this.label} was destroyed`;
+      rejectionMsg = `Peer ${this.label} was closed`;
     }
 
     for (const [packetType, entry] of this.responseMap) {
@@ -592,25 +608,25 @@ class Peer extends EventEmitter {
         resolve();
       };
 
-      const onError = async (err: Error) => {
+      const onError = (err: Error) => {
         cleanup();
 
         this.emit('connFailure');
 
         if (!retry) {
-          await this.close();
+          this.close();
           reject(errors.COULD_NOT_CONNECT(this.address, err));
           return;
         }
 
         if (Date.now() - startTime + retryDelay > Peer.CONNECTION_RETRIES_MAX_PERIOD) {
-          await this.close();
+          this.close();
           reject(errors.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED);
           return;
         }
 
         if (this.connectionRetriesRevoked) {
-          await this.close();
+          this.close();
           reject(errors.CONNECTION_RETRIES_REVOKED);
           return;
         }
@@ -675,7 +691,7 @@ class Peer extends EventEmitter {
   /**
    * Potentially timeout peer if it hasn't responded.
    */
-  private checkTimeout = async () => {
+  private checkTimeout = () => {
     const now = ms();
 
     for (const [packetId, entry] of this.responseMap) {
@@ -684,7 +700,7 @@ class Peer extends EventEmitter {
         const err = errors.RESPONSE_TIMEOUT(request);
         this.logger.error(`Peer timed out waiting for response to packet ${packetId}`);
         entry.reject(err);
-        await this.close(DisconnectionReason.ResponseStalling, packetId);
+        this.close(DisconnectionReason.ResponseStalling, packetId);
       }
     }
   };
@@ -770,7 +786,7 @@ class Peer extends EventEmitter {
       } else {
         this.logger.info(`Peer ${this.label} socket closed`);
       }
-      await this.close();
+      this.close();
     });
 
     this.socket.on('data', this.parser.feed);
@@ -797,10 +813,10 @@ class Peer extends EventEmitter {
         case errorCodes.FRAMER_INVALID_MSG_LENGTH:
           this.logger.warn(`Peer (${this.label}): ${err.message}`);
           this.emit('reputation', ReputationEvent.WireProtocolErr);
-          await this.close(DisconnectionReason.WireProtocolErr, err.message);
+          this.close(DisconnectionReason.WireProtocolErr, err.message);
           break;
         default:
-          await this.close();
+          this.close();
           break;
       }
     });
@@ -864,7 +880,7 @@ class Peer extends EventEmitter {
    * @param nodePubKey our node pub key
    * @param expectedNodePubKey the expected node pub key of the sender of the init packet
    */
-  private authenticateSessionInit = async (
+  private authenticateSessionInit = (
     packet: packets.SessionInitPacket,
     nodePubKey: string,
     expectedNodePubKey?: string,
@@ -878,14 +894,14 @@ class Peer extends EventEmitter {
 
     // verify that the init packet came from the expected node
     if (expectedNodePubKey && expectedNodePubKey !== sourceNodePubKey) {
-      await this.close(DisconnectionReason.UnexpectedIdentity);
+      this.close(DisconnectionReason.UnexpectedIdentity);
       throw errors.UNEXPECTED_NODE_PUB_KEY(sourceNodePubKey, expectedNodePubKey, addressUtils.toString(this.address));
     }
 
     // verify that the init packet was intended for us
     if (targetNodePubKey !== nodePubKey) {
       this.emit('reputation', ReputationEvent.InvalidAuth);
-      await this.close(DisconnectionReason.AuthFailureInvalidTarget);
+      this.close(DisconnectionReason.AuthFailureInvalidTarget);
       throw errors.AUTH_FAILURE_INVALID_TARGET(sourceNodePubKey, targetNodePubKey);
     }
 
@@ -896,7 +912,7 @@ class Peer extends EventEmitter {
 
     if (!verified) {
       this.emit('reputation', ReputationEvent.InvalidAuth);
-      await this.close(DisconnectionReason.AuthFailureInvalidSignature);
+      this.close(DisconnectionReason.AuthFailureInvalidSignature);
       throw errors.AUTH_FAILURE_INVALID_SIGNATURE(sourceNodePubKey);
     }
 
@@ -973,11 +989,11 @@ class Peer extends EventEmitter {
       assert(this.expectedNodePubKey);
       await this.initSession(ownNodeState, ownNodeKey, ownVersion, this.expectedNodePubKey);
       sessionInit = await this.waitSessionInit();
-      await this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey, this.expectedNodePubKey);
+      this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey, this.expectedNodePubKey);
     } else {
       // inbound handshake
       sessionInit = await this.waitSessionInit();
-      await this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey);
+      this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey);
     }
     return sessionInit;
   };
