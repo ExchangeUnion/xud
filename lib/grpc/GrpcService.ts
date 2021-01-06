@@ -843,6 +843,36 @@ class GrpcService implements grpc.UntypedServiceImplementation {
     }
   };
 
+  public orderBook: grpc.handleUnaryCall<xudrpc.OrderBookRequest, xudrpc.OrderBookResponse> = (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      const orderBookResponse = this.service.orderbook(call.request.toObject());
+      const response = new xudrpc.OrderBookResponse();
+
+      const createBucket = (bucket: { price: number; quantity: number }) => {
+        const grpcBucket = new xudrpc.OrderBookResponse.Bucket();
+        grpcBucket.setPrice(bucket.price);
+        grpcBucket.setQuantity(bucket.quantity);
+        return grpcBucket;
+      };
+
+      orderBookResponse.forEach((orderBookBuckets, currency) => {
+        const buckets = new xudrpc.OrderBookResponse.Buckets();
+        const buyBuckets = orderBookBuckets.buyBuckets.map(createBucket);
+        const sellBuckets = orderBookBuckets.sellBuckets.map(createBucket);
+        buckets.setBuyBucketsList(buyBuckets);
+        buckets.setSellBucketsList(sellBuckets);
+        response.getBucketsMap().set(currency, buckets);
+      });
+
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  };
+
   /**
    * See [[Service.placeOrder]]
    */

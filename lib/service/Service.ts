@@ -627,6 +627,64 @@ class Service extends EventEmitter {
     return result;
   };
 
+  public orderbook = (args: { pairId: string; precision: number; limit: number }) => {
+    const { pairId, precision, limit } = args;
+    const orders = this.listOrders({
+      pairId,
+      owner: Owner.Both,
+      includeAliases: false,
+      limit: 0,
+    });
+
+    type Buckets = {
+      price: number;
+      quantity: number;
+    }[];
+    const orderBookBuckets = new Map<
+      string,
+      {
+        buyBuckets: Buckets;
+        sellBuckets: Buckets;
+      }
+    >();
+
+    const createBuckets = (sideOrders: ServiceOrder[], isBuy: boolean) => {
+      // round prices to the desired precision
+      // we round buy orders down and sell orders up
+      const round = isBuy ? Math.floor : Math.ceil;
+
+      const roundedOrders = sideOrders.map((order) => {
+        return {
+          quantity: order.quantity!,
+          price: round(order.price! * 10 ** precision) / 10 ** precision,
+        };
+      });
+
+      // get price buckets in which to divide orders to
+      /** A map of rounded price to quantity for that price */
+      const priceBuckets = new Map<number, number>();
+      // get total quantity for each rounded price point
+      roundedOrders.forEach((order) => {
+        priceBuckets.set(order.price, (priceBuckets.get(order.price) ?? 0) + order.quantity);
+      });
+
+      const bucketsArray = Array.from(priceBuckets, ([price, quantity]) => ({ price, quantity })).reverse();
+      return limit > 0 ? bucketsArray.slice(0, limit) : bucketsArray;
+    };
+
+    orders.forEach((tradingPairSides, currency) => {
+      const buyBuckets = createBuckets(tradingPairSides.buyArray, true);
+      const sellBuckets = createBuckets(tradingPairSides.sellArray, false);
+
+      orderBookBuckets.set(currency, {
+        buyBuckets,
+        sellBuckets,
+      });
+    });
+
+    return orderBookBuckets;
+  };
+
   /**
    * Get the list of the order book's supported currencies
    * @returns A list of supported currency ticker symbols

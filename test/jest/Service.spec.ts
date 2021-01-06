@@ -29,7 +29,6 @@ jest.mock('../../lib/swaps/SwapClient');
 const mockedSwapClient = <jest.Mock<SwapClient>>(<any>SwapClient);
 jest.mock('../../lib/p2p/Pool');
 const mockedPool = <jest.Mock<Pool>>(<any>Pool);
-jest.mock('../../lib/p2p/Peer');
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
     return {

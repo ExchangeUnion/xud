@@ -358,6 +358,33 @@
         ]
       }
     },
+    "/v1/orderbook": {
+      "post": {
+        "summary": "Gets an order book depth chart where orders are grouped into \"buckets\"\naccording to their price rounded to a given level of precision.\nshell: xucli orderbook [pair_id] [precision]",
+        "operationId": "OrderBook",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcOrderBookResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcOrderBookRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/orders": {
       "get": {
         "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.\nshell: xucli listorders [pair_id] [include_own_orders] [limit]",
@@ -913,6 +940,40 @@
         "PEER"
       ],
       "default": "BOTH"
+    },
+    "OrderBookResponseBucket": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "type": "number",
+          "format": "double",
+          "description": "The rounded price of the bucket."
+        },
+        "quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The total quantity for all orders that fall into this bucket."
+        }
+      }
+    },
+    "OrderBookResponseBuckets": {
+      "type": "object",
+      "properties": {
+        "sell_buckets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OrderBookResponseBucket"
+          },
+          "title": "A sorted list of buckets for sell orders"
+        },
+        "buy_buckets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OrderBookResponseBucket"
+          },
+          "description": "A sorted list of buckets for buy orders."
+        }
+      }
     },
     "PeerLndUris": {
       "type": "object",
@@ -1476,6 +1537,37 @@
           "type": "string",
           "format": "uint64",
           "description": "The quantity on hold pending swap execution."
+        }
+      }
+    },
+    "xudrpcOrderBookRequest": {
+      "type": "object",
+      "properties": {
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair for which to retrieve orders."
+        },
+        "precision": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The number of digits to the right of the decimal point for each price bucket. A negative\nnumber rounds digits to the left of the decimal point, e.g. -2 would round to the hundreds place."
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The maximum number of price \"buckets\" to return, if zero or unspecified then no limit is imposed."
+        }
+      }
+    },
+    "xudrpcOrderBookResponse": {
+      "type": "object",
+      "properties": {
+        "buckets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/OrderBookResponseBuckets"
+          },
+          "title": "A map between currency tickers and sorted lists of order buckets"
         }
       }
     },

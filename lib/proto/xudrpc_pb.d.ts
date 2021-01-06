@@ -1155,6 +1155,114 @@ export namespace Order {
     }
 }
 
+export class OrderBookRequest extends jspb.Message { 
+    getPairId(): string;
+    setPairId(value: string): OrderBookRequest;
+
+    getPrecision(): number;
+    setPrecision(value: number): OrderBookRequest;
+
+    getLimit(): number;
+    setLimit(value: number): OrderBookRequest;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OrderBookRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: OrderBookRequest): OrderBookRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OrderBookRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OrderBookRequest;
+    static deserializeBinaryFromReader(message: OrderBookRequest, reader: jspb.BinaryReader): OrderBookRequest;
+}
+
+export namespace OrderBookRequest {
+    export type AsObject = {
+        pairId: string,
+        precision: number,
+        limit: number,
+    }
+}
+
+export class OrderBookResponse extends jspb.Message { 
+
+    getBucketsMap(): jspb.Map<string, OrderBookResponse.Buckets>;
+    clearBucketsMap(): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OrderBookResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: OrderBookResponse): OrderBookResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OrderBookResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OrderBookResponse;
+    static deserializeBinaryFromReader(message: OrderBookResponse, reader: jspb.BinaryReader): OrderBookResponse;
+}
+
+export namespace OrderBookResponse {
+    export type AsObject = {
+
+        bucketsMap: Array<[string, OrderBookResponse.Buckets.AsObject]>,
+    }
+
+
+    export class Bucket extends jspb.Message { 
+        getPrice(): number;
+        setPrice(value: number): Bucket;
+
+        getQuantity(): number;
+        setQuantity(value: number): Bucket;
+
+
+        serializeBinary(): Uint8Array;
+        toObject(includeInstance?: boolean): Bucket.AsObject;
+        static toObject(includeInstance: boolean, msg: Bucket): Bucket.AsObject;
+        static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+        static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+        static serializeBinaryToWriter(message: Bucket, writer: jspb.BinaryWriter): void;
+        static deserializeBinary(bytes: Uint8Array): Bucket;
+        static deserializeBinaryFromReader(message: Bucket, reader: jspb.BinaryReader): Bucket;
+    }
+
+    export namespace Bucket {
+        export type AsObject = {
+            price: number,
+            quantity: number,
+        }
+    }
+
+    export class Buckets extends jspb.Message { 
+        clearSellBucketsList(): void;
+        getSellBucketsList(): Array<OrderBookResponse.Bucket>;
+        setSellBucketsList(value: Array<OrderBookResponse.Bucket>): Buckets;
+        addSellBuckets(value?: OrderBookResponse.Bucket, index?: number): OrderBookResponse.Bucket;
+
+        clearBuyBucketsList(): void;
+        getBuyBucketsList(): Array<OrderBookResponse.Bucket>;
+        setBuyBucketsList(value: Array<OrderBookResponse.Bucket>): Buckets;
+        addBuyBuckets(value?: OrderBookResponse.Bucket, index?: number): OrderBookResponse.Bucket;
+
+
+        serializeBinary(): Uint8Array;
+        toObject(includeInstance?: boolean): Buckets.AsObject;
+        static toObject(includeInstance: boolean, msg: Buckets): Buckets.AsObject;
+        static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+        static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+        static serializeBinaryToWriter(message: Buckets, writer: jspb.BinaryWriter): void;
+        static deserializeBinary(bytes: Uint8Array): Buckets;
+        static deserializeBinaryFromReader(message: Buckets, reader: jspb.BinaryReader): Buckets;
+    }
+
+    export namespace Buckets {
+        export type AsObject = {
+            sellBucketsList: Array<OrderBookResponse.Bucket.AsObject>,
+            buyBucketsList: Array<OrderBookResponse.Bucket.AsObject>,
+        }
+    }
+
+}
+
 export class OrderRemoval extends jspb.Message { 
     getQuantity(): number;
     setQuantity(value: number): OrderRemoval;

@@ -36,6 +36,7 @@
     "test:unit:watch": "mocha --timeout 10000 -r ts-node/register test/unit/*  --watch --watch-extensions ts",
     "test:p2p": "mocha --timeout 10000 -r ts-node/register test/p2p/*",
     "test:p2p:watch": "mocha --timeout 10000 -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
+    "test:perf": "jest --testMatch='<rootDir>/test/perf/*.spec.[jt]s?(x)'",
     "test:crypto": "mocha --timeout 10000 -r ts-node/register test/crypto/*",
     "test:sim": "(npm run test:sim:build && npm run test:sim:run)",
     "test:sim:build": "(npm run test:sim:compile:xud && npm run test:sim:compile:custom-xud && cd test/simulation && ./docker-build.sh)",

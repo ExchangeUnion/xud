@@ -51,6 +51,11 @@
     - [OpenChannelRequest](#xudrpc.OpenChannelRequest)
     - [OpenChannelResponse](#xudrpc.OpenChannelResponse)
     - [Order](#xudrpc.Order)
+    - [OrderBookRequest](#xudrpc.OrderBookRequest)
+    - [OrderBookResponse](#xudrpc.OrderBookResponse)
+    - [OrderBookResponse.Bucket](#xudrpc.OrderBookResponse.Bucket)
+    - [OrderBookResponse.Buckets](#xudrpc.OrderBookResponse.Buckets)
+    - [OrderBookResponse.BucketsEntry](#xudrpc.OrderBookResponse.BucketsEntry)
     - [OrderRemoval](#xudrpc.OrderRemoval)
     - [OrderUpdate](#xudrpc.OrderUpdate)
     - [Orders](#xudrpc.Orders)
@@ -829,6 +834,86 @@
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
 | hold | [uint64](#uint64) |  | The quantity on hold pending swap execution. |
+
+
+
+
+
+
+<a name="xudrpc.OrderBookRequest"></a>
+
+### OrderBookRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
+| precision | [int32](#int32) |  | The number of digits to the right of the decimal point for each price bucket. A negative number rounds digits to the left of the decimal point, e.g. -2 would round to the hundreds place. |
+| limit | [uint32](#uint32) |  | The maximum number of price &#34;buckets&#34; to return, if zero or unspecified then no limit is imposed. |
+
+
+
+
+
+
+<a name="xudrpc.OrderBookResponse"></a>
+
+### OrderBookResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| buckets | [OrderBookResponse.BucketsEntry](#xudrpc.OrderBookResponse.BucketsEntry) | repeated | A map between currency tickers and sorted lists of order buckets |
+
+
+
+
+
+
+<a name="xudrpc.OrderBookResponse.Bucket"></a>
+
+### OrderBookResponse.Bucket
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| price | [double](#double) |  | The rounded price of the bucket. |
+| quantity | [uint64](#uint64) |  | The total quantity for all orders that fall into this bucket. |
+
+
+
+
+
+
+<a name="xudrpc.OrderBookResponse.Buckets"></a>
+
+### OrderBookResponse.Buckets
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sell_buckets | [OrderBookResponse.Bucket](#xudrpc.OrderBookResponse.Bucket) | repeated | A sorted list of buckets for sell orders |
+| buy_buckets | [OrderBookResponse.Bucket](#xudrpc.OrderBookResponse.Bucket) | repeated | A sorted list of buckets for buy orders. |
+
+
+
+
+
+
+<a name="xudrpc.OrderBookResponse.BucketsEntry"></a>
+
+### OrderBookResponse.BucketsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [OrderBookResponse.Buckets](#xudrpc.OrderBookResponse.Buckets) |  |  |
 
 
 
@@ -1639,6 +1724,7 @@ The primary service for interacting with a running xud node.
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. shell: xucli listpairs |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. shell: xucli listpeers |
 | OpenChannel | [OpenChannelRequest](#xudrpc.OpenChannelRequest) | [OpenChannelResponse](#xudrpc.OpenChannelResponse) | Opens a payment channel to a peer for the specified amount and currency. shell: xucli openchannel &lt;currency&gt; &lt;amount&gt; [node_identifier] [push_amount] |
+| OrderBook | [OrderBookRequest](#xudrpc.OrderBookRequest) | [OrderBookResponse](#xudrpc.OrderBookResponse) | Gets an order book depth chart where orders are grouped into &#34;buckets&#34; according to their price rounded to a given level of precision. shell: xucli orderbook [pair_id] [precision] |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous, non-streaming version of PlaceOrder. shell: xucli buy &lt;quantity&gt; &lt;pair_id&gt; &lt;price&gt; [order_id] [stream] shell: xucli sell &lt;quantity&gt; &lt;pair_id&gt; &lt;price&gt; [order_id] [stream] |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Executes a swap on a maker peer order. |
