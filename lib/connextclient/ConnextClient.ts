@@ -287,9 +287,13 @@ class ConnextClient extends SwapClient {
 
       // we want to make a request for the current collateral plus the greater of any
       // minimum request size for the currency or the capacity shortage + 5% buffer
-      const quantityToRequest =
-        inboundCapacity +
-        Math.max(inboundAmount * 1.05 - inboundCapacity, ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency] ?? 0);
+      const quantityToRequest = parseInt(
+        (
+          inboundCapacity +
+          Math.max(inboundAmount * 1.05 - inboundCapacity, ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency] ?? 0)
+        ).toFixed(),
+        10,
+      );
       const unitsToRequest = this.unitConverter.amountToUnits({
         currency,
         amount: quantityToRequest,
