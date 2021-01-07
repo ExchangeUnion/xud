@@ -212,7 +212,7 @@ class ConnextClient extends SwapClient {
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
-    this.ethProvider = getEthprovider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network], this.seed);
+    this.ethProvider = getEthprovider(this.host, this.port, CHAIN_IDENTIFIERS[this.network], this.seed);
   };
 
   public initConnextClient = async (seedMnemonic: string) => {
