@@ -58,6 +58,7 @@ interface LndClient {
 const GRPC_CLIENT_OPTIONS = {
   'grpc.ssl_target_name_override': 'localhost',
   'grpc.default_authority': 'localhost',
+  'grpc.max_receive_message_length': 1024 * 1024 * 200, // grpc default is 4 mb but lnd uses 200 mb
 };
 
 /** A class representing a client to interact with lnd. */
@@ -426,7 +427,7 @@ class LndClient extends SwapClient {
     if (this.status === ClientStatus.Initialized) {
       // we are waiting for the lnd wallet to be initialized by xud and for the lnd macaroons to be created
       this.logger.info('waiting for wallet to be initialized...');
-      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
       await this.waitForClientReady(this.walletUnlocker);
       this.lock();
 
@@ -509,8 +510,8 @@ class LndClient extends SwapClient {
           this.walletUnlocker = undefined;
         }
 
-        this.invoices = new InvoicesClient(this.uri, this.credentials);
-        this.router = new RouterClient(this.uri, this.credentials);
+        this.invoices = new InvoicesClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
+        this.router = new RouterClient(this.uri, this.credentials, GRPC_CLIENT_OPTIONS);
         try {
           const randomHash = crypto.randomBytes(32).toString('hex');
           this.logger.debug(`checking hold invoice support with hash: ${randomHash}`);
