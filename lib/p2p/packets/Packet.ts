@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
 import uuidv1 from 'uuid/v1';
-import stringify from 'json-stable-stringify';
 import PacketType from './PacketType';
 
 type PacketHeader = {
@@ -91,10 +90,6 @@ abstract class Packet<T = any> implements PacketInterface {
 
   public abstract serialize(): Uint8Array;
 
-  public toJSON = () => {
-    return stringify({ header: this.header, body: this.body });
-  };
-
   /**
    * Serialize this packet to binary Buffer.
    * @returns Buffer representation of the packet
@@ -104,10 +99,10 @@ abstract class Packet<T = any> implements PacketInterface {
   };
 
   /**
-   * Calculating the packet checksum using its JSON representation hash first 4 bytes.
+   * Calculating the packet checksum using its binary representation hash first 4 bytes.
    */
-  public checksum = (): number => {
-    return createHash('sha256').update(this.toJSON()).digest().readUInt32LE(0);
+  public checksum = (bytes: Uint8Array): number => {
+    return createHash('sha256').update(bytes).digest().readUInt32LE(0);
   };
 }
 

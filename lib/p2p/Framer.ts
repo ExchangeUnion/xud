@@ -69,7 +69,7 @@ class Framer {
       msg.writeUInt32LE(packet.type, 8);
 
       // checksum
-      msg.writeUInt32LE(packet.checksum(), 12);
+      msg.writeUInt32LE(packet.checksum(packetRaw), 12);
 
       // payload
       packetRaw.copy(msg, 16);

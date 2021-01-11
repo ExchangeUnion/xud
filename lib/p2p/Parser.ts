@@ -181,7 +181,7 @@ class Parser extends EventEmitter {
     }
 
     const packet = packetOrPbObj;
-    if (header.checksum && header.checksum !== packet.checksum()) {
+    if (header.checksum && header.checksum !== packet.checksum(payload)) {
       throw errors.PARSER_DATA_INTEGRITY_ERR(`${PacketType[header.type]} ${JSON.stringify(packet)}`);
     }
 
