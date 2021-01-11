@@ -18,7 +18,7 @@ export type InnerBody = {
 
 export type SessionInitPacketBody = InnerBody & {
   sign: string;
-}
+};
 
 class SessionInitPacket extends Packet<SessionInitPacketBody> {
   public get type(): PacketType {
@@ -73,7 +73,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     msg.setNodeState(serializeNodeState(body.nodeState));
 
     return msg.serializeBinary();
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SessionInitPacket();

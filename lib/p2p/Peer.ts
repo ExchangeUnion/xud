@@ -1040,7 +1040,7 @@ class Peer extends EventEmitter {
     ownVersion: string;
     expectedNodePubKey: string;
   }): packets.SessionInitPacket => {
-    let innerBody: any = {
+    const innerBody: any = {
       ephemeralPubKey,
       version: ownVersion,
       peerPubKey: expectedNodePubKey,
