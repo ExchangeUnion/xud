@@ -528,7 +528,7 @@ class Peer extends EventEmitter {
       let retries = 0;
       this.inbound = false;
       this.connectionRetriesRevoked = false;
-      
+
       const connectViaProxy = () => {
         this.socket = net.connect(torport, 'localhost');
 

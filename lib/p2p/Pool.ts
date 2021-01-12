@@ -57,9 +57,9 @@ interface Pool {
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
-/*interface NodeConnectionIterator {
+/* interface NodeConnectionIterator {
   forEach: (callback: (node: NodeConnectionInfo) => void) => void;
-}*/
+} */
 
 /**
  * Represents a pool of peers that handles all p2p network activity. This tracks all active and
@@ -178,26 +178,36 @@ class Pool extends EventEmitter {
   public getNodeAlias = (nodePubKey: string) => {
     return this.nodes.getAlias(nodePubKey);
   };
-  /** 
+  /**
    * attempt to have 8 outbound nodes
    */
   private populateOutbound = async (): Promise<void> => {
-    console.log("P populating outbound nodes...");
-    console.log("P outbound.size is", this.nodes.outbound.size, "\naddrMap.size is", this.nodes.addrManager.nNew + this.nodes.addrManager.nTried, "\nnodes.count is", this.nodes.count);
-    while (this.nodes.outbound.size < Math.min(this.nodes.addrManager.nNew + this.nodes.addrManager.nTried, 1)) { // TODO should be 8, but needs a big network...
-      console.log("AM selecting");
-      let node = this.nodes.addrManager.Select(false);
-      if (!node) { // no nodes in addrMan
-        console.log("P no nodes in addrMan");
+    console.log('P populating outbound nodes...');
+    console.log(
+      'P outbound.size is',
+      this.nodes.outbound.size,
+      '\naddrMap.size is',
+      this.nodes.addrManager.nNew + this.nodes.addrManager.nTried,
+      '\nnodes.count is',
+      this.nodes.count,
+    );
+    this.nodes.addrManager.ShowContents();
+    while (this.nodes.outbound.size < Math.min(this.nodes.addrManager.nNew + this.nodes.addrManager.nTried, 1)) {
+      // TODO should be 8, but needs a big network...
+      console.log('AM selecting');
+      const node = this.nodes.addrManager.Select(false);
+      if (!node) {
+        // no nodes in addrMan
+        console.log('P no nodes in addrMan');
         break;
       }
       if (!this.nodes.outbound.has(node.nodePubKey)) {
-        //console.log("connecting to ", node);
+        // console.log("connecting to ", node);
         await this.tryConnectNode(node, false); // will fail if already connected
       }
     }
-    console.log("P done populating outbound. outbound.size is", this.nodes.outbound.size);
-    console.log("P peers list is now", this.peers);
+    console.log('P done populating outbound. outbound.size is', this.nodes.outbound.size);
+    console.log('P peers list is now size', this.peers.size);
   };
 
   /**
@@ -221,21 +231,23 @@ class Pool extends EventEmitter {
     this.bindNodeList();
 
     this.loadingNodesPromise = this.nodes.load();
-    this.loadingNodesPromise.then(async () => {
-      if (!this.disconnecting) {
-        this.logger.info('Connecting to at most 8 known peers');
-        await this.populateOutbound();
-        this.logger.info('Completed start-up outbound connections to known peers');
-      }
-      this.loadingNodesPromise = undefined;
-    }).catch((reason) => {
-      this.logger.error('Unexpected error connecting to known peers on startup', reason);
-      this.loadingNodesPromise = undefined;
-    });
+    this.loadingNodesPromise
+      .then(async () => {
+        if (!this.disconnecting) {
+          this.logger.info('Connecting to at most 8 known peers');
+          await this.populateOutbound();
+          this.logger.info('Completed start-up outbound connections to known peers');
+        }
+        this.loadingNodesPromise = undefined;
+      })
+      .catch((reason) => {
+        this.logger.error('Unexpected error connecting to known peers on startup', reason);
+        this.loadingNodesPromise = undefined;
+      });
 
-    console.log("P verifying reachability");
+    console.log('P verifying reachability');
     this.verifyReachability();
-    console.log("P done verifying reachability");
+    console.log('P done verifying reachability');
     this.connected = true;
   };
 
@@ -385,7 +397,7 @@ class Pool extends EventEmitter {
    * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
-    /*private connectNodes = async (nodes: NodeConnectionIterator, retryConnecting = false) => {
+  /* private connectNodes = async (nodes: NodeConnectionIterator, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => { // TODO just use this.nodes instead
       // check that this node is not ourselves
@@ -404,25 +416,25 @@ class Pool extends EventEmitter {
       await Promise.all(connectionPromises);
     }
     });
-  }*/
+  } */
 
   /**
    * Attempt to create an outbound connection to a node using its known listening addresses.
-   */ 
+   */
   private tryConnectNode = async (node: NodeInstance, retryConnecting = false) => {
     let succeeded = true;
     console.log(retryConnecting);
-    console.log("P trying to connect to node", node.addressesText);
-    if (!await this.tryConnectWithLastAddress(node)) {
-      if (!await this.tryConnectWithAdvertisedAddresses(node)) {
-        console.log("P failed to connect to node");
+    console.log('P trying to connect to node', node.addressesText);
+    if (!(await this.tryConnectWithLastAddress(node))) {
+      if (!(await this.tryConnectWithAdvertisedAddresses(node))) {
+        console.log('P failed to connect to node');
         this.nodes.addrManager.Attempt(node);
         succeeded = false;
       }
     }
     if (succeeded) {
       // update metadata: connection succeeded
-      console.log("P successfully connected to node");
+      console.log('P successfully connected to node');
       this.nodes.addrManager.Good(node);
     }
   };
@@ -544,7 +556,7 @@ class Pool extends EventEmitter {
     } finally {
       this.pendingOutboundPeers.delete(nodePubKey);
     }
-    let nodeInstance = await this.nodes.getFromDB(nodePubKey);
+    const nodeInstance = await this.nodes.getFromDB(nodePubKey);
     assert(nodeInstance);
     if (nodeInstance) {
       this.nodes.outbound.set(nodePubKey, nodeInstance); // TODO why retrieve it from database?
@@ -600,7 +612,7 @@ class Pool extends EventEmitter {
       // if we are disconnected or disconnecting, don't open new connections
       throw errors.POOL_CLOSED;
     }
-    console.log("P opening peer", peer.address);
+    console.log('P opening peer', peer.address);
 
     try {
       const sessionInit = await peer.beginOpen({
@@ -612,13 +624,13 @@ class Pool extends EventEmitter {
         torport: this.config.torport,
       });
 
-      console.log("P validating peer");
+      console.log('P validating peer');
       await this.validatePeer(peer);
 
-      console.log("P completing open peer");
+      console.log('P completing open peer');
       await peer.completeOpen(this.nodeState, this.nodeKey, this.version, sessionInit);
     } catch (err) {
-      console.log("P error");
+      console.log('P error');
       const msg = `could not open connection to ${peer.inbound ? 'inbound' : 'outbound'} peer`;
       if (typeof err === 'string') {
         this.logger.warn(`${msg} (${peer.label}): ${err}`);
@@ -661,9 +673,9 @@ class Pool extends EventEmitter {
         }
       }
     }
-    
+
     this.peers.set(peerPubKey, peer);
-    console.log("opened connection to peer. peers is now: ", this.peers);
+    console.log('opened connection to peer. peers size is now: ', this.peers.size);
     peer.active = true;
     this.logger.verbose(`opened connection to ${peer.label} at ${addressUtils.toString(peer.address)}`);
 
@@ -704,14 +716,17 @@ class Pool extends EventEmitter {
     // create the node entry in db and in AddrMan
     if (!this.nodes.has(peer.nodePubKey!)) {
       console.log(`P new peer's address is ${peer.address}. is this correct for inbound nodes too?`);
-      await this.nodes.createNode({
-        addresses,
-        nodePubKey: peer.nodePubKey!,
-        lastAddress: peer.address, //peer.inbound ? undefined : peer.address,
-      }, peer.address.host );
+      await this.nodes.createNode(
+        {
+          addresses,
+          nodePubKey: peer.nodePubKey!,
+          lastAddress: peer.address, // peer.inbound ? undefined : peer.address,
+        },
+        peer.address.host,
+      );
     } else {
       // the node is known, update its listening addresses in db
-      //await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.address); //peer.inbound ? undefined : peer.address);//TODO uncomment
+      // await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.address); //peer.inbound ? undefined : peer.address);//TODO uncomment
     }
   };
 
@@ -747,11 +762,11 @@ class Pool extends EventEmitter {
 
       const node = this.nodes.get(nodePubKey);
       if (node) {
-        /*const Node: NodeConnectionInfo = {
+        /* const Node: NodeConnectionInfo = {
           nodePubKey,
           addresses: node.addresses,
           lastAddress: node.lastAddress,
-        };*/
+        }; */
 
         this.logger.info(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) was unbanned`);
         if (reconnect) {
@@ -858,11 +873,11 @@ class Pool extends EventEmitter {
   };
 
   private handleSocket = async (socket: Socket) => {
-    if (this.nodes.inbound.size >= 117) { 
+    if (this.nodes.inbound.size >= 117) {
       this.logger.debug('Ignoring inbound connection attempt because maximum inbound connection limit reached');
       return;
     }
-    if (!socket.remoteAddress) { 
+    if (!socket.remoteAddress) {
       // client disconnected, socket is destroyed
       this.logger.debug('Ignoring disconnected peer');
       socket.destroy();
@@ -946,7 +961,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.Nodes: {
         const nodes = (packet as packets.NodesPacket).body!;
-        
+
         nodes.forEach((node) => {
           // check that this node is not ourselves
           const isNotUs = node.nodePubKey !== this.nodePubKey;
@@ -957,7 +972,7 @@ class Pool extends EventEmitter {
             this.nodes.createNode(node, peer.address.host);
           }
         });
-          
+
         this.logger.verbose(`received ${nodes.length} nodes from ${peer.label}`);
         break;
       }
@@ -1128,12 +1143,12 @@ class Pool extends EventEmitter {
       this.connected // we don't reconnect if we're in the process of disconnecting or have disconnected the p2p pool
     ) {
       this.logger.debug(`Not attempting to reconnect to a disconnected peer ${peer.label}`);
-      /*const node = {
+      /* const node = {
         addresses,
         lastAddress: peer.address,
         nodePubKey: peer.nodePubKey,
-      };*/
-      //await this.tryConnectNode(peer, true);
+      }; */
+      // await this.tryConnectNode(peer, true);
     }
   };
 

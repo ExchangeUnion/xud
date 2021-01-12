@@ -12,7 +12,7 @@ class P2PRepository {
   constructor(private models: Models) {}
 
   public getNodes = async (): Promise<NodeInstance[]> => {
-    console.log("PR getting nodes from db");
+    console.log('PR getting nodes from db');
     return this.models.Node.findAll();
   };
 
@@ -50,14 +50,14 @@ class P2PRepository {
 
   public addNodes = async (nodes: NodeCreationAttributes[]) => {
     return this.models.Node.bulkCreate(<NodeAttributes[]>nodes);
-  }
-    /*
+  };
+  /*
   public deleteNode = async (nodePubKey: string) => {
     let node = await this.getNode(nodePubKey);
     if (node) { // TODO actually delete the node
       return this.models.Node.deleteOne({"NodeInstance": node});
     }
-  };*/
+  }; */
 }
 
 export default P2PRepository;
