@@ -5,14 +5,8 @@ import { mergeMap } from 'rxjs/operators';
 // This file will be a separate module with the above dependencies.
 
 // gets the Ethereum provider object to read data from the chain
-const getProvider = (host: string, port: number, name: string, chainId: number): ethers.providers.JsonRpcProvider => {
-  return new ethers.providers.JsonRpcProvider(
-    { url: `http://${host}:${port}/ethprovider/${chainId}` },
-    {
-      name,
-      chainId,
-    },
-  );
+const getProvider = (host: string, port: number, chainId: number): ethers.providers.JsonRpcProvider => {
+  return new ethers.providers.JsonRpcProvider({ url: `http://${host}:${port}/ethprovider/${chainId}` });
 };
 
 // gets the signer object necessary for write access (think unlock wallet)
@@ -85,9 +79,9 @@ const getERC20Balance = curry(
 // This is the main function that has to be called before this package exposes more functions.
 // Think of it as a constructor where we create the interal state of the module before
 // we export more functionality to the consumer.
-const getEthprovider = (host: string, port: number, name: string, chainId: number, seed: string) => {
+const getEthprovider = (host: string, port: number, chainId: number, seed: string) => {
   // create the internal state
-  const provider = getProvider(host, port, name, chainId);
+  const provider = getProvider(host, port, chainId);
   const signer = getSigner(provider, seed);
   // because the functions below are curried we can only provide some of the arguments
   const getERC20BalanceWithSigner = getERC20Balance(signer.address);

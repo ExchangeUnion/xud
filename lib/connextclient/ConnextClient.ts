@@ -66,7 +66,7 @@ const getRouterNodeIdentifier = (network: string): string => {
       return 'vector8kVKCFZKgNZHeGBN6HpdeE8qjDnGbmAkTQj56snsuejviU3nBB';
     case 'testnet':
       // public key of our testnet router node
-      return 'vector6XKj2XPrVEYfTEdxEjgVVnFCtZVXa4RrfzQLiXpjfcj4GJMdpR';
+      return 'vector6Y5JHqC9z6HyZ6kD9SuPMiNrdRVts4un3ekMsdso21oJkZ9vHh';
     case 'mainnet':
       throw new Error('mainnet router node has not been created, yet');
     default:
@@ -212,7 +212,7 @@ class ConnextClient extends SwapClient {
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
-    this.ethProvider = getEthprovider(this.host, this.port, this.network, CHAIN_IDENTIFIERS[this.network], this.seed);
+    this.ethProvider = getEthprovider(this.host, this.port, CHAIN_IDENTIFIERS[this.network], this.seed);
   };
 
   public initConnextClient = async (seedMnemonic: string) => {
