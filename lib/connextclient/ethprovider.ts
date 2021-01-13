@@ -6,9 +6,7 @@ import { mergeMap } from 'rxjs/operators';
 
 // gets the Ethereum provider object to read data from the chain
 const getProvider = (host: string, port: number, chainId: number): ethers.providers.JsonRpcProvider => {
-  return new ethers.providers.JsonRpcProvider(
-    { url: `http://${host}:${port}/ethprovider/${chainId}` },
-  );
+  return new ethers.providers.JsonRpcProvider({ url: `http://${host}:${port}/ethprovider/${chainId}` });
 };
 
 // gets the signer object necessary for write access (think unlock wallet)
