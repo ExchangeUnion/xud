@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash } from 'crypto';
 import * as pb from '../../proto/xudp2p_pb';
 import { removeUndefinedProps, convertKvpArrayToKvps, setObjectToMap } from '../../utils/utils';
 import { NodeState } from '../types';
