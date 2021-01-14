@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import uuidv1 from 'uuid/v1';
 import PacketType from './PacketType';
 
@@ -96,13 +95,6 @@ abstract class Packet<T = any> implements PacketInterface {
    */
   public toRaw = (): Buffer => {
     return Buffer.from(this.serialize().buffer as ArrayBuffer);
-  };
-
-  /**
-   * Calculating the packet checksum using its binary representation hash first 4 bytes.
-   */
-  public checksum = (bytes: Uint8Array): number => {
-    return createHash('sha256').update(bytes).digest().readUInt32LE(0);
   };
 }
 
