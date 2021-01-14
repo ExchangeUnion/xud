@@ -23,6 +23,7 @@ import swapsErrors from '../swaps/errors';
 import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
+import Alerts from '../alerts/Alerts';
 import { SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
@@ -38,6 +39,7 @@ import {
   ServiceTrade,
   XudInfo,
 } from './types';
+import { Alert } from '../alerts/types';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -102,6 +104,7 @@ class Service extends EventEmitter {
   private swaps: Swaps;
   private logger: Logger;
   private nodekey: NodeKey;
+  private alerts: Alerts;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
@@ -114,6 +117,7 @@ class Service extends EventEmitter {
     this.swaps = components.swaps;
     this.logger = components.logger;
     this.nodekey = components.nodeKey;
+    this.alerts = components.alerts;
 
     this.version = components.version;
   }
@@ -811,6 +815,27 @@ class Service extends EventEmitter {
       : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.discoverNodes(nodePubKey);
   };
+
+  /*
+   * Subscribe to alerts.
+   */
+  public subscribeAlerts = (callback: (payload: Alert) => void, cancelled$: Observable<void>) => {
+    const observables: Observable<Alert>[] = [];
+    observables.push(fromEvent<Alert>(this.alerts, 'alert'));
+
+    const mergedObservable$ = this.getMergedObservable$(observables, cancelled$);
+
+    mergedObservable$.subscribe({
+      next: (alert) => {
+        callback(alert);
+      },
+      error: this.logger.error,
+    });
+  };
+
+  private getMergedObservable$(observables: Observable<Alert>[], cancelled$: Observable<void>) {
+    return merge(...observables).pipe(takeUntil(cancelled$));
+  }
 
   /*
    * Subscribe to orders being added to the order book.

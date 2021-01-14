@@ -1,7 +1,11 @@
+import { ServiceError, status } from '@grpc/grpc-js';
 import colors from 'colors/safe';
 import { accessSync, watch } from 'fs';
 import os from 'os';
 import path from 'path';
+import { Arguments } from 'yargs';
+import { XudClient } from '../proto/xudrpc_grpc_pb';
+import { setTimeoutPromise } from '../utils/utils';
 
 const SATOSHIS_PER_COIN = 10 ** 8;
 
@@ -100,3 +104,36 @@ be recovered with it and must be backed up and recovered separately. Keep it \
 somewhere safe, it is your ONLY backup in case of data loss.
 `);
 }
+
+export const waitForClient = (
+  client: XudClient,
+  argv: Arguments,
+  ensureConnection: Function,
+  successCallback: Function,
+  printError?: boolean,
+) => {
+  client.waitForReady(Date.now() + 3000, (error?: Error) => {
+    if (error) {
+      if (error.message === 'Failed to connect before the deadline') {
+        console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
+        process.exit(1);
+      }
+
+      if (printError) console.error(`${error.name}: ${error.message}`);
+      setTimeout(ensureConnection, 3000);
+    } else {
+      console.log('Successfully connected, streaming');
+      successCallback(argv);
+    }
+  });
+};
+
+export const onStreamError = async (ensureConnection: Function, err: ServiceError) => {
+  if (err.code === status.UNIMPLEMENTED) {
+    console.error("xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again");
+    process.exit(1);
+  }
+  console.warn(`Unexpected error occured: ${err.message}, reconnecting in 1 second`);
+  await setTimeoutPromise(1000);
+  await ensureConnection();
+};

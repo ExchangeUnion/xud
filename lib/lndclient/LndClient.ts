@@ -3,17 +3,18 @@ import { ServiceClient } from '@grpc/grpc-js/build/src/make-client';
 import assert from 'assert';
 import crypto from 'crypto';
 import { promises as fs, watch } from 'fs';
+import { BalanceAlertEvent } from 'lib/alerts/types';
 import path from 'path';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import Logger from '../Logger';
 import * as lndinvoicesGrpc from '../proto/lndinvoices_grpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
-import * as lndwalletGrpc from '../proto/lndwalletunlocker_grpc_pb';
-import * as lndwallet from '../proto/lndwalletunlocker_pb';
 import * as lndrouterGrpc from '../proto/lndrouter_grpc_pb';
 import * as lndrouter from '../proto/lndrouter_pb';
 import * as lndGrpc from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
+import * as lndwalletGrpc from '../proto/lndwalletunlocker_grpc_pb';
+import * as lndwallet from '../proto/lndwalletunlocker_pb';
 import { BASE_MAX_CLIENT_WAIT_TIME, MAX_FEE_RATIO, MAX_PAYMENT_TIME } from '../swaps/consts';
 import swapErrors from '../swaps/errors';
 import SwapClient, {
@@ -44,6 +45,7 @@ interface LndClient {
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlertEvent) => void): this;
 
   once(event: 'initialized', listener: () => void): this;
 
@@ -53,6 +55,7 @@ interface LndClient {
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
   emit(event: 'initialized'): boolean;
+  emit(event: 'lowTradingBalance', alert: BalanceAlertEvent): boolean;
 }
 
 const GRPC_CLIENT_OPTIONS = {
@@ -255,9 +258,21 @@ class LndClient extends SwapClient {
   };
 
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(async (err) => {
-      this.logger.error('failed to update total outbound capacity', err);
-    });
+    await this.channelBalance()
+      .then(() => {
+        const totalBalance = this.totalOutboundAmount + this.totalInboundAmount;
+        const alertThreshold = totalBalance * 0.1;
+        this.checkLowBalance(
+          this.totalInboundAmount,
+          this.totalOutboundAmount,
+          totalBalance,
+          alertThreshold,
+          this.currency,
+        );
+      })
+      .catch(async (err) => {
+        this.logger.error('failed to update total outbound capacity', err);
+      });
   };
 
   private unaryCall = <T, U>(

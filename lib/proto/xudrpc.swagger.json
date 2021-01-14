@@ -663,6 +663,23 @@
         ]
       }
     },
+    "/v1/subscribealerts": {
+      "get": {
+        "summary": "Subscribes to alerts such as low balance.",
+        "operationId": "SubscribeAlerts",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/xudrpcAlert"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/subscribeorders": {
       "get": {
         "summary": "Subscribes to orders being added to and removed from the order book. This call allows the client\nto maintain an up-to-date view of the order book. For example, an exchange that wants to show\nits users a real time view of the orders available to them would subscribe to this streaming\ncall to be alerted as new orders are added and expired orders are removed.",
@@ -897,6 +914,23 @@
     }
   },
   "definitions": {
+    "AlertAlertType": {
+      "type": "string",
+      "enum": [
+        "LOW_TRADING_BALANCE"
+      ],
+      "default": "LOW_TRADING_BALANCE",
+      "description": "The type of the alert."
+    },
+    "BalanceAlertSide": {
+      "type": "string",
+      "enum": [
+        "REMOTE",
+        "LOCAL"
+      ],
+      "default": "REMOTE",
+      "description": "The side of the low balance."
+    },
     "CurrencySwapClient": {
       "type": "string",
       "enum": [
@@ -985,6 +1019,26 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
+    "xudrpcAlert": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/AlertAlertType"
+        },
+        "message": {
+          "type": "string",
+          "description": "The human readable alert message."
+        },
+        "date": {
+          "type": "string",
+          "format": "int64",
+          "description": "The human readable alert message."
+        },
+        "balance_alert": {
+          "$ref": "#/definitions/xudrpcBalanceAlert"
+        }
+      }
+    },
     "xudrpcBalance": {
       "type": "object",
       "properties": {
@@ -1017,6 +1071,38 @@
           "type": "string",
           "format": "uint64",
           "description": "Unconfirmed wallet balance in satoshis."
+        }
+      }
+    },
+    "xudrpcBalanceAlert": {
+      "type": "object",
+      "properties": {
+        "total_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The total balance."
+        },
+        "side": {
+          "$ref": "#/definitions/BalanceAlertSide"
+        },
+        "bound": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The bound of the low balance in percentage."
+        },
+        "percent": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The percent of the total trading balance."
+        },
+        "side_balance": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The balance in satoshis on this side of the channel"
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the channel this alert is for."
         }
       }
     },
@@ -2152,6 +2238,18 @@
     }
   },
   "x-stream-definitions": {
+    "xudrpcAlert": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcAlert"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcAlert"
+    },
     "xudrpcOrderUpdate": {
       "type": "object",
       "properties": {

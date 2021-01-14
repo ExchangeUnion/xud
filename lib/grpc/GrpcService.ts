@@ -2,7 +2,7 @@
 import grpc, { ServerWritableStream, status } from '@grpc/grpc-js';
 import { fromEvent } from 'rxjs';
 import { take } from 'rxjs/operators';
-import { SwapFailureReason } from '../constants/enums';
+import { AlertType, SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
@@ -10,6 +10,7 @@ import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
 import { SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
+import { Alert } from '../alerts/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -993,6 +994,35 @@ class GrpcService implements grpc.UntypedServiceImplementation {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
+  };
+
+  /*
+   * See [[Service.subscribeAlerts]]
+   */
+  public subscribeAlerts: grpc.handleServerStreamingCall<xudrpc.SubscribeAlertsRequest, xudrpc.Alert> = (call) => {
+    if (!this.isReady(this.service, call)) {
+      return;
+    }
+
+    const cancelled$ = getCancelled$(call);
+    this.service.subscribeAlerts((serviceAlert: Alert) => {
+      const alert = new xudrpc.Alert();
+      alert.setType(serviceAlert.type as number);
+      alert.setMessage(serviceAlert.message);
+      alert.setDate(serviceAlert.date);
+      if (serviceAlert.type === AlertType.LowTradingBalance) {
+        const balanceServiceAlert = serviceAlert as Alert;
+        const balanceAlert = new xudrpc.BalanceAlert();
+        balanceAlert.setBound(balanceServiceAlert.bound);
+        balanceAlert.setSide(balanceServiceAlert.side as number);
+        balanceAlert.setSideBalance(balanceServiceAlert.sideBalance);
+        balanceAlert.setTotalBalance(balanceServiceAlert.totalBalance);
+        balanceAlert.setCurrency(balanceServiceAlert.currency);
+        alert.setBalanceAlert(balanceAlert);
+      }
+      call.write(alert);
+    }, cancelled$);
+    this.addStream(call);
   };
 
   /*

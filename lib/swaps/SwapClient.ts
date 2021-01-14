@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import { SwapClientType } from '../constants/enums';
+import { BalanceAlertEvent } from 'lib/alerts/types';
+import { ChannelSide, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
 import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
@@ -72,9 +73,11 @@ export type WithdrawArguments = {
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, units: bigint, currency?: string) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlertEvent) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, units: bigint, currency?: string): boolean;
+  emit(event: 'lowTradingBalance', alert: BalanceAlertEvent): boolean;
   emit(event: 'initialized'): boolean;
 }
 
@@ -227,6 +230,34 @@ abstract class SwapClient extends EventEmitter {
       this.status = newStatus;
     } else {
       this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
+    }
+  };
+
+  protected checkLowBalance = (
+    remoteBalance: number,
+    localBalance: number,
+    totalBalance: number,
+    alertThreshold: number,
+    currency: string,
+  ) => {
+    if (localBalance < alertThreshold) {
+      this.emit('lowTradingBalance', {
+        totalBalance,
+        currency,
+        side: ChannelSide.Local,
+        sideBalance: localBalance,
+        bound: 10,
+      });
+    }
+
+    if (remoteBalance < alertThreshold) {
+      this.emit('lowTradingBalance', {
+        totalBalance,
+        currency,
+        side: ChannelSide.Remote,
+        sideBalance: remoteBalance,
+        bound: 10,
+      });
     }
   };
 

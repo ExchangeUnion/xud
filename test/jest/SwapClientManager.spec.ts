@@ -70,6 +70,7 @@ const loggers = {
   swaps: logger,
   http: logger,
   service: logger,
+  alerts: logger,
 };
 
 describe('Swaps.SwapClientManager', () => {

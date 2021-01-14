@@ -294,6 +294,13 @@ service Xud {
     };
   }
 
+  /* Subscribes to alerts such as low balance. */
+  rpc SubscribeAlerts(SubscribeAlertsRequest) returns (stream Alert) {
+    option (google.api.http) = {
+      get: "/v1/subscribealerts"
+    };
+  }
+
   /* Subscribes to orders being added to and removed from the order book. This call allows the client
    * to maintain an up-to-date view of the order book. For example, an exchange that wants to show
    * its users a real time view of the orders available to them would subscribe to this streaming
@@ -401,6 +408,22 @@ message AddPairRequest {
 }
 message AddPairResponse {}
 
+message Alert {
+   // The type of the alert.
+   enum AlertType {
+     LOW_TRADING_BALANCE = 0;
+   }
+   AlertType type = 1 [json_name = "type"];
+   // The human readable alert message.
+   string message = 2 [json_name = "message"];
+   // The human readable alert message.
+   int64 date = 3 [json_name = "date"];
+   // The structured payload.
+   oneof payload {
+     BalanceAlert balance_alert = 4 [json_name = "balance_alert"];
+   }
+}
+
 message Balance {
   // Total balance denominated in satoshis.
   uint64 total_balance = 1 [json_name = "total_balance"];
@@ -414,6 +437,25 @@ message Balance {
   uint64 wallet_balance = 5 [json_name = "wallet_balance"];
   // Unconfirmed wallet balance in satoshis.
   uint64 unconfirmed_wallet_balance = 6 [json_name = "unconfirmed_wallet_balance"];
+}
+
+message BalanceAlert {
+  // The total balance.
+  uint64 total_balance = 1 [json_name = "total_balance"];
+  // The side of the low balance.
+  enum Side {
+    REMOTE = 0;
+    LOCAL = 1;
+  }
+  Side side = 2 [json_name = "side"];
+  // The bound of the low balance in percentage.
+  uint32 bound = 3 [json_name = "bound"];
+  // The percent of the total trading balance.
+  uint32 percent = 4 [json_name = "percent"];
+  // The balance in satoshis on this side of the channel
+  uint64 side_balance = 5 [json_name = "side_balance"];
+  // The currency of the channel this alert is for.
+  string currency = 6 [json_name = "currency"];
 }
 
 message BanRequest {
@@ -866,6 +908,9 @@ message ShutdownResponse {}
 message SubscribeOrdersRequest {
   // Whether to transmit all existing active orders upon establishing the stream.
   bool existing = 1 [json_name = "existing"];
+}
+
+message SubscribeAlertsRequest {
 }
 
 message SubscribeSwapsAcceptedRequest { }

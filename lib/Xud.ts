@@ -19,6 +19,7 @@ import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { createSimnetChannels } from './utils/simnet-connext-channels';
 import { UnitConverter } from './utils/UnitConverter';
+import Alerts from './alerts/Alerts';
 
 const { version }: { version: string } = require('../package.json');
 
@@ -43,6 +44,7 @@ class Xud extends EventEmitter {
   private shuttingDown = false;
   private swapClientManager?: SwapClientManager;
   private simnetChannels$?: Subscription;
+  private alerts!: Alerts;
 
   /**
    * Create an Exchange Union daemon.
@@ -198,6 +200,8 @@ class Xud extends EventEmitter {
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init();
 
+      this.alerts = new Alerts({ swapClientManager: this.swapClientManager, logger: loggers.alerts });
+
       this.service = new Service({
         version,
         nodeKey,
@@ -207,6 +211,7 @@ class Xud extends EventEmitter {
         swaps: this.swaps,
         logger: loggers.service,
         shutdown: this.beginShutdown,
+        alerts: this.alerts,
       });
 
       this.service.on('logLevel', (level) => {

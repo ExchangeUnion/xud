@@ -3,6 +3,7 @@ import assert from 'assert';
 import http from 'http';
 import { combineLatest, defer, from, fromEvent, interval, Observable, of, Subscription, throwError, timer } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, mergeMap, mergeMapTo, pluck, take, timeout } from 'rxjs/operators';
+import { BalanceAlertEvent } from '../alerts/types';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
@@ -49,6 +50,7 @@ interface ConnextClient {
   on(event: 'htlcAccepted', listener: (rHash: string, units: bigint, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'depositConfirmed', listener: (hash: string) => void): this;
+  on(event: 'lowTradingBalance', listener: (alert: BalanceAlertEvent) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, units: bigint, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -56,6 +58,7 @@ interface ConnextClient {
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
   emit(event: 'depositConfirmed', hash: string): void;
+  emit(event: 'lowTradingBalance', alert: BalanceAlertEvent): boolean;
 }
 
 const getRouterNodeIdentifier = (network: string): string => {
@@ -338,6 +341,15 @@ class ConnextClient extends SwapClient {
         channelBalancePromises.push(this.channelBalance(currency));
       }
       await Promise.all(channelBalancePromises);
+
+      for (const [currency] of this.tokenAddresses) {
+        const remoteBalance = this.inboundAmounts.get(currency) || 0;
+        const localBalance = this.outboundAmounts.get(currency) || 0;
+        const totalBalance = remoteBalance + localBalance;
+        const alertThreshold = totalBalance * 0.1;
+
+        this.checkLowBalance(remoteBalance, localBalance, totalBalance, alertThreshold, currency);
+      }
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);
     }

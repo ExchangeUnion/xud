@@ -9,6 +9,7 @@ import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Swaps from '../../lib/swaps/Swaps';
 import NodeKey from '../../lib/nodekey/NodeKey';
+import Alerts from '../../lib/alerts/Alerts';
 
 jest.mock('../../lib/nodekey/NodeKey');
 const mockedNodeKey = <jest.Mock<NodeKey>>(<any>NodeKey);
@@ -16,6 +17,8 @@ jest.mock('../../lib/orderbook/OrderBook');
 const mockedOrderbook = <jest.Mock<Orderbook>>(<any>Orderbook);
 jest.mock('../../lib/swaps/Swaps');
 const mockedSwaps = <jest.Mock<Swaps>>(<any>Swaps);
+jest.mock('../../lib/alerts/Alerts');
+const mockedAlerts = <jest.Mock<Alerts>>(<any>Alerts);
 jest.mock('../../lib/swaps/SwapClientManager', () => {
   return jest.fn().mockImplementation(() => {
     return {
@@ -67,6 +70,7 @@ describe('Service', () => {
       shutdown: jest.fn(),
       nodeKey: new mockedNodeKey(),
       logger: new mockedLogger(),
+      alerts: new mockedAlerts(),
     };
     peer = new mockedPeer();
     components.pool.getPeer = jest.fn().mockReturnValue(peer);

@@ -66,6 +66,57 @@ export namespace AddPairResponse {
     }
 }
 
+export class Alert extends jspb.Message { 
+    getType(): Alert.AlertType;
+    setType(value: Alert.AlertType): Alert;
+
+    getMessage(): string;
+    setMessage(value: string): Alert;
+
+    getDate(): number;
+    setDate(value: number): Alert;
+
+
+    hasBalanceAlert(): boolean;
+    clearBalanceAlert(): void;
+    getBalanceAlert(): BalanceAlert | undefined;
+    setBalanceAlert(value?: BalanceAlert): Alert;
+
+
+    getPayloadCase(): Alert.PayloadCase;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Alert.AsObject;
+    static toObject(includeInstance: boolean, msg: Alert): Alert.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: Alert, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Alert;
+    static deserializeBinaryFromReader(message: Alert, reader: jspb.BinaryReader): Alert;
+}
+
+export namespace Alert {
+    export type AsObject = {
+        type: Alert.AlertType,
+        message: string,
+        date: number,
+        balanceAlert?: BalanceAlert.AsObject,
+    }
+
+    export enum AlertType {
+    LOW_TRADING_BALANCE = 0,
+    }
+
+
+    export enum PayloadCase {
+        PAYLOAD_NOT_SET = 0,
+    
+    BALANCE_ALERT = 4,
+
+    }
+
+}
+
 export class Balance extends jspb.Message { 
     getTotalBalance(): number;
     setTotalBalance(value: number): Balance;
@@ -105,6 +156,53 @@ export namespace Balance {
         walletBalance: number,
         unconfirmedWalletBalance: number,
     }
+}
+
+export class BalanceAlert extends jspb.Message { 
+    getTotalBalance(): number;
+    setTotalBalance(value: number): BalanceAlert;
+
+    getSide(): BalanceAlert.Side;
+    setSide(value: BalanceAlert.Side): BalanceAlert;
+
+    getBound(): number;
+    setBound(value: number): BalanceAlert;
+
+    getPercent(): number;
+    setPercent(value: number): BalanceAlert;
+
+    getSideBalance(): number;
+    setSideBalance(value: number): BalanceAlert;
+
+    getCurrency(): string;
+    setCurrency(value: string): BalanceAlert;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): BalanceAlert.AsObject;
+    static toObject(includeInstance: boolean, msg: BalanceAlert): BalanceAlert.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: BalanceAlert, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): BalanceAlert;
+    static deserializeBinaryFromReader(message: BalanceAlert, reader: jspb.BinaryReader): BalanceAlert;
+}
+
+export namespace BalanceAlert {
+    export type AsObject = {
+        totalBalance: number,
+        side: BalanceAlert.Side,
+        bound: number,
+        percent: number,
+        sideBalance: number,
+        currency: string,
+    }
+
+    export enum Side {
+    REMOTE = 0,
+    LOCAL = 1,
+    }
+
 }
 
 export class BanRequest extends jspb.Message { 
@@ -1898,6 +1996,23 @@ export class SubscribeOrdersRequest extends jspb.Message {
 export namespace SubscribeOrdersRequest {
     export type AsObject = {
         existing: boolean,
+    }
+}
+
+export class SubscribeAlertsRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribeAlertsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeAlertsRequest): SubscribeAlertsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribeAlertsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeAlertsRequest;
+    static deserializeBinaryFromReader(message: SubscribeAlertsRequest, reader: jspb.BinaryReader): SubscribeAlertsRequest;
+}
+
+export namespace SubscribeAlertsRequest {
+    export type AsObject = {
     }
 }
 
