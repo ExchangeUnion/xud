@@ -95,6 +95,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     listPairs: IXudService_IListPairs;
     listPeers: IXudService_IListPeers;
     openChannel: IXudService_IOpenChannel;
+    orderBook: IXudService_IOrderBook;
     placeOrder: IXudService_IPlaceOrder;
     placeOrderSync: IXudService_IPlaceOrderSync;
     executeSwap: IXudService_IExecuteSwap;
@@ -276,6 +277,15 @@ interface IXudService_IOpenChannel extends grpc.MethodDefinition<xudrpc_pb.OpenC
     responseSerialize: grpc.serialize<xudrpc_pb.OpenChannelResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.OpenChannelResponse>;
 }
+interface IXudService_IOrderBook extends grpc.MethodDefinition<xudrpc_pb.OrderBookRequest, xudrpc_pb.OrderBookResponse> {
+    path: "/xudrpc.Xud/OrderBook";
+    requestStream: false;
+    responseStream: false;
+    requestSerialize: grpc.serialize<xudrpc_pb.OrderBookRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.OrderBookRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.OrderBookResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.OrderBookResponse>;
+}
 interface IXudService_IPlaceOrder extends grpc.MethodDefinition<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent> {
     path: "/xudrpc.Xud/PlaceOrder";
     requestStream: false;
@@ -451,6 +461,7 @@ export interface IXudServer extends grpc.UntypedServiceImplementation {
     listPairs: grpc.handleUnaryCall<xudrpc_pb.ListPairsRequest, xudrpc_pb.ListPairsResponse>;
     listPeers: grpc.handleUnaryCall<xudrpc_pb.ListPeersRequest, xudrpc_pb.ListPeersResponse>;
     openChannel: grpc.handleUnaryCall<xudrpc_pb.OpenChannelRequest, xudrpc_pb.OpenChannelResponse>;
+    orderBook: grpc.handleUnaryCall<xudrpc_pb.OrderBookRequest, xudrpc_pb.OrderBookResponse>;
     placeOrder: grpc.handleServerStreamingCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
     executeSwap: grpc.handleUnaryCall<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.SwapSuccess>;
@@ -525,6 +536,9 @@ export interface IXudClient {
     openChannel(request: xudrpc_pb.OpenChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
+    orderBook(request: xudrpc_pb.OrderBookRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OrderBookResponse) => void): grpc.ClientUnaryCall;
+    orderBook(request: xudrpc_pb.OrderBookRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OrderBookResponse) => void): grpc.ClientUnaryCall;
+    orderBook(request: xudrpc_pb.OrderBookRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OrderBookResponse) => void): grpc.ClientUnaryCall;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
@@ -629,6 +643,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public openChannel(request: xudrpc_pb.OpenChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
+    public orderBook(request: xudrpc_pb.OrderBookRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OrderBookResponse) => void): grpc.ClientUnaryCall;
+    public orderBook(request: xudrpc_pb.OrderBookRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OrderBookResponse) => void): grpc.ClientUnaryCall;
+    public orderBook(request: xudrpc_pb.OrderBookRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OrderBookResponse) => void): grpc.ClientUnaryCall;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     public placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;

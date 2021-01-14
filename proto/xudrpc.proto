@@ -203,6 +203,17 @@ service Xud {
     };
   }
 
+  /* Gets an order book depth chart where orders are grouped into "buckets"
+   * according to their price rounded to a given level of precision.
+   * shell: xucli orderbook [pair_id] [precision] */
+  rpc OrderBook(OrderBookRequest) returns (OrderBookResponse) {
+    option (google.api.http) = {
+      post: "/v1/orderbook"
+      body: "*"
+    };
+  }
+
+
   /* Adds an order to the order book.
    * If price is zero or unspecified a market order will get added. */
   rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
@@ -681,6 +692,32 @@ message Order {
   bool is_own_order = 9 [json_name = "is_own_order"];
   // The quantity on hold pending swap execution.
   uint64 hold = 10 [json_name = "hold"];
+}
+
+message OrderBookRequest {
+  // The trading pair for which to retrieve orders.
+  string pair_id = 1;
+  // The number of digits to the right of the decimal point for each price bucket. A negative
+  // number rounds digits to the left of the decimal point, e.g. -2 would round to the hundreds place.
+  int32 precision = 2;
+  // The maximum number of price "buckets" to return, if zero or unspecified then no limit is imposed.
+  uint32 limit = 3;
+}
+message OrderBookResponse {
+  message Bucket {
+    // The rounded price of the bucket.
+    double price = 1;
+    // The total quantity for all orders that fall into this bucket.
+    uint64 quantity = 2;
+  }
+  message Buckets {
+    // A sorted list of buckets for sell orders
+    repeated Bucket sell_buckets = 1;
+    // A sorted list of buckets for buy orders.
+    repeated Bucket buy_buckets = 2;
+  }
+  // A map between currency tickers and sorted lists of order buckets 
+  map<string, Buckets> buckets = 1;
 }
 
 message OrderRemoval {
