@@ -5,6 +5,7 @@ import { randomBytes } from '../utils/cryptoUtils';
 import errors from './errors';
 import Network from './Network';
 import Packet from './packets/Packet';
+import { calcChecksum } from './packets/utils';
 
 type WireMsgHeader = {
   magic?: number;
@@ -69,7 +70,7 @@ class Framer {
       msg.writeUInt32LE(packet.type, 8);
 
       // checksum
-      msg.writeUInt32LE(packet.checksum(), 12);
+      msg.writeUInt32LE(calcChecksum(packetRaw), 12);
 
       // payload
       packetRaw.copy(msg, 16);

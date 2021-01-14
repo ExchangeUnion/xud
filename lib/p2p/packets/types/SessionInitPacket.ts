@@ -4,8 +4,7 @@ import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
 import { validateNodeState, convertNodeState, serializeNodeState } from '../utils';
 
-export type SessionInitPacketBody = {
-  sign: string;
+export type InnerBody = {
   ephemeralPubKey: string;
   /** The node pub key of the peer we are connecting to. */
   peerPubKey: string;
@@ -15,6 +14,10 @@ export type SessionInitPacketBody = {
   version: string;
   /** Our local node pub key. */
   nodePubKey: string;
+};
+
+export type SessionInitPacketBody = InnerBody & {
+  sign: string;
 };
 
 class SessionInitPacket extends Packet<SessionInitPacketBody> {
@@ -59,6 +62,17 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
         nodeState: convertNodeState(obj.nodeState!),
       },
     });
+  };
+
+  public static serializeInnerBody = (body: InnerBody): Uint8Array => {
+    const msg = new pb.SessionInitPacket();
+    msg.setPeerPubKey(body.peerPubKey);
+    msg.setEphemeralPubKey(body.ephemeralPubKey);
+    msg.setVersion(body.version);
+    msg.setNodePubKey(body.nodePubKey);
+    msg.setNodeState(serializeNodeState(body.nodeState));
+
+    return msg.serializeBinary();
   };
 
   public serialize = (): Uint8Array => {

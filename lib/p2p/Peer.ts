@@ -1,7 +1,6 @@
 import assert from 'assert';
 import { createECDH, createHash } from 'crypto';
 import { EventEmitter } from 'events';
-import stringify from 'json-stable-stringify';
 import net, { Socket } from 'net';
 import secp256k1 from 'secp256k1';
 import { SocksClient, SocksClientOptions } from 'socks';
@@ -886,7 +885,7 @@ class Peer extends EventEmitter {
     expectedNodePubKey?: string,
   ) => {
     const body = packet.body!;
-    const { sign, ...bodyWithoutSign } = body;
+    const { sign, ...innerBody } = body;
     /** The pub key of the node that sent the init packet. */
     const sourceNodePubKey = body.nodePubKey;
     /** The pub key of the node that the init packet is intended for. */
@@ -906,7 +905,7 @@ class Peer extends EventEmitter {
     }
 
     // verify that the msg was signed by the peer
-    const msg = stringify(bodyWithoutSign);
+    const msg = packets.SessionInitPacket.serializeInnerBody(innerBody);
     const msgHash = createHash('sha256').update(msg).digest();
     const verified = secp256k1.verify(msgHash, Buffer.from(sign, 'hex'), Buffer.from(sourceNodePubKey, 'hex'));
 
@@ -1057,7 +1056,7 @@ class Peer extends EventEmitter {
     ownVersion: string;
     expectedNodePubKey: string;
   }): packets.SessionInitPacket => {
-    let body: any = {
+    const innerBody: any = {
       ephemeralPubKey,
       version: ownVersion,
       peerPubKey: expectedNodePubKey,
@@ -1065,11 +1064,11 @@ class Peer extends EventEmitter {
       nodeState: ownNodeState,
     };
 
-    const msg = stringify(body);
+    const msg = packets.SessionInitPacket.serializeInnerBody(innerBody);
     const msgHash = createHash('sha256').update(msg).digest();
     const { signature } = secp256k1.sign(msgHash, ownNodeKey.privKey);
 
-    body = { ...body, sign: signature.toString('hex') };
+    const body = { ...innerBody, sign: signature.toString('hex') };
 
     return new packets.SessionInitPacket(body);
   };

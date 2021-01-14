@@ -4,6 +4,7 @@ import Framer, { WireMsgHeader } from './Framer';
 import { PacketType } from './packets';
 import Packet, { isPacket } from './packets/Packet';
 import * as packetTypes from './packets/types';
+import { calcChecksum } from './packets/utils';
 
 interface Parser {
   on(event: 'packet', packet: (order: Packet) => void): this;
@@ -181,7 +182,7 @@ class Parser extends EventEmitter {
     }
 
     const packet = packetOrPbObj;
-    if (header.checksum && header.checksum !== packet.checksum()) {
+    if (header.checksum && header.checksum !== calcChecksum(payload)) {
       throw errors.PARSER_DATA_INTEGRITY_ERR(`${PacketType[header.type]} ${JSON.stringify(packet)}`);
     }
 

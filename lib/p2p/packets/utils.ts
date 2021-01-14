@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import * as pb from '../../proto/xudp2p_pb';
 import { removeUndefinedProps, convertKvpArrayToKvps, setObjectToMap } from '../../utils/utils';
 import { NodeState } from '../types';
@@ -66,4 +67,11 @@ export const serializeNodeState = (nodeState: NodeState): pb.NodeState => {
     setObjectToMap(nodeState.tokenIdentifiers, pbNodeState.getTokenIdentifiersMap());
   }
   return pbNodeState;
+};
+
+/**
+ * Calculate checksum using the bytes sha256-hash first 4 bytes.
+ */
+export const calcChecksum = (bytes: Uint8Array): number => {
+  return createHash('sha256').update(bytes).digest().readUInt32LE(0);
 };
