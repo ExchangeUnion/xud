@@ -113,8 +113,6 @@ class ConnextClient extends SwapClient {
   private seed: string | undefined;
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
-  /** A map of currencies to promises representing collateral requests. */
-  private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
 
@@ -268,21 +266,8 @@ class ConnextClient extends SwapClient {
    * if one doesn't exist, starts a new request for the specified amount. Then
    * calls channelBalance to refresh the inbound capacity for the currency.
    */
-  private requestCollateralInBackground = (currency: string, units: number) => {
-    // first check whether we already have a pending collateral request for this currency
-    // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
-    const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
-      assetId: this.tokenAddresses.get(currency),
-      amount: units.toLocaleString('fullwide', { useGrouping: false }),
-    }).then(() => {
-      this.requestCollateralPromises.delete(currency);
-      this.logger.debug(`completed collateral request of ${units} ${currency} units`);
-      return this.channelBalance(currency);
-    }).catch((err) => {
-      this.requestCollateralPromises.delete(currency);
-      this.logger.error(err);
-    });
-    this.requestCollateralPromises.set(currency, requestCollateralPromise);
+  private requestCollateralInBackground = (_currency: string, _units: number) => {
+    this.logger.info('did not request collateral because this xud version is deprecated');
   }
 
   /**
