@@ -730,6 +730,27 @@ export namespace GetMnemonicResponse {
     }
 }
 
+export class GetEthMnemonicResponse extends jspb.Message { 
+    getSeedMnemonic(): string;
+    setSeedMnemonic(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetEthMnemonicResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetEthMnemonicResponse): GetEthMnemonicResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetEthMnemonicResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetEthMnemonicResponse;
+    static deserializeBinaryFromReader(message: GetEthMnemonicResponse, reader: jspb.BinaryReader): GetEthMnemonicResponse;
+}
+
+export namespace GetEthMnemonicResponse {
+    export type AsObject = {
+        seedMnemonic: string,
+    }
+}
+
 export class GetNodeInfoRequest extends jspb.Message { 
     getNodeIdentifier(): string;
     setNodeIdentifier(value: string): void;

@@ -600,6 +600,23 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.getETHMnemonic]]
+   */
+  public getETHMnemonic: grpc.handleUnaryCall<xudrpc.GetMnemonicRequest, xudrpc.GetEthMnemonicResponse> = async (_, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      const mnemonic = await this.service.getETHMnemonic();
+      const response = new xudrpc.GetEthMnemonicResponse();
+      response.setSeedMnemonic(mnemonic);
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.getNodeInfo]]
    */
   public getNodeInfo: grpc.handleUnaryCall<xudrpc.GetNodeInfoRequest, xudrpc.GetNodeInfoResponse> = async (call, callback) => {

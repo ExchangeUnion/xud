@@ -227,6 +227,23 @@
         ]
       }
     },
+    "/v1/eth-mnemonic": {
+      "get": {
+        "summary": "Gets the ETH account mnemonic .\nshell: xucli getnemonic",
+        "operationId": "GetETHMnemonic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetEthMnemonicResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/executeswap": {
       "post": {
         "summary": "Executes a swap on a maker peer order.",
@@ -1185,6 +1202,14 @@
             "$ref": "#/definitions/xudrpcBalance"
           },
           "description": "A map between currency ticker symbols and their balances."
+        }
+      }
+    },
+    "xudrpcGetEthMnemonicResponse": {
+      "type": "object",
+      "properties": {
+        "seed_mnemonic": {
+          "type": "string"
         }
       }
     },

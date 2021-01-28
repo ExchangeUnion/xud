@@ -30,6 +30,7 @@
     - [GetBalanceRequest](#xudrpc.GetBalanceRequest)
     - [GetBalanceResponse](#xudrpc.GetBalanceResponse)
     - [GetBalanceResponse.BalancesEntry](#xudrpc.GetBalanceResponse.BalancesEntry)
+    - [GetEthMnemonicResponse](#xudrpc.GetEthMnemonicResponse)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
@@ -101,9 +102,11 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
+  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -502,6 +505,21 @@
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [Balance](#xudrpc.Balance) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.GetEthMnemonicResponse"></a>
+
+### GetEthMnemonicResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seed_mnemonic | [string](#string) |  |  |
 
 
 
@@ -1613,6 +1631,7 @@ The primary service for interacting with a running xud node.
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. shell: xucli getbalance [currency] |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. shell: xucli getinfo |
 | GetMnemonic | [GetMnemonicRequest](#xudrpc.GetMnemonicRequest) | [GetMnemonicResponse](#xudrpc.GetMnemonicResponse) | Gets the master seed mnemonic . shell: xucli getnemonic |
+| GetETHMnemonic | [GetMnemonicRequest](#xudrpc.GetMnemonicRequest) | [GetEthMnemonicResponse](#xudrpc.GetEthMnemonicResponse) | Gets the ETH account mnemonic . shell: xucli getnemonic |
 | GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Gets general information about a node. shell: xucli getnodeinfo &lt;node_identifier&gt; |
 | ListOrders | [ListOrdersRequest](#xudrpc.ListOrdersRequest) | [ListOrdersResponse](#xudrpc.ListOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. shell: xucli listorders [pair_id] [include_own_orders] [limit] |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. shell: xucli listcurrencies |

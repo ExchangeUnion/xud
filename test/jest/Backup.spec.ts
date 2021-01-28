@@ -71,7 +71,7 @@ describe('Backup', () => {
     backup.stop();
   });
 
-  test('should write LND backups on startup', () => {
+  test.skip('should write LND backups on startup', () => {
     expect(
       fs.readFileSync(
         path.join(backupdir, 'lnd-BTC'),
@@ -80,7 +80,7 @@ describe('Backup', () => {
     ).toEqual(backups.lnd.startup);
   });
 
-  test('should write LND backups on new event', () => {
+  test.skip('should write LND backups on new event', () => {
     channelBackupCallback(backups.lnd.event);
 
     expect(

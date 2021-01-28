@@ -86,6 +86,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     getBalance: IXudService_IGetBalance;
     getInfo: IXudService_IGetInfo;
     getMnemonic: IXudService_IGetMnemonic;
+    getETHMnemonic: IXudService_IGetETHMnemonic;
     getNodeInfo: IXudService_IGetNodeInfo;
     listOrders: IXudService_IListOrders;
     listCurrencies: IXudService_IListCurrencies;
@@ -209,6 +210,15 @@ interface IXudService_IGetMnemonic extends grpc.MethodDefinition<xudrpc_pb.GetMn
     requestDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.GetMnemonicResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicResponse>;
+}
+interface IXudService_IGetETHMnemonic extends grpc.MethodDefinition<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetEthMnemonicResponse> {
+    path: string; // "/xudrpc.Xud/GetETHMnemonic"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.GetMnemonicRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.GetMnemonicRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.GetEthMnemonicResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.GetEthMnemonicResponse>;
 }
 interface IXudService_IGetNodeInfo extends grpc.MethodDefinition<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse> {
     path: string; // "/xudrpc.Xud/GetNodeInfo"
@@ -432,6 +442,7 @@ export interface IXudServer {
     getBalance: grpc.handleUnaryCall<xudrpc_pb.GetBalanceRequest, xudrpc_pb.GetBalanceResponse>;
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
     getMnemonic: grpc.handleUnaryCall<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetMnemonicResponse>;
+    getETHMnemonic: grpc.handleUnaryCall<xudrpc_pb.GetMnemonicRequest, xudrpc_pb.GetEthMnemonicResponse>;
     getNodeInfo: grpc.handleUnaryCall<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse>;
     listOrders: grpc.handleUnaryCall<xudrpc_pb.ListOrdersRequest, xudrpc_pb.ListOrdersResponse>;
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
@@ -491,6 +502,9 @@ export interface IXudClient {
     getMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getETHMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetEthMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getETHMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetEthMnemonicResponse) => void): grpc.ClientUnaryCall;
+    getETHMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetEthMnemonicResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
@@ -592,6 +606,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
     public getMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getETHMnemonic(request: xudrpc_pb.GetMnemonicRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetEthMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getETHMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetEthMnemonicResponse) => void): grpc.ClientUnaryCall;
+    public getETHMnemonic(request: xudrpc_pb.GetMnemonicRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetEthMnemonicResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;

@@ -142,6 +142,14 @@ service Xud {
     };
   }
 
+  /* Gets the ETH account mnemonic .
+   * shell: xucli getnemonic */
+  rpc GetETHMnemonic(GetMnemonicRequest) returns (GetEthMnemonicResponse) {
+    option (google.api.http) = {
+      get: "/v1/eth-mnemonic"
+    };
+  }
+
   /* Gets general information about a node.
    * shell: xucli getnodeinfo <node_identifier> */
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
@@ -564,6 +572,9 @@ message GetInfoResponse {
 message GetMnemonicRequest {}
 message GetMnemonicResponse {
   repeated string seed_mnemonic = 1 [json_name = "seed_mnemonic"];
+}
+message GetEthMnemonicResponse {
+  string seed_mnemonic = 1 [json_name = "seed_mnemonic"];
 }
 
 message GetNodeInfoRequest {

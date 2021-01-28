@@ -373,6 +373,13 @@ class Service extends EventEmitter {
   }
 
   /**
+   * Gets Ethereum mnemonic
+   */
+  public getETHMnemonic = async () => {
+    return this.nodekey.childSeed(SwapClientType.Connext);
+  }
+
+  /**
    * Gets information about a specified node.
    */
   public getNodeInfo = async (args: { nodeIdentifier: string }) => {
