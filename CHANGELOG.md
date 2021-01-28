@@ -1,3 +1,19 @@
+## [1.2.5](https://github.com/ExchangeUnion/xud/compare/v1.2.3...v1.2.5) (2021-01-28)
+
+
+### Bug Fixes
+
+* **rpc:** 0 remaining quantity on full remove  ([#2022](https://github.com/ExchangeUnion/xud/issues/2022)) ([de7fd48](https://github.com/ExchangeUnion/xud/commit/de7fd48a860cb1bccf380c7050839de0a8c46d1f)), closes [#2020](https://github.com/ExchangeUnion/xud/issues/2020)
+
+
+### Features
+
+* **cli:** add getethmnemonic ([8007801](https://github.com/ExchangeUnion/xud/commit/80078017754effa55dc93faa662aae233bff605f))
+* **connext:** disable collateralization requests ([b12a01e](https://github.com/ExchangeUnion/xud/commit/b12a01e21b4142f190481835192b683a9fb8c6f4))
+* **test:** skip simtests in preversion script ([e708326](https://github.com/ExchangeUnion/xud/commit/e708326ff753bfe05e470ac51176c2fd26090250))
+
+
+
 ## [1.2.4](https://github.com/ExchangeUnion/xud/compare/v1.2.0...v1.2.4) (2020-12-05)
 
 
