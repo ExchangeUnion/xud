@@ -168,7 +168,7 @@
     "json-stable-stringify": "^1.0.1",
     "keccak": "^2.1.0",
     "moment": "^2.29.1",
-    "node-forge": "^0.10.0",
+    "node-forge": "^1.0.0",
     "ramda": "0.27.1",
     "rxjs": "^6.6.3",
     "secp256k1": "^3.7.1",
